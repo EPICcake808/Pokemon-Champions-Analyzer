@@ -1,0 +1,1421 @@
+{
+  "regulation_id": "champions_regulation_m_a",
+  "team_size": 6,
+  "typing_counts": {
+    "normal": 0,
+    "fire": 0,
+    "water": 1,
+    "electric": 0,
+    "grass": 1,
+    "ice": 0,
+    "fighting": 1,
+    "poison": 0,
+    "ground": 0,
+    "flying": 1,
+    "psychic": 0,
+    "bug": 0,
+    "rock": 1,
+    "ghost": 3,
+    "dragon": 1,
+    "dark": 1,
+    "steel": 2,
+    "fairy": 0
+  },
+  "defensive_profile": {
+    "normal": {
+      "average_multiplier": 0.25,
+      "weak_members": 0,
+      "resistant_members": 3,
+      "immune_members": 3
+    },
+    "fire": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "water": {
+      "average_multiplier": 0.9167,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "electric": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "grass": {
+      "average_multiplier": 0.875,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "ice": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "fighting": {
+      "average_multiplier": 0.8333,
+      "weak_members": 2,
+      "resistant_members": 0,
+      "immune_members": 3
+    },
+    "poison": {
+      "average_multiplier": 0.4167,
+      "weak_members": 0,
+      "resistant_members": 3,
+      "immune_members": 2
+    },
+    "ground": {
+      "average_multiplier": 1.0833,
+      "weak_members": 2,
+      "resistant_members": 1,
+      "immune_members": 1
+    },
+    "flying": {
+      "average_multiplier": 1.0,
+      "weak_members": 1,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "psychic": {
+      "average_multiplier": 0.75,
+      "weak_members": 0,
+      "resistant_members": 1,
+      "immune_members": 1
+    },
+    "bug": {
+      "average_multiplier": 0.625,
+      "weak_members": 0,
+      "resistant_members": 4,
+      "immune_members": 0
+    },
+    "rock": {
+      "average_multiplier": 0.9583,
+      "weak_members": 1,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "ghost": {
+      "average_multiplier": 1.3333,
+      "weak_members": 2,
+      "resistant_members": 0,
+      "immune_members": 0
+    },
+    "dragon": {
+      "average_multiplier": 0.9167,
+      "weak_members": 0,
+      "resistant_members": 1,
+      "immune_members": 0
+    },
+    "dark": {
+      "average_multiplier": 1.25,
+      "weak_members": 2,
+      "resistant_members": 1,
+      "immune_members": 0
+    },
+    "steel": {
+      "average_multiplier": 0.9167,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "fairy": {
+      "average_multiplier": 1.1667,
+      "weak_members": 1,
+      "resistant_members": 0,
+      "immune_members": 0
+    }
+  },
+  "top_defensive_weaknesses": [
+    "ghost",
+    "dark",
+    "fire",
+    "electric",
+    "ice"
+  ],
+  "offensive_coverage": {
+    "normal": 0,
+    "fire": 0,
+    "water": 2,
+    "electric": 1,
+    "grass": 1,
+    "ice": 0,
+    "fighting": 1,
+    "poison": 0,
+    "ground": 0,
+    "flying": 1,
+    "psychic": 1,
+    "bug": 0,
+    "rock": 1,
+    "ghost": 1,
+    "dragon": 1,
+    "dark": 1,
+    "steel": 1,
+    "fairy": 0
+  },
+  "target_coverage": {
+    "normal": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 0,
+      "immune_lines": 1
+    },
+    "fire": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "water": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 3,
+      "immune_lines": 0
+    },
+    "electric": {
+      "best_multiplier": 1.0,
+      "super_effective_lines": 0,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 3,
+      "immune_lines": 0
+    },
+    "grass": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 8,
+      "resisted_lines": 4,
+      "immune_lines": 0
+    },
+    "ice": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 12,
+      "resisted_lines": 0,
+      "immune_lines": 0
+    },
+    "fighting": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "poison": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "ground": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 1,
+      "immune_lines": 1
+    },
+    "flying": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "psychic": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "bug": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "rock": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 5,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 1,
+      "immune_lines": 0
+    },
+    "ghost": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 0,
+      "immune_lines": 1
+    },
+    "dragon": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 8,
+      "resisted_lines": 4,
+      "immune_lines": 0
+    },
+    "dark": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 2,
+      "immune_lines": 1
+    },
+    "steel": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 6,
+      "resisted_lines": 6,
+      "immune_lines": 0
+    },
+    "fairy": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 2,
+      "immune_lines": 1
+    }
+  },
+  "coverage_gaps": [
+    "electric",
+    "steel",
+    "dragon",
+    "grass",
+    "dark"
+  ],
+  "speed_profile": {
+    "average_base_speed": 87.5,
+    "average_battle_speed": 110.33,
+    "median_battle_speed": 108.5,
+    "standard_deviation": 34.26,
+    "team_tier": "mixed",
+    "normalized_level": 50,
+    "fastest": {
+      "pokemon": "Aerodactyl",
+      "base_speed": 130,
+      "battle_speed": 169,
+      "tier": "very_fast"
+    },
+    "slowest": {
+      "pokemon": "Sableye",
+      "base_speed": 50,
+      "battle_speed": 63,
+      "tier": "trick_room_slow"
+    },
+    "base_speed_extremes": {
+      "fastest": {
+        "pokemon": "Aerodactyl",
+        "base_speed": 130
+      },
+      "slowest": {
+        "pokemon": "Sableye",
+        "base_speed": 50
+      }
+    },
+    "spread": {
+      "minimum": 63,
+      "maximum": 169,
+      "range": 106
+    },
+    "distribution": {
+      "trick_room_slow": {
+        "count": 1,
+        "members": [
+          "Sableye"
+        ]
+      },
+      "slow": {
+        "count": 1,
+        "members": [
+          "Sinistcha"
+        ]
+      },
+      "midrange": {
+        "count": 2,
+        "members": [
+          "Archaludon",
+          "Basculegion (M)"
+        ]
+      },
+      "fast": {
+        "count": 1,
+        "members": [
+          "Lucario-Mega"
+        ]
+      },
+      "very_fast": {
+        "count": 1,
+        "members": [
+          "Aerodactyl"
+        ]
+      },
+      "elite_fast": {
+        "count": 0,
+        "members": []
+      }
+    },
+    "benchmarks": {
+      "catalog": {
+        "regulation_id": "champions_regulation_m_a",
+        "display_name": "Pokemon Champions Regulation M-A Speed Benchmarks",
+        "notes": "Curated from repeated Regulation M-A tournament fast-mode shells and common max-Speed reference points. These are qualitative benchmark tiers, not exhaustive usage stats."
+      },
+      "notes": [
+        "Natural Speed: Aerodactyl reaches 169, ties the Jolly Garchomp benchmark (169) but misses Timid Whimsicott (184).",
+        "Tailwind Speed: Aerodactyl reaches 338, ties the Tailwind Jolly Garchomp benchmark (338) but misses Tailwind Jolly Sneasler (378).",
+        "Choice Scarf Speed: Basculegion (M) tops out at 168, below the Choice Scarf Jolly Basculegion benchmark (214).",
+        "Trick Room underspeed benchmarks: no Trick Room source is present, so the team has no in-team Trick Room speed line."
+      ],
+      "groups": {
+        "natural": {
+          "label": "Natural Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Aerodactyl",
+          "best_speed": 169,
+          "benchmarks": [
+            {
+              "slug": "jolly_garchomp",
+              "label": "Jolly Garchomp",
+              "target_speed": 169,
+              "source": "Common M-A fast physical cleaner",
+              "comparison": "faster",
+              "status": "tie",
+              "hit_members": [
+                "Aerodactyl"
+              ],
+              "tie_members": [
+                "Aerodactyl"
+              ]
+            },
+            {
+              "slug": "timid_whimsicott",
+              "label": "Timid Whimsicott",
+              "target_speed": 184,
+              "source": "Common M-A Tailwind setter reference",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "jolly_sneasler",
+              "label": "Jolly Sneasler",
+              "target_speed": 189,
+              "source": "Common M-A high-end unboosted speed threat",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "timid_dragapult",
+              "label": "Timid Dragapult",
+              "target_speed": 213,
+              "source": "Top-end unboosted speed ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "tailwind": {
+          "label": "Tailwind Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Aerodactyl",
+          "best_speed": 338,
+          "benchmarks": [
+            {
+              "slug": "tailwind_garchomp",
+              "label": "Tailwind Jolly Garchomp",
+              "target_speed": 338,
+              "source": "Common Tailwind offense floor",
+              "comparison": "faster",
+              "status": "tie",
+              "hit_members": [
+                "Aerodactyl"
+              ],
+              "tie_members": [
+                "Aerodactyl"
+              ]
+            },
+            {
+              "slug": "tailwind_sneasler",
+              "label": "Tailwind Jolly Sneasler",
+              "target_speed": 378,
+              "source": "Common Tailwind high-end pressure line",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "tailwind_dragapult",
+              "label": "Tailwind Timid Dragapult",
+              "target_speed": 426,
+              "source": "Top-end Tailwind ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "choice_scarf": {
+          "label": "Choice Scarf Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Basculegion (M)",
+          "best_speed": 168,
+          "benchmarks": [
+            {
+              "slug": "choice_scarf_basculegion",
+              "label": "Choice Scarf Jolly Basculegion",
+              "target_speed": 214,
+              "source": "Common M-A rain and Tailwind Scarf reference",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "choice_scarf_garchomp",
+              "label": "Choice Scarf Jolly Garchomp",
+              "target_speed": 253,
+              "source": "Common M-A generic Scarf speed ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "trick_room": {
+          "label": "Trick Room Underspeed",
+          "comparison": "slower",
+          "available": false,
+          "best_member": null,
+          "best_speed": null,
+          "benchmarks": [
+            {
+              "slug": "min_speed_torkoal",
+              "label": "Min-Speed Torkoal",
+              "target_speed": 36,
+              "source": "Common dedicated Trick Room floor",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_amoonguss",
+              "label": "Min-Speed Amoonguss",
+              "target_speed": 45,
+              "source": "Common slow redirection reference",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_kingambit",
+              "label": "Min-Speed Kingambit",
+              "target_speed": 63,
+              "source": "Common mid-slow Trick Room breaker reference",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_farigiraf",
+              "label": "Min-Speed Farigiraf",
+              "target_speed": 72,
+              "source": "Common Trick Room setter benchmark",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_sinistcha",
+              "label": "Min-Speed Sinistcha",
+              "target_speed": 81,
+              "source": "Common M-A Trick Room support benchmark",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        }
+      }
+    },
+    "members": [
+      {
+        "pokemon": "Aerodactyl",
+        "base_speed": 130,
+        "battle_speed": 169,
+        "stats": {
+          "hp": 155,
+          "attack": 129,
+          "defense": 85,
+          "special_attack": 72,
+          "special_defense": 95,
+          "speed": 169
+        },
+        "tier": "very_fast",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 338
+          }
+        ],
+        "benchmark_tags": [
+          {
+            "group": "natural",
+            "group_label": "Natural Speed",
+            "comparison": "faster",
+            "benchmark_slug": "jolly_garchomp",
+            "benchmark_label": "Jolly Garchomp",
+            "target_speed": 169,
+            "status": "tie",
+            "context_speed": 169
+          },
+          {
+            "group": "tailwind",
+            "group_label": "Tailwind Speed",
+            "comparison": "faster",
+            "benchmark_slug": "tailwind_garchomp",
+            "benchmark_label": "Tailwind Jolly Garchomp",
+            "target_speed": 338,
+            "status": "tie",
+            "context_speed": 338
+          }
+        ]
+      },
+      {
+        "pokemon": "Lucario-Mega",
+        "base_speed": 112,
+        "battle_speed": 132,
+        "stats": {
+          "hp": 149,
+          "attack": 148,
+          "defense": 123,
+          "special_attack": 160,
+          "special_defense": 90,
+          "speed": 132
+        },
+        "tier": "fast",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 264
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Basculegion (M)",
+        "base_speed": 78,
+        "battle_speed": 112,
+        "stats": {
+          "hp": 195,
+          "attack": 136,
+          "defense": 85,
+          "special_attack": 90,
+          "special_defense": 95,
+          "speed": 112
+        },
+        "tier": "midrange",
+        "speed_contexts": [
+          {
+            "slug": "tailwind_choice_scarf",
+            "label": "Tailwind + Choice Scarf",
+            "speed": 336
+          },
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 224
+          },
+          {
+            "slug": "choice_scarf",
+            "label": "Choice Scarf",
+            "speed": 168
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Archaludon",
+        "base_speed": 85,
+        "battle_speed": 105,
+        "stats": {
+          "hp": 169,
+          "attack": 112,
+          "defense": 150,
+          "special_attack": 160,
+          "special_defense": 88,
+          "speed": 105
+        },
+        "tier": "midrange",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 210
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Sinistcha",
+        "base_speed": 70,
+        "battle_speed": 81,
+        "stats": {
+          "hp": 150,
+          "attack": 80,
+          "defense": 127,
+          "special_attack": 141,
+          "special_defense": 114,
+          "speed": 81
+        },
+        "tier": "slow",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 162
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Sableye",
+        "base_speed": 50,
+        "battle_speed": 63,
+        "stats": {
+          "hp": 129,
+          "attack": 95,
+          "defense": 96,
+          "special_attack": 85,
+          "special_defense": 96,
+          "speed": 63
+        },
+        "tier": "trick_room_slow",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 126
+          }
+        ],
+        "benchmark_tags": []
+      }
+    ]
+  },
+  "damage_split": {
+    "physical": 6,
+    "special": 6
+  },
+  "utility_moves": 12,
+  "utility_breakdown": {
+    "protection": {
+      "count": 4,
+      "moves": [
+        "Detect",
+        "Protect",
+        "Protect",
+        "Wide Guard"
+      ]
+    },
+    "screen": {
+      "count": 2,
+      "moves": [
+        "Light Screen",
+        "Reflect"
+      ]
+    },
+    "redirection": {
+      "count": 1,
+      "moves": [
+        "Rage Powder"
+      ]
+    },
+    "weather": {
+      "count": 1,
+      "moves": [
+        "Rain Dance"
+      ]
+    },
+    "terrain": {
+      "count": 0,
+      "moves": []
+    },
+    "speed_control": {
+      "count": 2,
+      "moves": [
+        "Quash",
+        "Tailwind"
+      ]
+    },
+    "recovery": {
+      "count": 1,
+      "moves": [
+        "Life Dew"
+      ]
+    },
+    "healing_support": {
+      "count": 1,
+      "moves": [
+        "Life Dew"
+      ]
+    },
+    "pivoting": {
+      "count": 0,
+      "moves": []
+    },
+    "entry_hazard": {
+      "count": 0,
+      "moves": []
+    },
+    "hazard_removal": {
+      "count": 0,
+      "moves": []
+    },
+    "disruption": {
+      "count": 0,
+      "moves": []
+    },
+    "item_control": {
+      "count": 0,
+      "moves": []
+    },
+    "phazing": {
+      "count": 0,
+      "moves": []
+    },
+    "trapping": {
+      "count": 0,
+      "moves": []
+    },
+    "anti_setup": {
+      "count": 0,
+      "moves": []
+    },
+    "flinch_control": {
+      "count": 0,
+      "moves": []
+    },
+    "status_infliction": {
+      "count": 0,
+      "moves": []
+    },
+    "stat_boost": {
+      "count": 1,
+      "moves": [
+        "Calm Mind"
+      ]
+    },
+    "stat_drop": {
+      "count": 0,
+      "moves": []
+    },
+    "other_utility": {
+      "count": 0,
+      "moves": []
+    }
+  },
+  "pokemon_role_breakdown": {
+    "physical_sweeper": {
+      "count": 1,
+      "members": [
+        "Basculegion (M)"
+      ]
+    },
+    "special_sweeper": {
+      "count": 2,
+      "members": [
+        "Lucario-Mega",
+        "Archaludon"
+      ]
+    },
+    "setup_sweeper": {
+      "count": 1,
+      "members": [
+        "Lucario-Mega"
+      ]
+    },
+    "cleaner": {
+      "count": 1,
+      "members": [
+        "Basculegion (M)"
+      ]
+    },
+    "bulky_attacker": {
+      "count": 2,
+      "members": [
+        "Archaludon",
+        "Basculegion (M)"
+      ]
+    },
+    "pivot": {
+      "count": 0,
+      "members": []
+    },
+    "bulky_pivot": {
+      "count": 0,
+      "members": []
+    },
+    "bulky_support": {
+      "count": 1,
+      "members": [
+        "Archaludon"
+      ]
+    },
+    "support": {
+      "count": 2,
+      "members": [
+        "Sableye",
+        "Sinistcha"
+      ]
+    },
+    "fake_out_support": {
+      "count": 0,
+      "members": []
+    },
+    "tailwind_setter": {
+      "count": 1,
+      "members": [
+        "Aerodactyl"
+      ]
+    },
+    "trick_room_setter": {
+      "count": 0,
+      "members": []
+    },
+    "hazard_setter": {
+      "count": 0,
+      "members": []
+    },
+    "hazard_control": {
+      "count": 0,
+      "members": []
+    },
+    "screen_setter": {
+      "count": 1,
+      "members": [
+        "Sableye"
+      ]
+    },
+    "weather_setter": {
+      "count": 1,
+      "members": [
+        "Sableye"
+      ]
+    },
+    "terrain_setter": {
+      "count": 0,
+      "members": []
+    },
+    "speed_control": {
+      "count": 2,
+      "members": [
+        "Sableye",
+        "Aerodactyl"
+      ]
+    },
+    "healing_support": {
+      "count": 1,
+      "members": [
+        "Sinistcha"
+      ]
+    },
+    "trapper": {
+      "count": 0,
+      "members": []
+    },
+    "redirector": {
+      "count": 1,
+      "members": [
+        "Sinistcha"
+      ]
+    }
+  },
+  "member_roles": {
+    "Lucario-Mega": [
+      "special_sweeper",
+      "setup_sweeper"
+    ],
+    "Sableye": [
+      "support",
+      "screen_setter",
+      "weather_setter",
+      "speed_control"
+    ],
+    "Archaludon": [
+      "special_sweeper",
+      "bulky_attacker",
+      "bulky_support"
+    ],
+    "Sinistcha": [
+      "support",
+      "healing_support",
+      "redirector"
+    ],
+    "Basculegion (M)": [
+      "physical_sweeper",
+      "cleaner",
+      "bulky_attacker"
+    ],
+    "Aerodactyl": [
+      "tailwind_setter",
+      "speed_control"
+    ]
+  },
+  "team_archetype": "rain_tailwind",
+  "team_archetype_scores": {
+    "hyper_offense": 9.8,
+    "bulky_offense": 8.3,
+    "balance": 7.95,
+    "semi_stall": -3.1,
+    "stall": -9.5,
+    "trick_room": 0.2,
+    "rain": 5.9,
+    "sun": -2.6,
+    "sand": 0.0,
+    "snow": -1.4,
+    "electric_terrain": 0.9,
+    "grassy_terrain": -0.8,
+    "misty_terrain": -3.1,
+    "psychic_terrain": -0.2,
+    "tailwind": 11.8,
+    "semiroom": -0.1,
+    "rain_tailwind": 13.0,
+    "sun_tailwind": 4.9,
+    "sand_tailwind": 5.4,
+    "snow_tailwind": 0.4,
+    "rain_room": 1.1,
+    "sun_room": -5.1,
+    "sand_room": -3.5,
+    "snow_room": -5.5,
+    "tailroom": 4.65,
+    "rain_tailroom": 1.6,
+    "sun_tailroom": -4.4,
+    "screens_offense": 10.35,
+    "dual_mode": 6.95,
+    "psyspam": -0.2,
+    "perish_trap": -8.1
+  },
+  "team_package_profile": {
+    "style": {
+      "label": "hyper_offense",
+      "scores": {
+        "hyper_offense": 9.8,
+        "bulky_offense": 8.3,
+        "balance": 7.95,
+        "semi_stall": -3.1,
+        "stall": -9.5
+      }
+    },
+    "modes": {
+      "labels": [
+        "tailwind",
+        "rain",
+        "rain_tailwind",
+        "dual_mode"
+      ],
+      "scores": {
+        "tailwind": 13.0,
+        "trick_room": 4.65,
+        "semiroom": -0.1,
+        "tailroom": 4.65,
+        "dual_mode": 6.95,
+        "rain": 13.0,
+        "sun": 4.9,
+        "sand": 5.4,
+        "snow": 0.4,
+        "electric_terrain": 0.9,
+        "grassy_terrain": -0.8,
+        "misty_terrain": -3.1,
+        "psychic_terrain": -0.2,
+        "rain_tailwind": 13.0,
+        "sun_tailwind": 4.9,
+        "sand_tailwind": 5.4,
+        "snow_tailwind": 0.4,
+        "rain_room": 1.1,
+        "sun_room": -5.1,
+        "sand_room": -3.5,
+        "snow_room": -5.5,
+        "rain_tailroom": 1.6,
+        "sun_tailroom": -4.4
+      }
+    },
+    "win_conditions": {
+      "labels": [
+        "screens_offense",
+        "setup_sweep"
+      ],
+      "scores": {
+        "perish_trap": -8.1,
+        "screens_offense": 10.35,
+        "setup_sweep": 5.4,
+        "psyspam": -0.2
+      }
+    }
+  },
+  "matchup_profile": {
+    "scores": {
+      "hyper_offense": 2.24,
+      "bulky_offense": 0.74,
+      "balance": -1.05,
+      "semi_stall": -0.58,
+      "stall": 1.01,
+      "trick_room": -2.36
+    },
+    "favorable": [
+      "hyper_offense",
+      "stall"
+    ],
+    "unfavorable": [
+      "trick_room",
+      "balance"
+    ]
+  },
+  "meta_mode_profile": {
+    "team_scores": {
+      "tailwind": 4.56,
+      "rain": 4.42,
+      "rain_tailwind": 6.25,
+      "trick_room": 1.08,
+      "tailroom": 2.75,
+      "rain_trick_room": 2.62,
+      "rain_tailroom": 4.92,
+      "sand": -0.11,
+      "snow": -0.52,
+      "snow_tailwind": 1.55,
+      "sun": -0.45,
+      "sun_trick_room": -1.17
+    },
+    "team_labels": [
+      "rain_tailwind"
+    ],
+    "scores": {
+      "tailwind": 2.06,
+      "rain": 0.56,
+      "rain_tailwind": 2.65,
+      "trick_room": -3.26,
+      "tailroom": -0.48,
+      "rain_trick_room": -1.67,
+      "rain_tailroom": 0.26,
+      "sand": 0.57,
+      "snow": -0.93,
+      "snow_tailwind": 1.1,
+      "sun": -0.09,
+      "sun_trick_room": -0.76
+    },
+    "favorable": [
+      "rain_tailwind",
+      "tailwind"
+    ],
+    "unfavorable": [
+      "trick_room",
+      "rain_trick_room"
+    ]
+  },
+  "team_difficulty": {
+    "label": "moderate",
+    "score": 4.8,
+    "factors": [
+      "The team relies on finding at least one setup window.",
+      "Several support lines create a high number of sequencing branches each turn.",
+      "Field-control turns need to be managed carefully.",
+      "The team has multiple speed-control lines to choose between."
+    ]
+  },
+  "vector_labels": [
+    "typing_normal",
+    "typing_fire",
+    "typing_water",
+    "typing_electric",
+    "typing_grass",
+    "typing_ice",
+    "typing_fighting",
+    "typing_poison",
+    "typing_ground",
+    "typing_flying",
+    "typing_psychic",
+    "typing_bug",
+    "typing_rock",
+    "typing_ghost",
+    "typing_dragon",
+    "typing_dark",
+    "typing_steel",
+    "typing_fairy",
+    "defense_avg_multiplier_normal",
+    "defense_avg_multiplier_fire",
+    "defense_avg_multiplier_water",
+    "defense_avg_multiplier_electric",
+    "defense_avg_multiplier_grass",
+    "defense_avg_multiplier_ice",
+    "defense_avg_multiplier_fighting",
+    "defense_avg_multiplier_poison",
+    "defense_avg_multiplier_ground",
+    "defense_avg_multiplier_flying",
+    "defense_avg_multiplier_psychic",
+    "defense_avg_multiplier_bug",
+    "defense_avg_multiplier_rock",
+    "defense_avg_multiplier_ghost",
+    "defense_avg_multiplier_dragon",
+    "defense_avg_multiplier_dark",
+    "defense_avg_multiplier_steel",
+    "defense_avg_multiplier_fairy",
+    "offense_normal",
+    "offense_fire",
+    "offense_water",
+    "offense_electric",
+    "offense_grass",
+    "offense_ice",
+    "offense_fighting",
+    "offense_poison",
+    "offense_ground",
+    "offense_flying",
+    "offense_psychic",
+    "offense_bug",
+    "offense_rock",
+    "offense_ghost",
+    "offense_dragon",
+    "offense_dark",
+    "offense_steel",
+    "offense_fairy",
+    "average_base_speed",
+    "fastest_base_speed",
+    "slowest_base_speed",
+    "physical_moves",
+    "special_moves",
+    "utility_moves",
+    "utility_role_protection",
+    "utility_role_screen",
+    "utility_role_redirection",
+    "utility_role_weather",
+    "utility_role_terrain",
+    "utility_role_speed_control",
+    "utility_role_recovery",
+    "utility_role_healing_support",
+    "utility_role_pivoting",
+    "utility_role_entry_hazard",
+    "utility_role_hazard_removal",
+    "utility_role_disruption",
+    "utility_role_item_control",
+    "utility_role_phazing",
+    "utility_role_trapping",
+    "utility_role_anti_setup",
+    "utility_role_flinch_control",
+    "utility_role_status_infliction",
+    "utility_role_stat_boost",
+    "utility_role_stat_drop",
+    "utility_role_other_utility",
+    "pokemon_role_physical_sweeper",
+    "pokemon_role_special_sweeper",
+    "pokemon_role_setup_sweeper",
+    "pokemon_role_cleaner",
+    "pokemon_role_bulky_attacker",
+    "pokemon_role_pivot",
+    "pokemon_role_bulky_pivot",
+    "pokemon_role_bulky_support",
+    "pokemon_role_support",
+    "pokemon_role_fake_out_support",
+    "pokemon_role_tailwind_setter",
+    "pokemon_role_trick_room_setter",
+    "pokemon_role_hazard_setter",
+    "pokemon_role_hazard_control",
+    "pokemon_role_screen_setter",
+    "pokemon_role_weather_setter",
+    "pokemon_role_terrain_setter",
+    "pokemon_role_speed_control",
+    "pokemon_role_healing_support",
+    "pokemon_role_trapper",
+    "pokemon_role_redirector",
+    "team_archetype_hyper_offense",
+    "team_archetype_bulky_offense",
+    "team_archetype_balance",
+    "team_archetype_semi_stall",
+    "team_archetype_stall",
+    "team_archetype_trick_room",
+    "team_archetype_rain",
+    "team_archetype_sun",
+    "team_archetype_sand",
+    "team_archetype_snow",
+    "team_archetype_electric_terrain",
+    "team_archetype_grassy_terrain",
+    "team_archetype_misty_terrain",
+    "team_archetype_psychic_terrain",
+    "team_archetype_tailwind",
+    "team_archetype_semiroom",
+    "team_archetype_rain_tailwind",
+    "team_archetype_sun_tailwind",
+    "team_archetype_sand_tailwind",
+    "team_archetype_snow_tailwind",
+    "team_archetype_rain_room",
+    "team_archetype_sun_room",
+    "team_archetype_sand_room",
+    "team_archetype_snow_room",
+    "team_archetype_tailroom",
+    "team_archetype_rain_tailroom",
+    "team_archetype_sun_tailroom",
+    "team_archetype_screens_offense",
+    "team_archetype_psyspam",
+    "team_archetype_dual_mode",
+    "team_archetype_perish_trap"
+  ],
+  "vector": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    3.0,
+    1.0,
+    1.0,
+    2.0,
+    0.0,
+    0.25,
+    1.1667,
+    0.9167,
+    1.1667,
+    0.875,
+    1.1667,
+    0.8333,
+    0.4167,
+    1.0833,
+    1.0,
+    0.75,
+    0.625,
+    0.9583,
+    1.3333,
+    0.9167,
+    1.25,
+    0.9167,
+    1.1667,
+    0.0,
+    0.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    87.5,
+    130.0,
+    50.0,
+    6.0,
+    6.0,
+    12.0,
+    4.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    1.0,
+    1.0,
+    2.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    2.0,
+    1.0,
+    0.0,
+    1.0,
+    9.8,
+    8.3,
+    7.95,
+    -3.1,
+    -9.5,
+    0.2,
+    5.9,
+    -2.6,
+    0.0,
+    -1.4,
+    0.9,
+    -0.8,
+    -3.1,
+    -0.2,
+    11.8,
+    -0.1,
+    13.0,
+    4.9,
+    5.4,
+    0.4,
+    1.1,
+    -5.1,
+    -3.5,
+    -5.5,
+    4.65,
+    1.6,
+    -4.4,
+    10.35,
+    -0.2,
+    6.95,
+    -8.1
+  ]
+}

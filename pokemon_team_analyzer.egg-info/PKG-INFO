@@ -1,0 +1,41 @@
+Metadata-Version: 2.4
+Name: pokemon-team-analyzer
+Version: 0.1.0
+Summary: Analyze Pokemon Showdown teams and export fixed-length feature vectors.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: certifi>=2024.2.2
+
+# Pokemon Team Analyzer
+
+This project parses Pokemon Showdown team imports and summarizes a team's structure as both a readable report and a fixed-length numeric vector.
+
+## What it reports
+
+- Team typing counts
+- Defensive exposure by attacking type
+- Offensive coverage by move type
+- Speed profile based on base Speed
+- Damage split across physical and special attacks
+- Utility move count
+- A flattened 60-feature vector for later similarity or distance calculations
+
+## Usage
+
+Install the package and its runtime dependency first:
+
+```bash
+python3 -m pip install -e .
+```
+
+```bash
+python -m pokemon_team_analyzer examples/sample_team.txt
+```
+
+JSON output:
+
+```bash
+python -m pokemon_team_analyzer examples/sample_team.txt --json
+```
+
+The analyzer fetches Pokemon and move metadata from PokeAPI on first use and stores a trimmed local cache in `~/.cache/pokemon_team_analyzer/pokeapi_cache.json`.

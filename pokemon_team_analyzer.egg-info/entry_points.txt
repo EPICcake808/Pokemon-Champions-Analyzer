@@ -1,0 +1,2 @@
+[console_scripts]
+pokemon-team-analyzer = pokemon_team_analyzer.cli:main

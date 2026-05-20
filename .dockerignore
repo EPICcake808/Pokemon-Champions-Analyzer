@@ -1,0 +1,16 @@
+.git
+.next
+.pytest_cache
+.ruff_cache
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.tmp
+pokemon_team_analyzer.egg-info
+web/.next
+web/node_modules
+web/npm-debug.log*
+node_modules

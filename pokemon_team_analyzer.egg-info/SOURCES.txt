@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+pokemon_team_analyzer/__init__.py
+pokemon_team_analyzer/__main__.py
+pokemon_team_analyzer/analyzer.py
+pokemon_team_analyzer/cli.py
+pokemon_team_analyzer/data.py
+pokemon_team_analyzer/models.py
+pokemon_team_analyzer/showdown.py
+pokemon_team_analyzer.egg-info/PKG-INFO
+pokemon_team_analyzer.egg-info/SOURCES.txt
+pokemon_team_analyzer.egg-info/dependency_links.txt
+pokemon_team_analyzer.egg-info/entry_points.txt
+pokemon_team_analyzer.egg-info/requires.txt
+pokemon_team_analyzer.egg-info/top_level.txt
+tests/test_analyzer.py
