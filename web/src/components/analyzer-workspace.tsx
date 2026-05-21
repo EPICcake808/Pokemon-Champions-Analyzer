@@ -98,6 +98,7 @@ const CHAMPIONS_FIXED_IV = 31;
 
 type AnalyzerWorkspaceProps = {
   initialAnalysis: PokemonTeamAnalysis;
+  initialAnalysisError?: string | null;
   initialTeamText: string;
   initialSessionUser: AuthSessionUser | null;
   initialSavedTeams: SavedTeamRecord[];
@@ -256,6 +257,7 @@ function formatBuilderOptionValue(value: string | null | undefined) {
 
 export function AnalyzerWorkspace({
   initialAnalysis,
+  initialAnalysisError,
   initialTeamText,
   initialSessionUser,
   initialSavedTeams,
@@ -286,7 +288,7 @@ export function AnalyzerWorkspace({
   const [builderSpeciesError, setBuilderSpeciesError] = useState<string | null>(null);
   const [selectedRegulationId, setSelectedRegulationId] = useState(initialAnalysis.regulation_id);
   const [isLoading, setIsLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(initialAnalysisError ?? null);
   const [legalityIssues, setLegalityIssues] = useState<string[]>([]);
 
   const sessionUser = sessionUserOverride !== undefined ? sessionUserOverride : initialSessionUser;

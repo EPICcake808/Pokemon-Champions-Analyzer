@@ -1,0 +1,2525 @@
+{
+  "regulation_id": "champions_regulation_m_a",
+  "team_size": 6,
+  "typing_counts": {
+    "normal": 0,
+    "fire": 0,
+    "water": 1,
+    "electric": 0,
+    "grass": 1,
+    "ice": 0,
+    "fighting": 1,
+    "poison": 0,
+    "ground": 0,
+    "flying": 1,
+    "psychic": 0,
+    "bug": 0,
+    "rock": 1,
+    "ghost": 3,
+    "dragon": 1,
+    "dark": 1,
+    "steel": 2,
+    "fairy": 0
+  },
+  "defensive_profile": {
+    "normal": {
+      "average_multiplier": 0.25,
+      "weak_members": 0,
+      "resistant_members": 3,
+      "immune_members": 3
+    },
+    "fire": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "water": {
+      "average_multiplier": 0.9167,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "electric": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "grass": {
+      "average_multiplier": 0.875,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "ice": {
+      "average_multiplier": 1.1667,
+      "weak_members": 2,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "fighting": {
+      "average_multiplier": 0.8333,
+      "weak_members": 2,
+      "resistant_members": 0,
+      "immune_members": 3
+    },
+    "poison": {
+      "average_multiplier": 0.4167,
+      "weak_members": 0,
+      "resistant_members": 3,
+      "immune_members": 2
+    },
+    "ground": {
+      "average_multiplier": 1.0833,
+      "weak_members": 2,
+      "resistant_members": 1,
+      "immune_members": 1
+    },
+    "flying": {
+      "average_multiplier": 1.0,
+      "weak_members": 1,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "psychic": {
+      "average_multiplier": 0.75,
+      "weak_members": 0,
+      "resistant_members": 1,
+      "immune_members": 1
+    },
+    "bug": {
+      "average_multiplier": 0.625,
+      "weak_members": 0,
+      "resistant_members": 4,
+      "immune_members": 0
+    },
+    "rock": {
+      "average_multiplier": 0.9583,
+      "weak_members": 1,
+      "resistant_members": 2,
+      "immune_members": 0
+    },
+    "ghost": {
+      "average_multiplier": 1.3333,
+      "weak_members": 2,
+      "resistant_members": 0,
+      "immune_members": 0
+    },
+    "dragon": {
+      "average_multiplier": 0.9167,
+      "weak_members": 0,
+      "resistant_members": 1,
+      "immune_members": 0
+    },
+    "dark": {
+      "average_multiplier": 1.25,
+      "weak_members": 2,
+      "resistant_members": 1,
+      "immune_members": 0
+    },
+    "steel": {
+      "average_multiplier": 0.9167,
+      "weak_members": 1,
+      "resistant_members": 3,
+      "immune_members": 0
+    },
+    "fairy": {
+      "average_multiplier": 1.1667,
+      "weak_members": 1,
+      "resistant_members": 0,
+      "immune_members": 0
+    }
+  },
+  "top_defensive_weaknesses": [
+    "ghost",
+    "dark",
+    "fire",
+    "electric",
+    "ice"
+  ],
+  "offensive_coverage": {
+    "normal": 0,
+    "fire": 0,
+    "water": 2,
+    "electric": 1,
+    "grass": 1,
+    "ice": 0,
+    "fighting": 1,
+    "poison": 0,
+    "ground": 0,
+    "flying": 1,
+    "psychic": 1,
+    "bug": 0,
+    "rock": 1,
+    "ghost": 1,
+    "dragon": 1,
+    "dark": 1,
+    "steel": 1,
+    "fairy": 0
+  },
+  "target_coverage": {
+    "normal": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 0,
+      "immune_lines": 1
+    },
+    "fire": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "water": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 3,
+      "immune_lines": 0
+    },
+    "electric": {
+      "best_multiplier": 1.0,
+      "super_effective_lines": 0,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 3,
+      "immune_lines": 0
+    },
+    "grass": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 8,
+      "resisted_lines": 4,
+      "immune_lines": 0
+    },
+    "ice": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 12,
+      "resisted_lines": 0,
+      "immune_lines": 0
+    },
+    "fighting": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "poison": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "ground": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 3,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 1,
+      "immune_lines": 1
+    },
+    "flying": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "psychic": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "bug": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 10,
+      "resisted_lines": 2,
+      "immune_lines": 0
+    },
+    "rock": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 5,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 1,
+      "immune_lines": 0
+    },
+    "ghost": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 2,
+      "neutral_or_better_lines": 11,
+      "resisted_lines": 0,
+      "immune_lines": 1
+    },
+    "dragon": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 8,
+      "resisted_lines": 4,
+      "immune_lines": 0
+    },
+    "dark": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 2,
+      "immune_lines": 1
+    },
+    "steel": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 6,
+      "resisted_lines": 6,
+      "immune_lines": 0
+    },
+    "fairy": {
+      "best_multiplier": 2.0,
+      "super_effective_lines": 1,
+      "neutral_or_better_lines": 9,
+      "resisted_lines": 2,
+      "immune_lines": 1
+    }
+  },
+  "coverage_gaps": [
+    "electric",
+    "steel",
+    "dragon",
+    "grass",
+    "dark"
+  ],
+  "speed_profile": {
+    "average_base_speed": 87.5,
+    "average_battle_speed": 120.33,
+    "median_battle_speed": 121.0,
+    "standard_deviation": 43.59,
+    "team_tier": "mixed",
+    "normalized_level": 50,
+    "fastest": {
+      "pokemon": "Aerodactyl",
+      "base_speed": 130,
+      "battle_speed": 197,
+      "tier": "elite_fast"
+    },
+    "slowest": {
+      "pokemon": "Sableye",
+      "base_speed": 50,
+      "battle_speed": 63,
+      "tier": "trick_room_slow"
+    },
+    "base_speed_extremes": {
+      "fastest": {
+        "pokemon": "Aerodactyl",
+        "base_speed": 130
+      },
+      "slowest": {
+        "pokemon": "Sableye",
+        "base_speed": 50
+      }
+    },
+    "spread": {
+      "minimum": 63,
+      "maximum": 197,
+      "range": 134
+    },
+    "distribution": {
+      "trick_room_slow": {
+        "count": 1,
+        "members": [
+          "Sableye"
+        ]
+      },
+      "slow": {
+        "count": 1,
+        "members": [
+          "Sinistcha"
+        ]
+      },
+      "midrange": {
+        "count": 1,
+        "members": [
+          "Archaludon"
+        ]
+      },
+      "fast": {
+        "count": 2,
+        "members": [
+          "Lucario-Mega",
+          "Basculegion (M)"
+        ]
+      },
+      "very_fast": {
+        "count": 0,
+        "members": []
+      },
+      "elite_fast": {
+        "count": 1,
+        "members": [
+          "Aerodactyl"
+        ]
+      }
+    },
+    "benchmarks": {
+      "catalog": {
+        "regulation_id": "champions_regulation_m_a",
+        "display_name": "Pokemon Champions Regulation M-A Speed Benchmarks",
+        "notes": "Curated from repeated Regulation M-A tournament fast-mode shells and common max-Speed reference points. These are qualitative benchmark tiers, not exhaustive usage stats."
+      },
+      "notes": [
+        "Team speed shape: The roster has 3 fast members and 2 slow members, so preview planning matters more than on a one-speed team. Raw battle Speed runs from Sableye at 63 (Trick Room Slow) to Aerodactyl at 197 (Elite Fast).",
+        "Natural Speed: Aerodactyl is your fastest unboosted line at 197. That is still below Jolly Garchomp (200), so this mode does not clear any current curated benchmark.",
+        "Tailwind Speed: Aerodactyl is your fastest Tailwind line at 394. That is still below Tailwind Jolly Garchomp (400), so this mode does not clear any current curated benchmark.",
+        "Choice Scarf Speed: Basculegion (M) is your best Choice Scarf line at 208. That is still below Choice Scarf Jolly Basculegion (259), so this mode does not clear any current curated benchmark.",
+        "Trick Room underspeed: the team has no Trick Room setter, so it cannot create its own slower-first mode.",
+        "Benchmark depth: 0 members reach at least one natural-speed anchor; 0 members reach at least one Tailwind anchor; 0 Scarf lines clear at least one curated Scarf anchor.",
+        "Additional speed spikes: Basculegion (M) jumps from 139 to 417 with Tailwind + Choice Scarf."
+      ],
+      "groups": {
+        "natural": {
+          "label": "Natural Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Aerodactyl",
+          "best_speed": 197,
+          "benchmarks": [
+            {
+              "slug": "jolly_garchomp",
+              "label": "Jolly Garchomp",
+              "target_speed": 200,
+              "source": "Common M-A fast physical cleaner",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "timid_whimsicott",
+              "label": "Timid Whimsicott",
+              "target_speed": 215,
+              "source": "Common M-A Tailwind setter reference",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "jolly_sneasler",
+              "label": "Jolly Sneasler",
+              "target_speed": 220,
+              "source": "Common M-A high-end unboosted speed threat",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "timid_dragapult",
+              "label": "Timid Dragapult",
+              "target_speed": 244,
+              "source": "Top-end unboosted speed ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "tailwind": {
+          "label": "Tailwind Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Aerodactyl",
+          "best_speed": 394,
+          "benchmarks": [
+            {
+              "slug": "tailwind_garchomp",
+              "label": "Tailwind Jolly Garchomp",
+              "target_speed": 400,
+              "source": "Common Tailwind offense floor",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "tailwind_sneasler",
+              "label": "Tailwind Jolly Sneasler",
+              "target_speed": 440,
+              "source": "Common Tailwind high-end pressure line",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "tailwind_dragapult",
+              "label": "Tailwind Timid Dragapult",
+              "target_speed": 488,
+              "source": "Top-end Tailwind ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "choice_scarf": {
+          "label": "Choice Scarf Speed",
+          "comparison": "faster",
+          "available": true,
+          "best_member": "Basculegion (M)",
+          "best_speed": 208,
+          "benchmarks": [
+            {
+              "slug": "choice_scarf_basculegion",
+              "label": "Choice Scarf Jolly Basculegion",
+              "target_speed": 259,
+              "source": "Common M-A rain and Tailwind Scarf reference",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "choice_scarf_garchomp",
+              "label": "Choice Scarf Jolly Garchomp",
+              "target_speed": 300,
+              "source": "Common M-A generic Scarf speed ceiling",
+              "comparison": "faster",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        },
+        "trick_room": {
+          "label": "Trick Room Underspeed",
+          "comparison": "slower",
+          "available": false,
+          "best_member": null,
+          "best_speed": null,
+          "benchmarks": [
+            {
+              "slug": "min_speed_torkoal",
+              "label": "Min-Speed Torkoal",
+              "target_speed": 36,
+              "source": "Common dedicated Trick Room floor",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_amoonguss",
+              "label": "Min-Speed Amoonguss",
+              "target_speed": 45,
+              "source": "Common slow redirection reference",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_kingambit",
+              "label": "Min-Speed Kingambit",
+              "target_speed": 63,
+              "source": "Common mid-slow Trick Room breaker reference",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_farigiraf",
+              "label": "Min-Speed Farigiraf",
+              "target_speed": 72,
+              "source": "Common Trick Room setter benchmark",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            },
+            {
+              "slug": "min_speed_sinistcha",
+              "label": "Min-Speed Sinistcha",
+              "target_speed": 81,
+              "source": "Common M-A Trick Room support benchmark",
+              "comparison": "slower",
+              "status": "miss",
+              "hit_members": [],
+              "tie_members": []
+            }
+          ]
+        }
+      }
+    },
+    "members": [
+      {
+        "pokemon": "Aerodactyl",
+        "base_speed": 130,
+        "battle_speed": 197,
+        "stats": {
+          "hp": 155,
+          "attack": 157,
+          "defense": 85,
+          "special_attack": 72,
+          "special_defense": 97,
+          "speed": 197
+        },
+        "tier": "elite_fast",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 394
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Basculegion (M)",
+        "base_speed": 78,
+        "battle_speed": 139,
+        "stats": {
+          "hp": 195,
+          "attack": 164,
+          "defense": 87,
+          "special_attack": 90,
+          "special_defense": 95,
+          "speed": 139
+        },
+        "tier": "fast",
+        "speed_contexts": [
+          {
+            "slug": "tailwind_choice_scarf",
+            "label": "Tailwind + Choice Scarf",
+            "speed": 417
+          },
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 278
+          },
+          {
+            "slug": "choice_scarf",
+            "label": "Choice Scarf",
+            "speed": 208
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Lucario-Mega",
+        "base_speed": 112,
+        "battle_speed": 134,
+        "stats": {
+          "hp": 177,
+          "attack": 148,
+          "defense": 150,
+          "special_attack": 160,
+          "special_defense": 90,
+          "speed": 134
+        },
+        "tier": "fast",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 268
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Archaludon",
+        "base_speed": 85,
+        "battle_speed": 108,
+        "stats": {
+          "hp": 197,
+          "attack": 112,
+          "defense": 151,
+          "special_attack": 164,
+          "special_defense": 110,
+          "speed": 108
+        },
+        "tier": "midrange",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 216
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Sinistcha",
+        "base_speed": 70,
+        "battle_speed": 81,
+        "stats": {
+          "hp": 177,
+          "attack": 80,
+          "defense": 133,
+          "special_attack": 141,
+          "special_defense": 138,
+          "speed": 81
+        },
+        "tier": "slow",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 162
+          }
+        ],
+        "benchmark_tags": []
+      },
+      {
+        "pokemon": "Sableye",
+        "base_speed": 50,
+        "battle_speed": 63,
+        "stats": {
+          "hp": 157,
+          "attack": 95,
+          "defense": 104,
+          "special_attack": 85,
+          "special_defense": 118,
+          "speed": 63
+        },
+        "tier": "trick_room_slow",
+        "speed_contexts": [
+          {
+            "slug": "tailwind",
+            "label": "Tailwind",
+            "speed": 126
+          }
+        ],
+        "benchmark_tags": []
+      }
+    ]
+  },
+  "damage_split": {
+    "physical": 6,
+    "special": 6
+  },
+  "utility_moves": 12,
+  "utility_breakdown": {
+    "protection": {
+      "count": 4,
+      "moves": [
+        "Detect",
+        "Protect",
+        "Protect",
+        "Wide Guard"
+      ]
+    },
+    "screen": {
+      "count": 2,
+      "moves": [
+        "Light Screen",
+        "Reflect"
+      ]
+    },
+    "redirection": {
+      "count": 1,
+      "moves": [
+        "Rage Powder"
+      ]
+    },
+    "weather": {
+      "count": 1,
+      "moves": [
+        "Rain Dance"
+      ]
+    },
+    "terrain": {
+      "count": 0,
+      "moves": []
+    },
+    "speed_control": {
+      "count": 2,
+      "moves": [
+        "Quash",
+        "Tailwind"
+      ]
+    },
+    "recovery": {
+      "count": 1,
+      "moves": [
+        "Life Dew"
+      ]
+    },
+    "healing_support": {
+      "count": 1,
+      "moves": [
+        "Life Dew"
+      ]
+    },
+    "pivoting": {
+      "count": 0,
+      "moves": []
+    },
+    "entry_hazard": {
+      "count": 0,
+      "moves": []
+    },
+    "hazard_removal": {
+      "count": 0,
+      "moves": []
+    },
+    "disruption": {
+      "count": 0,
+      "moves": []
+    },
+    "item_control": {
+      "count": 0,
+      "moves": []
+    },
+    "phazing": {
+      "count": 0,
+      "moves": []
+    },
+    "trapping": {
+      "count": 0,
+      "moves": []
+    },
+    "anti_setup": {
+      "count": 0,
+      "moves": []
+    },
+    "flinch_control": {
+      "count": 0,
+      "moves": []
+    },
+    "status_infliction": {
+      "count": 0,
+      "moves": []
+    },
+    "stat_boost": {
+      "count": 1,
+      "moves": [
+        "Calm Mind"
+      ]
+    },
+    "stat_drop": {
+      "count": 0,
+      "moves": []
+    },
+    "other_utility": {
+      "count": 0,
+      "moves": []
+    }
+  },
+  "pokemon_role_breakdown": {
+    "physical_sweeper": {
+      "count": 1,
+      "members": [
+        "Basculegion (M)"
+      ]
+    },
+    "special_sweeper": {
+      "count": 2,
+      "members": [
+        "Lucario-Mega",
+        "Archaludon"
+      ]
+    },
+    "setup_sweeper": {
+      "count": 1,
+      "members": [
+        "Lucario-Mega"
+      ]
+    },
+    "cleaner": {
+      "count": 1,
+      "members": [
+        "Basculegion (M)"
+      ]
+    },
+    "bulky_attacker": {
+      "count": 2,
+      "members": [
+        "Archaludon",
+        "Basculegion (M)"
+      ]
+    },
+    "pivot": {
+      "count": 0,
+      "members": []
+    },
+    "bulky_pivot": {
+      "count": 0,
+      "members": []
+    },
+    "bulky_support": {
+      "count": 1,
+      "members": [
+        "Archaludon"
+      ]
+    },
+    "support": {
+      "count": 3,
+      "members": [
+        "Sableye",
+        "Sinistcha",
+        "Aerodactyl"
+      ]
+    },
+    "fake_out_support": {
+      "count": 0,
+      "members": []
+    },
+    "tailwind_setter": {
+      "count": 1,
+      "members": [
+        "Aerodactyl"
+      ]
+    },
+    "trick_room_setter": {
+      "count": 0,
+      "members": []
+    },
+    "hazard_setter": {
+      "count": 0,
+      "members": []
+    },
+    "hazard_control": {
+      "count": 0,
+      "members": []
+    },
+    "screen_setter": {
+      "count": 1,
+      "members": [
+        "Sableye"
+      ]
+    },
+    "weather_setter": {
+      "count": 1,
+      "members": [
+        "Sableye"
+      ]
+    },
+    "terrain_setter": {
+      "count": 0,
+      "members": []
+    },
+    "speed_control": {
+      "count": 2,
+      "members": [
+        "Sableye",
+        "Aerodactyl"
+      ]
+    },
+    "healing_support": {
+      "count": 1,
+      "members": [
+        "Sinistcha"
+      ]
+    },
+    "trapper": {
+      "count": 0,
+      "members": []
+    },
+    "redirector": {
+      "count": 1,
+      "members": [
+        "Sinistcha"
+      ]
+    }
+  },
+  "member_roles": {
+    "Lucario-Mega": [
+      "special_sweeper",
+      "setup_sweeper"
+    ],
+    "Sableye": [
+      "support",
+      "screen_setter",
+      "weather_setter",
+      "speed_control"
+    ],
+    "Archaludon": [
+      "special_sweeper",
+      "bulky_attacker",
+      "bulky_support"
+    ],
+    "Sinistcha": [
+      "support",
+      "healing_support",
+      "redirector"
+    ],
+    "Basculegion (M)": [
+      "physical_sweeper",
+      "cleaner",
+      "bulky_attacker"
+    ],
+    "Aerodactyl": [
+      "support",
+      "tailwind_setter",
+      "speed_control"
+    ]
+  },
+  "team_archetype": "rain_tailwind",
+  "team_archetype_scores": {
+    "hyper_offense": 9.8,
+    "bulky_offense": 7.8,
+    "balance": 7.95,
+    "semi_stall": -2.3,
+    "stall": -8.6,
+    "trick_room": 0.7,
+    "rain": 6.5,
+    "sun": -2.2,
+    "sand": 0.4,
+    "snow": -1.0,
+    "electric_terrain": 1.3,
+    "grassy_terrain": -0.4,
+    "misty_terrain": -2.4,
+    "psychic_terrain": 0.2,
+    "tailwind": 11.8,
+    "semiroom": 0.6,
+    "rain_tailwind": 13.0,
+    "sun_tailwind": 4.9,
+    "sand_tailwind": 5.4,
+    "snow_tailwind": 0.8,
+    "rain_room": 1.1,
+    "sun_room": -5.1,
+    "sand_room": -3.1,
+    "snow_room": -5.0,
+    "tailroom": 5.45,
+    "rain_tailroom": 2.2,
+    "sun_tailroom": -3.8,
+    "screens_offense": 10.35,
+    "dual_mode": 7.75,
+    "psyspam": -6.6,
+    "perish_trap": -7.4
+  },
+  "team_package_profile": {
+    "style": {
+      "label": "hyper_offense",
+      "scores": {
+        "hyper_offense": 9.8,
+        "bulky_offense": 7.8,
+        "balance": 7.95,
+        "semi_stall": -2.3,
+        "stall": -8.6
+      }
+    },
+    "modes": {
+      "labels": [
+        "tailwind",
+        "rain",
+        "rain_tailwind",
+        "dual_mode"
+      ],
+      "scores": {
+        "tailwind": 13.0,
+        "trick_room": 5.45,
+        "semiroom": 0.6,
+        "tailroom": 5.45,
+        "dual_mode": 7.75,
+        "rain": 13.0,
+        "sun": 4.9,
+        "sand": 5.4,
+        "snow": 0.8,
+        "electric_terrain": 1.3,
+        "grassy_terrain": -0.4,
+        "misty_terrain": -2.4,
+        "psychic_terrain": 0.2,
+        "rain_tailwind": 13.0,
+        "sun_tailwind": 4.9,
+        "sand_tailwind": 5.4,
+        "snow_tailwind": 0.8,
+        "rain_room": 1.1,
+        "sun_room": -5.1,
+        "sand_room": -3.1,
+        "snow_room": -5.0,
+        "rain_tailroom": 2.2,
+        "sun_tailroom": -3.8
+      }
+    },
+    "win_conditions": {
+      "labels": [
+        "screens_offense",
+        "setup_sweep"
+      ],
+      "scores": {
+        "perish_trap": -7.4,
+        "screens_offense": 10.35,
+        "setup_sweep": 5.4,
+        "psyspam": -6.6
+      }
+    }
+  },
+  "matchup_profile": {
+    "scores": {
+      "hyper_offense": 2.37,
+      "bulky_offense": 0.87,
+      "balance": -1.11,
+      "semi_stall": -0.65,
+      "stall": 0.74,
+      "trick_room": -2.23
+    },
+    "favorable": [
+      "hyper_offense",
+      "bulky_offense"
+    ],
+    "unfavorable": [
+      "trick_room",
+      "balance"
+    ]
+  },
+  "meta_mode_profile": {
+    "team_scores": {
+      "tailwind": 5.5,
+      "trick_room": 1.15,
+      "semiroom": 0.7,
+      "tailroom": 3.29,
+      "dual_mode": 4.83,
+      "rain": 4.94,
+      "sun": -0.45,
+      "sand": -0.08,
+      "snow": -0.52,
+      "electric_terrain": -0.31,
+      "grassy_terrain": 0.32,
+      "misty_terrain": -0.58,
+      "psychic_terrain": -0.62,
+      "rain_tailwind": 7.55,
+      "sun_tailwind": 2.09,
+      "sand_tailwind": 2.15,
+      "snow_tailwind": 1.63,
+      "rain_room": 2.73,
+      "sun_room": -1.17,
+      "sand_room": -0.9,
+      "snow_room": -1.1,
+      "rain_tailroom": 5.18,
+      "sun_tailroom": 0.48
+    },
+    "team_labels": [
+      "rain_tailwind"
+    ],
+    "scores": {
+      "tailwind": 2.52,
+      "trick_room": -2.8,
+      "semiroom": -2.1,
+      "tailroom": -0.07,
+      "dual_mode": -0.65,
+      "rain": 0.97,
+      "sun": 0.34,
+      "sand": 0.97,
+      "snow": -0.52,
+      "electric_terrain": -0.26,
+      "grassy_terrain": -1.18,
+      "misty_terrain": -1.83,
+      "psychic_terrain": -0.99,
+      "rain_tailwind": 3.08,
+      "sun_tailwind": 1.99,
+      "sand_tailwind": 2.11,
+      "snow_tailwind": 1.52,
+      "rain_room": -1.24,
+      "sun_room": -0.3,
+      "sand_room": -0.88,
+      "snow_room": -1.8,
+      "rain_tailroom": 0.69,
+      "sun_tailroom": 0.44
+    },
+    "favorable": [
+      "rain_tailwind",
+      "tailwind"
+    ],
+    "unfavorable": [
+      "trick_room",
+      "semiroom"
+    ]
+  },
+  "team_difficulty": {
+    "label": "moderate",
+    "score": 4.8,
+    "factors": [
+      "One of the main win routes is a setup sweeper, so finding even a single safe boost turn matters.",
+      "The team has 5 major support pieces through support roles, screens, or redirection, so each turn can branch into many reasonable lines.",
+      "Weather or terrain management matters here, so part of the difficulty is keeping the right field effect active at the right time.",
+      "The team has 3 speed-control pieces, which is powerful but means you need to choose the right speed mode for each matchup.",
+      "A solid bulky backbone gives the team some room to absorb a bad turn or an awkward trade."
+    ]
+  },
+  "beginner_guidance": {
+    "notes": [
+      "This build leans support-first: 12 of 24 moves are support or board-control actions. Make sure each support turn is buying a later knockout or safer board state.",
+      "The team has no clear anti-setup button such as Taunt, Haze, Encore, or phazing. Opposing setup usually has to be answered with direct damage.",
+      "The roster mixes fast and slow attackers, but it only has one real speed-mode button. Some members may be stranded if that single mode is denied.",
+      "The current attack spread still struggles to pressure Electric, Steel, Dragon. Against those types, support turns need to create especially clean damage positions."
+    ]
+  },
+  "team_preview": {
+    "bring_plans": [
+      {
+        "label": "Primary Tailwind plan",
+        "summary": "Lead Archaludon and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Lucario-Mega in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Lucario-Mega"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Aerodactyl",
+          "Basculegion (M)",
+          "Lucario-Mega"
+        ],
+        "recommended_into": [],
+        "member_reasons": {
+          "Archaludon": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Gets Tailwind online immediately.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      },
+      {
+        "label": "Tailwind mirror plan",
+        "summary": "Into Tailwind, lead Basculegion (M) and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Basculegion (M)",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Tailwind"
+        ],
+        "member_reasons": {
+          "Basculegion (M)": "Still threatens damage even when the opposing fast mode gets first move.",
+          "Aerodactyl": "Blunts common spread-pressure turns from Tailwind offense.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sableye": "Helps keep opposing Tailwind turns from snowballing immediately."
+        }
+      },
+      {
+        "label": "Rain Tailwind mirror plan",
+        "summary": "Into Rain Tailwind, lead Lucario-Mega and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Archaludon and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Archaludon",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Aerodactyl",
+          "Archaludon",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Rain Tailwind"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Blunts common spread-pressure turns from Tailwind offense.",
+          "Archaludon": "Pressures common rain pieces with direct coverage.",
+          "Sableye": "Helps keep opposing Tailwind turns from snowballing immediately."
+        }
+      },
+      {
+        "label": "Into Trick Room",
+        "summary": "Into Trick Room, lead Archaludon and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Aerodactyl",
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Trick Room"
+        ],
+        "member_reasons": {
+          "Archaludon": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Gets Tailwind online immediately.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sinistcha": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Into Tailroom",
+        "summary": "Into Tailroom, lead Basculegion (M) and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Basculegion (M)",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Lucario-Mega",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Tailroom"
+        ],
+        "member_reasons": {
+          "Basculegion (M)": "Still threatens damage even when the opposing fast mode gets first move.",
+          "Aerodactyl": "Blunts common spread-pressure turns from Tailwind offense.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sinistcha": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Into Rain Room",
+        "summary": "Into Rain Room, lead Sableye and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Archaludon and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sableye",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Archaludon",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Sableye",
+          "Aerodactyl",
+          "Archaludon",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Rain Room"
+        ],
+        "member_reasons": {
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Archaludon": "Pressures common rain pieces with direct coverage.",
+          "Sinistcha": "Pressures common rain pieces with direct coverage."
+        }
+      },
+      {
+        "label": "Into Rain",
+        "summary": "Into Rain, lead Sinistcha and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Archaludon and Lucario-Mega in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sinistcha",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Archaludon",
+          "Lucario-Mega"
+        ],
+        "pick_four": [
+          "Sinistcha",
+          "Aerodactyl",
+          "Archaludon",
+          "Lucario-Mega"
+        ],
+        "recommended_into": [
+          "Rain"
+        ],
+        "member_reasons": {
+          "Sinistcha": "Pressures common rain pieces with direct coverage.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Archaludon": "Pressures common rain pieces with direct coverage.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      },
+      {
+        "label": "Into Sand",
+        "summary": "Into Sand, lead Lucario-Mega and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Aerodactyl",
+          "Basculegion (M)",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Sand"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Pressures common sand pieces with direct coverage.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Basculegion (M)": "Pressures common sand pieces with direct coverage.",
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns."
+        }
+      },
+      {
+        "label": "Into Rain Tailroom",
+        "summary": "Into Rain Tailroom, lead Sableye and Archaludon to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sableye",
+          "Archaludon"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Sableye",
+          "Archaludon",
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Rain Tailroom"
+        ],
+        "member_reasons": {
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns.",
+          "Archaludon": "Pressures common rain pieces with direct coverage.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sinistcha": "Pressures common rain pieces with direct coverage."
+        }
+      },
+      {
+        "label": "Into Dual Mode",
+        "summary": "Into Dual Mode, lead Sinistcha and Basculegion (M) to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Archaludon in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sinistcha",
+          "Basculegion (M)"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Archaludon"
+        ],
+        "pick_four": [
+          "Sinistcha",
+          "Basculegion (M)",
+          "Lucario-Mega",
+          "Archaludon"
+        ],
+        "recommended_into": [
+          "Dual Mode"
+        ],
+        "member_reasons": {
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Basculegion (M)": "Turns the first speed-control turns into immediate pressure.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Archaludon": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Snow Tailwind mirror plan",
+        "summary": "Into Snow Tailwind, lead Sableye and Basculegion (M) to get the fast mode online quickly and force early tempo. Keep Aerodactyl and Archaludon in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sableye",
+          "Basculegion (M)"
+        ],
+        "back": [
+          "Aerodactyl",
+          "Archaludon"
+        ],
+        "pick_four": [
+          "Sableye",
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Archaludon"
+        ],
+        "recommended_into": [
+          "Snow Tailwind"
+        ],
+        "member_reasons": {
+          "Sableye": "Helps keep opposing Tailwind turns from snowballing immediately.",
+          "Basculegion (M)": "Still threatens damage even when the opposing fast mode gets first move.",
+          "Aerodactyl": "Blunts common spread-pressure turns from Tailwind offense.",
+          "Archaludon": "Pressures common snow pieces with direct coverage."
+        }
+      },
+      {
+        "label": "Into Sun Room",
+        "summary": "Into Sun Room, lead Lucario-Mega and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Sableye and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Sableye",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Aerodactyl",
+          "Sableye",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Sun Room"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns.",
+          "Sinistcha": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Into Semiroom",
+        "summary": "Into Semiroom, lead Archaludon and Sinistcha to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Lucario-Mega in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Sinistcha"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Lucario-Mega"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Sinistcha",
+          "Basculegion (M)",
+          "Lucario-Mega"
+        ],
+        "recommended_into": [
+          "Semiroom"
+        ],
+        "member_reasons": {
+          "Archaludon": "Turns the first speed-control turns into immediate pressure.",
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      },
+      {
+        "label": "Sun Tailwind mirror plan",
+        "summary": "Into Sun Tailwind, lead Basculegion (M) and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Archaludon and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Basculegion (M)",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Archaludon",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Archaludon",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Sun Tailwind"
+        ],
+        "member_reasons": {
+          "Basculegion (M)": "Still threatens damage even when the opposing fast mode gets first move.",
+          "Aerodactyl": "Blunts common spread-pressure turns from Tailwind offense.",
+          "Archaludon": "Stays in back as the stabilizing midgame piece if the opener gets messy.",
+          "Sableye": "Helps keep opposing Tailwind turns from snowballing immediately."
+        }
+      },
+      {
+        "label": "Sand Tailwind mirror plan",
+        "summary": "Into Sand Tailwind, lead Lucario-Mega and Sableye to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Sinistcha in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Sableye",
+          "Basculegion (M)",
+          "Sinistcha"
+        ],
+        "recommended_into": [
+          "Sand Tailwind"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Pressures common sand pieces with direct coverage.",
+          "Sableye": "Helps keep opposing Tailwind turns from snowballing immediately.",
+          "Basculegion (M)": "Still threatens damage even when the opposing fast mode gets first move.",
+          "Sinistcha": "Pressures common sand pieces with direct coverage."
+        }
+      },
+      {
+        "label": "Into Sun Tailroom",
+        "summary": "Into Sun Tailroom, lead Archaludon and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Aerodactyl",
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Sun Tailroom"
+        ],
+        "member_reasons": {
+          "Archaludon": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns."
+        }
+      },
+      {
+        "label": "Into Psychic Terrain",
+        "summary": "Into Psychic Terrain, lead Lucario-Mega and Sinistcha to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Aerodactyl in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Sinistcha"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Aerodactyl"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Sinistcha",
+          "Basculegion (M)",
+          "Aerodactyl"
+        ],
+        "recommended_into": [
+          "Psychic Terrain"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Pressures common psychic terrain pieces with useful coverage.",
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Basculegion (M)": "Pressures common psychic terrain pieces with useful coverage.",
+          "Aerodactyl": "Rounds out the four by covering a role the opening pair should not expose too early."
+        }
+      },
+      {
+        "label": "Into Sand Room",
+        "summary": "Into Sand Room, lead Sableye and Sinistcha to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Archaludon in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sableye",
+          "Sinistcha"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Archaludon"
+        ],
+        "pick_four": [
+          "Sableye",
+          "Sinistcha",
+          "Lucario-Mega",
+          "Archaludon"
+        ],
+        "recommended_into": [
+          "Sand Room"
+        ],
+        "member_reasons": {
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns.",
+          "Sinistcha": "Pressures common sand pieces with direct coverage.",
+          "Lucario-Mega": "Pressures common sand pieces with direct coverage.",
+          "Archaludon": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Into Snow",
+        "summary": "Into Snow, lead Sableye and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Archaludon and Basculegion (M) in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sableye",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Archaludon",
+          "Basculegion (M)"
+        ],
+        "pick_four": [
+          "Sableye",
+          "Aerodactyl",
+          "Archaludon",
+          "Basculegion (M)"
+        ],
+        "recommended_into": [
+          "Snow"
+        ],
+        "member_reasons": {
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Archaludon": "Pressures common snow pieces with direct coverage.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      },
+      {
+        "label": "Into Sun",
+        "summary": "Into Sun, lead Sinistcha and Aerodactyl to get the fast mode online quickly and force early tempo. Keep Basculegion (M) and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sinistcha",
+          "Aerodactyl"
+        ],
+        "back": [
+          "Basculegion (M)",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Sinistcha",
+          "Aerodactyl",
+          "Basculegion (M)",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Sun"
+        ],
+        "member_reasons": {
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Basculegion (M)": "Pressures common sun pieces with direct coverage.",
+          "Sableye": "Can reset weather and cut off the opponent's boosted turns."
+        }
+      },
+      {
+        "label": "Into Snow Room",
+        "summary": "Into Snow Room, lead Archaludon and Basculegion (M) to get the fast mode online quickly and force early tempo. Keep Aerodactyl and Lucario-Mega in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Basculegion (M)"
+        ],
+        "back": [
+          "Aerodactyl",
+          "Lucario-Mega"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Lucario-Mega"
+        ],
+        "recommended_into": [
+          "Snow Room"
+        ],
+        "member_reasons": {
+          "Archaludon": "Pressures common snow pieces with direct coverage.",
+          "Basculegion (M)": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Checks common spread damage from the current weather shells.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      },
+      {
+        "label": "Into Electric Terrain",
+        "summary": "Into Electric Terrain, lead Archaludon and Sinistcha to get the fast mode online quickly and force early tempo. Keep Lucario-Mega and Sableye in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Archaludon",
+          "Sinistcha"
+        ],
+        "back": [
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "pick_four": [
+          "Archaludon",
+          "Sinistcha",
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "recommended_into": [
+          "Electric Terrain"
+        ],
+        "member_reasons": {
+          "Archaludon": "Turns the first speed-control turns into immediate pressure.",
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Lucario-Mega": "Stays in back as the main cleaner once the opener has forced trades.",
+          "Sableye": "Rounds out the four by covering a role the opening pair should not expose too early."
+        }
+      },
+      {
+        "label": "Into Grassy Terrain",
+        "summary": "Into Grassy Terrain, lead Sinistcha and Basculegion (M) to get the fast mode online quickly and force early tempo. Keep Aerodactyl and Archaludon in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Sinistcha",
+          "Basculegion (M)"
+        ],
+        "back": [
+          "Aerodactyl",
+          "Archaludon"
+        ],
+        "pick_four": [
+          "Sinistcha",
+          "Basculegion (M)",
+          "Aerodactyl",
+          "Archaludon"
+        ],
+        "recommended_into": [
+          "Grassy Terrain"
+        ],
+        "member_reasons": {
+          "Sinistcha": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Basculegion (M)": "Turns the first speed-control turns into immediate pressure.",
+          "Aerodactyl": "Pressures common grassy terrain pieces with useful coverage.",
+          "Archaludon": "Stays in back as the stabilizing midgame piece if the opener gets messy."
+        }
+      },
+      {
+        "label": "Into Misty Terrain",
+        "summary": "Into Misty Terrain, lead Lucario-Mega and Sableye to get the fast mode online quickly and force early tempo. Keep Archaludon and Basculegion (M) in back as the cleaner or stabilizing endgame line.",
+        "leads": [
+          "Lucario-Mega",
+          "Sableye"
+        ],
+        "back": [
+          "Archaludon",
+          "Basculegion (M)"
+        ],
+        "pick_four": [
+          "Lucario-Mega",
+          "Sableye",
+          "Archaludon",
+          "Basculegion (M)"
+        ],
+        "recommended_into": [
+          "Misty Terrain"
+        ],
+        "member_reasons": {
+          "Lucario-Mega": "Turns the first speed-control turns into immediate pressure.",
+          "Sableye": "Rounds out the four by covering a role the opening pair should not expose too early.",
+          "Archaludon": "Pressures common misty terrain pieces with useful coverage.",
+          "Basculegion (M)": "Stays in back as the main cleaner once the opener has forced trades."
+        }
+      }
+    ],
+    "watch_teams": [
+      "Trick Room teams want their slow attackers moving first, so treat the setup turn and the first room turn as the real danger window.",
+      "Semiroom teams can switch between fast and slow plans midgame, so do not expose your cleaner until you know which speed button they are actually leaning on.",
+      "Trick Room teams punish teams that only function while moving first, so preview should already know which of your four can survive the slow turns.",
+      "Balance teams usually force repeated small trades, so preserve your control pieces until you know which exchange actually opens your win condition."
+    ],
+    "watch_pokemon": [
+      "Farigiraf (Trick Room)",
+      "Torkoal (Trick Room)",
+      "Incineroar (Trick Room)",
+      "Kangaskhan (Trick Room)",
+      "Aegislash (Trick Room)",
+      "Hatterene (Trick Room)"
+    ],
+    "strategy_notes": [
+      "Default to Archaludon and Aerodactyl in front with Basculegion (M) and Lucario-Mega in back unless preview gives you a clear reason to pivot off that line. That opener keeps your safest first-turn tempo button in front while saving the back pair that usually closes once the board is stable.",
+      "Try to keep Aerodactyl and Sableye healthy until the board is ready. Those are your cleanest buttons for claiming speed or field control, so avoid cashing them in for small early chip unless that trade immediately opens your endgame.",
+      "Use Sableye to make the first two turns safer, then hand the game to your setup or cleaner pieces rather than overextending with support. The screen turn matters most when it buys two attacks or a setup window, not when it only patches a bad lead for one exchange.",
+      "If preview has strong answers to your default opener, pivot early into Basculegion (M) and Aerodactyl rather than forcing the same four every round. That swap is usually better than making your best cleaner defend from turn one."
+    ],
+    "counterplay_notes": [
+      "Into Trick Room preview, lean on Sinistcha to either contest the setup turn or make the first room turn low-impact. Beginners often lose this matchup by aiming only at the sweeper; making the setup turn or first room turn low-value is usually enough.",
+      "If preview is built around Ghost, Dark pressure, do not bring four members that all amplify that axis unless your mode advantage is overwhelming. In practice, at least one of your four should resist, pivot around, or disrupt that lane instead of simply racing it."
+    ]
+  },
+  "meta_analysis": {
+    "label": "strong",
+    "overall_score": 0.76,
+    "positive_weight_share": 56.0,
+    "negative_weight_share": 31.8,
+    "strongest_modes": [
+      "rain_tailwind",
+      "tailwind",
+      "sun_tailwind"
+    ],
+    "pressured_modes": [
+      "trick_room",
+      "rain_room",
+      "semiroom"
+    ],
+    "strongest_targets": [
+      "Mega Charizard Y Aerodactyl",
+      "Rain Archaludon",
+      "Mega Glimmora Offense"
+    ],
+    "pressured_targets": [
+      "Farigiraf Torkoal Room",
+      "Mega Gardevoir Tailroom"
+    ],
+    "tournament_rows": [
+      {
+        "slug": "mega-charizard-y-aerodactyl",
+        "label": "Mega Charizard Y Aerodactyl",
+        "source": "Recent May 2026 M-A tournament front-runner",
+        "result_label": "top-table finish",
+        "modes": [
+          "Sun Tailwind",
+          "Tailwind",
+          "Sun"
+        ],
+        "key_cores": [
+          "Mega Charizard Y + Aerodactyl",
+          "Garchomp + Basculegion"
+        ],
+        "key_pokemon": [
+          "Mega Charizard Y",
+          "Aerodactyl",
+          "Sylveon",
+          "Garchomp",
+          "Kingambit",
+          "Basculegion"
+        ],
+        "popularity_score": 96.0,
+        "result_score": 95.0,
+        "meta_weight": 0.9568,
+        "meta_share": 23.1,
+        "matchup_score": 1.91,
+        "impact_score": 1.83,
+        "standing": "favored"
+      },
+      {
+        "slug": "rain-archaludon",
+        "label": "Rain Archaludon",
+        "source": "Repeated May 2026 M-A top-cut shell",
+        "result_label": "multiple top cuts",
+        "modes": [
+          "Rain Tailwind",
+          "Rain"
+        ],
+        "key_cores": [
+          "Pelipper + Archaludon",
+          "Archaludon + Basculegion"
+        ],
+        "key_pokemon": [
+          "Pelipper",
+          "Archaludon",
+          "Basculegion",
+          "Sinistcha",
+          "Incineroar",
+          "Scizor"
+        ],
+        "popularity_score": 92.0,
+        "result_score": 94.0,
+        "meta_weight": 0.9264,
+        "meta_share": 22.3,
+        "matchup_score": 1.95,
+        "impact_score": 1.81,
+        "standing": "favored"
+      },
+      {
+        "slug": "farigiraf-torkoal-room",
+        "label": "Farigiraf Torkoal Room",
+        "source": "Repeated May 2026 M-A top-cut shell",
+        "result_label": "repeated deep runs",
+        "modes": [
+          "Trick Room",
+          "Sun Room"
+        ],
+        "key_cores": [
+          "Farigiraf + Torkoal",
+          "Farigiraf + Sinistcha"
+        ],
+        "key_pokemon": [
+          "Farigiraf",
+          "Torkoal",
+          "Sinistcha",
+          "Kangaskhan",
+          "Hatterene",
+          "Aegislash"
+        ],
+        "popularity_score": 84.0,
+        "result_score": 91.0,
+        "meta_weight": 0.7589,
+        "meta_share": 18.3,
+        "matchup_score": -1.79,
+        "impact_score": -1.36,
+        "standing": "pressured"
+      },
+      {
+        "slug": "mega-gardevoir-tailroom",
+        "label": "Mega Gardevoir Tailroom",
+        "source": "Live May 2026 M-A tournament snapshot",
+        "result_label": "recent top cut",
+        "modes": [
+          "Tailroom",
+          "Trick Room",
+          "Tailwind"
+        ],
+        "key_cores": [
+          "Gardevoir-Mega + Whimsicott",
+          "Sneasler + Kingambit"
+        ],
+        "key_pokemon": [
+          "Mega Gardevoir",
+          "Whimsicott",
+          "Sneasler",
+          "Kingambit",
+          "Primarina"
+        ],
+        "popularity_score": 62.0,
+        "result_score": 82.0,
+        "meta_weight": 0.5609,
+        "meta_share": 13.5,
+        "matchup_score": -0.45,
+        "impact_score": -0.25,
+        "standing": "slightly_pressured"
+      },
+      {
+        "slug": "mega-scizor-balance",
+        "label": "Mega Scizor Balance",
+        "source": "Live May 2026 M-A tournament snapshot",
+        "result_label": "recent top cut",
+        "modes": [
+          "Tailwind",
+          "Tailroom",
+          "Trick Room"
+        ],
+        "key_cores": [
+          "Sneasler + Scizor-Mega",
+          "Garchomp + Aerodactyl"
+        ],
+        "key_pokemon": [
+          "Mega Scizor",
+          "Sneasler",
+          "Garchomp",
+          "Aerodactyl",
+          "Sinistcha",
+          "Milotic"
+        ],
+        "popularity_score": 58.0,
+        "result_score": 79.0,
+        "meta_weight": 0.5048,
+        "meta_share": 12.2,
+        "matchup_score": 0.15,
+        "impact_score": 0.08,
+        "standing": "slightly_favored"
+      },
+      {
+        "slug": "mega-glimmora-offense",
+        "label": "Mega Glimmora Offense",
+        "source": "Recent May 2026 M-A high-result shell",
+        "result_label": "recent strong finishes",
+        "modes": [
+          "Tailwind"
+        ],
+        "key_cores": [
+          "Mega Glimmora + Aerodactyl",
+          "Mega Glimmora + Garchomp"
+        ],
+        "key_pokemon": [
+          "Mega Glimmora",
+          "Aerodactyl",
+          "Garchomp",
+          "Kingambit",
+          "Sneasler",
+          "Basculegion"
+        ],
+        "popularity_score": 54.0,
+        "result_score": 77.0,
+        "meta_weight": 0.4418,
+        "meta_share": 10.6,
+        "matchup_score": 2.36,
+        "impact_score": 1.04,
+        "standing": "favored"
+      }
+    ],
+    "weighted_matchups": [
+      {
+        "mode": "tailwind",
+        "tournament_weight": 1.0,
+        "meta_share": 12.8,
+        "matchup_score": 2.52,
+        "impact_score": 2.52,
+        "identity_score": 5.5,
+        "standing": "favored"
+      },
+      {
+        "mode": "rain_tailwind",
+        "tournament_weight": 0.82,
+        "meta_share": 10.5,
+        "matchup_score": 3.08,
+        "impact_score": 2.53,
+        "identity_score": 7.55,
+        "standing": "favored"
+      },
+      {
+        "mode": "trick_room",
+        "tournament_weight": 0.7,
+        "meta_share": 9.0,
+        "matchup_score": -2.8,
+        "impact_score": -1.96,
+        "identity_score": 1.15,
+        "standing": "pressured"
+      },
+      {
+        "mode": "tailroom",
+        "tournament_weight": 0.64,
+        "meta_share": 8.2,
+        "matchup_score": -0.07,
+        "impact_score": -0.04,
+        "identity_score": 3.29,
+        "standing": "even"
+      },
+      {
+        "mode": "rain_room",
+        "tournament_weight": 0.48,
+        "meta_share": 6.1,
+        "matchup_score": -1.24,
+        "impact_score": -0.6,
+        "identity_score": 2.73,
+        "standing": "pressured"
+      },
+      {
+        "mode": "rain",
+        "tournament_weight": 0.42,
+        "meta_share": 5.4,
+        "matchup_score": 0.97,
+        "impact_score": 0.41,
+        "identity_score": 4.94,
+        "standing": "favored"
+      },
+      {
+        "mode": "sand",
+        "tournament_weight": 0.36,
+        "meta_share": 4.6,
+        "matchup_score": 0.97,
+        "impact_score": 0.35,
+        "identity_score": -0.08,
+        "standing": "favored"
+      },
+      {
+        "mode": "rain_tailroom",
+        "tournament_weight": 0.36,
+        "meta_share": 4.6,
+        "matchup_score": 0.69,
+        "impact_score": 0.25,
+        "identity_score": 5.18,
+        "standing": "slightly_favored"
+      },
+      {
+        "mode": "dual_mode",
+        "tournament_weight": 0.34,
+        "meta_share": 4.4,
+        "matchup_score": -0.65,
+        "impact_score": -0.22,
+        "identity_score": 4.83,
+        "standing": "slightly_pressured"
+      },
+      {
+        "mode": "snow_tailwind",
+        "tournament_weight": 0.31,
+        "meta_share": 4.0,
+        "matchup_score": 1.52,
+        "impact_score": 0.47,
+        "identity_score": 1.63,
+        "standing": "favored"
+      },
+      {
+        "mode": "sun_room",
+        "tournament_weight": 0.28,
+        "meta_share": 3.6,
+        "matchup_score": -0.3,
+        "impact_score": -0.08,
+        "identity_score": -1.17,
+        "standing": "slightly_pressured"
+      },
+      {
+        "mode": "semiroom",
+        "tournament_weight": 0.26,
+        "meta_share": 3.3,
+        "matchup_score": -2.1,
+        "impact_score": -0.55,
+        "identity_score": 0.7,
+        "standing": "pressured"
+      },
+      {
+        "mode": "sun_tailwind",
+        "tournament_weight": 0.24,
+        "meta_share": 3.1,
+        "matchup_score": 1.99,
+        "impact_score": 0.48,
+        "identity_score": 2.09,
+        "standing": "favored"
+      },
+      {
+        "mode": "sand_tailwind",
+        "tournament_weight": 0.22,
+        "meta_share": 2.8,
+        "matchup_score": 2.11,
+        "impact_score": 0.46,
+        "identity_score": 2.15,
+        "standing": "favored"
+      },
+      {
+        "mode": "sun_tailroom",
+        "tournament_weight": 0.22,
+        "meta_share": 2.8,
+        "matchup_score": 0.44,
+        "impact_score": 0.1,
+        "identity_score": 0.48,
+        "standing": "slightly_favored"
+      },
+      {
+        "mode": "psychic_terrain",
+        "tournament_weight": 0.18,
+        "meta_share": 2.3,
+        "matchup_score": -0.99,
+        "impact_score": -0.18,
+        "identity_score": -0.62,
+        "standing": "pressured"
+      },
+      {
+        "mode": "sand_room",
+        "tournament_weight": 0.18,
+        "meta_share": 2.3,
+        "matchup_score": -0.88,
+        "impact_score": -0.16,
+        "identity_score": -0.9,
+        "standing": "pressured"
+      },
+      {
+        "mode": "snow",
+        "tournament_weight": 0.18,
+        "meta_share": 2.3,
+        "matchup_score": -0.52,
+        "impact_score": -0.09,
+        "identity_score": -0.52,
+        "standing": "slightly_pressured"
+      },
+      {
+        "mode": "sun",
+        "tournament_weight": 0.16,
+        "meta_share": 2.0,
+        "matchup_score": 0.34,
+        "impact_score": 0.05,
+        "identity_score": -0.45,
+        "standing": "slightly_favored"
+      },
+      {
+        "mode": "snow_room",
+        "tournament_weight": 0.14,
+        "meta_share": 1.8,
+        "matchup_score": -1.8,
+        "impact_score": -0.25,
+        "identity_score": -1.1,
+        "standing": "pressured"
+      },
+      {
+        "mode": "electric_terrain",
+        "tournament_weight": 0.12,
+        "meta_share": 1.5,
+        "matchup_score": -0.26,
+        "impact_score": -0.03,
+        "identity_score": -0.31,
+        "standing": "slightly_pressured"
+      },
+      {
+        "mode": "grassy_terrain",
+        "tournament_weight": 0.11,
+        "meta_share": 1.4,
+        "matchup_score": -1.18,
+        "impact_score": -0.13,
+        "identity_score": 0.32,
+        "standing": "pressured"
+      },
+      {
+        "mode": "misty_terrain",
+        "tournament_weight": 0.09,
+        "meta_share": 1.2,
+        "matchup_score": -1.83,
+        "impact_score": -0.16,
+        "identity_score": -0.58,
+        "standing": "pressured"
+      }
+    ],
+    "notes": [
+      "Weighted against current Regulation M-A tournament-result teams, this team grades as strong at 0.76, with 56.0% of the tracked board scoring favorable and 31.8% scoring pressured.",
+      "The cleanest current team-level edges are into Mega Charizard Y Aerodactyl, Rain Archaludon, and Mega Glimmora Offense, which together represent about 56.0% of the tracked high-performing field.",
+      "The heaviest current team-level pressure comes from Farigiraf Torkoal Room and Mega Gardevoir Tailroom, which together account for about 31.8% of the tracked high-performing field.",
+      "Across the 6 current results-backed board teams, 3 are favorable, 1 land in the even band, and 2 are currently pressured by the board thresholds.",
+      "At the mode layer, the cleanest weighted edges are into Rain Tailwind, Tailwind, and Sun Tailwind, which together make up about 26.4% of tracked mode share.",
+      "The most relevant mode-level checks come from Trick Room, Rain Room, and Semiroom, which together account for about 18.4% of tracked mode share.",
+      "The single best weighted mode edge is Rain Tailwind at matchup 3.08 over 10.5% of mode share.",
+      "The sharpest mode-level check is Trick Room at matchup -2.80 over 9.0% of mode share.",
+      "The biggest current board anchors are Mega Charizard Y Aerodactyl (23.1% share, +1.91 matchup) and Rain Archaludon (22.3% share, +1.95 matchup), so those shells define a large share of the live-field positioning check by themselves.",
+      "The roster itself already overlaps with high-traffic M-A shells like Rain Tailwind, so it is not trying to win from a completely off-meta position."
+    ]
+  },
+  "vector_labels": [
+    "typing_normal",
+    "typing_fire",
+    "typing_water",
+    "typing_electric",
+    "typing_grass",
+    "typing_ice",
+    "typing_fighting",
+    "typing_poison",
+    "typing_ground",
+    "typing_flying",
+    "typing_psychic",
+    "typing_bug",
+    "typing_rock",
+    "typing_ghost",
+    "typing_dragon",
+    "typing_dark",
+    "typing_steel",
+    "typing_fairy",
+    "defense_avg_multiplier_normal",
+    "defense_avg_multiplier_fire",
+    "defense_avg_multiplier_water",
+    "defense_avg_multiplier_electric",
+    "defense_avg_multiplier_grass",
+    "defense_avg_multiplier_ice",
+    "defense_avg_multiplier_fighting",
+    "defense_avg_multiplier_poison",
+    "defense_avg_multiplier_ground",
+    "defense_avg_multiplier_flying",
+    "defense_avg_multiplier_psychic",
+    "defense_avg_multiplier_bug",
+    "defense_avg_multiplier_rock",
+    "defense_avg_multiplier_ghost",
+    "defense_avg_multiplier_dragon",
+    "defense_avg_multiplier_dark",
+    "defense_avg_multiplier_steel",
+    "defense_avg_multiplier_fairy",
+    "offense_normal",
+    "offense_fire",
+    "offense_water",
+    "offense_electric",
+    "offense_grass",
+    "offense_ice",
+    "offense_fighting",
+    "offense_poison",
+    "offense_ground",
+    "offense_flying",
+    "offense_psychic",
+    "offense_bug",
+    "offense_rock",
+    "offense_ghost",
+    "offense_dragon",
+    "offense_dark",
+    "offense_steel",
+    "offense_fairy",
+    "average_base_speed",
+    "fastest_base_speed",
+    "slowest_base_speed",
+    "physical_moves",
+    "special_moves",
+    "utility_moves",
+    "utility_role_protection",
+    "utility_role_screen",
+    "utility_role_redirection",
+    "utility_role_weather",
+    "utility_role_terrain",
+    "utility_role_speed_control",
+    "utility_role_recovery",
+    "utility_role_healing_support",
+    "utility_role_pivoting",
+    "utility_role_entry_hazard",
+    "utility_role_hazard_removal",
+    "utility_role_disruption",
+    "utility_role_item_control",
+    "utility_role_phazing",
+    "utility_role_trapping",
+    "utility_role_anti_setup",
+    "utility_role_flinch_control",
+    "utility_role_status_infliction",
+    "utility_role_stat_boost",
+    "utility_role_stat_drop",
+    "utility_role_other_utility",
+    "pokemon_role_physical_sweeper",
+    "pokemon_role_special_sweeper",
+    "pokemon_role_setup_sweeper",
+    "pokemon_role_cleaner",
+    "pokemon_role_bulky_attacker",
+    "pokemon_role_pivot",
+    "pokemon_role_bulky_pivot",
+    "pokemon_role_bulky_support",
+    "pokemon_role_support",
+    "pokemon_role_fake_out_support",
+    "pokemon_role_tailwind_setter",
+    "pokemon_role_trick_room_setter",
+    "pokemon_role_hazard_setter",
+    "pokemon_role_hazard_control",
+    "pokemon_role_screen_setter",
+    "pokemon_role_weather_setter",
+    "pokemon_role_terrain_setter",
+    "pokemon_role_speed_control",
+    "pokemon_role_healing_support",
+    "pokemon_role_trapper",
+    "pokemon_role_redirector",
+    "team_archetype_hyper_offense",
+    "team_archetype_bulky_offense",
+    "team_archetype_balance",
+    "team_archetype_semi_stall",
+    "team_archetype_stall",
+    "team_archetype_trick_room",
+    "team_archetype_rain",
+    "team_archetype_sun",
+    "team_archetype_sand",
+    "team_archetype_snow",
+    "team_archetype_electric_terrain",
+    "team_archetype_grassy_terrain",
+    "team_archetype_misty_terrain",
+    "team_archetype_psychic_terrain",
+    "team_archetype_tailwind",
+    "team_archetype_semiroom",
+    "team_archetype_rain_tailwind",
+    "team_archetype_sun_tailwind",
+    "team_archetype_sand_tailwind",
+    "team_archetype_snow_tailwind",
+    "team_archetype_rain_room",
+    "team_archetype_sun_room",
+    "team_archetype_sand_room",
+    "team_archetype_snow_room",
+    "team_archetype_tailroom",
+    "team_archetype_rain_tailroom",
+    "team_archetype_sun_tailroom",
+    "team_archetype_screens_offense",
+    "team_archetype_psyspam",
+    "team_archetype_dual_mode",
+    "team_archetype_perish_trap"
+  ],
+  "vector": [
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    3.0,
+    1.0,
+    1.0,
+    2.0,
+    0.0,
+    0.25,
+    1.1667,
+    0.9167,
+    1.1667,
+    0.875,
+    1.1667,
+    0.8333,
+    0.4167,
+    1.0833,
+    1.0,
+    0.75,
+    0.625,
+    0.9583,
+    1.3333,
+    0.9167,
+    1.25,
+    0.9167,
+    1.1667,
+    0.0,
+    0.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    0.0,
+    87.5,
+    130.0,
+    50.0,
+    6.0,
+    6.0,
+    12.0,
+    4.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    2.0,
+    1.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    1.0,
+    2.0,
+    1.0,
+    1.0,
+    2.0,
+    0.0,
+    0.0,
+    1.0,
+    3.0,
+    0.0,
+    1.0,
+    0.0,
+    0.0,
+    0.0,
+    1.0,
+    1.0,
+    0.0,
+    2.0,
+    1.0,
+    0.0,
+    1.0,
+    9.8,
+    7.8,
+    7.95,
+    -2.3,
+    -8.6,
+    0.7,
+    6.5,
+    -2.2,
+    0.4,
+    -1.0,
+    1.3,
+    -0.4,
+    -2.4,
+    0.2,
+    11.8,
+    0.6,
+    13.0,
+    4.9,
+    5.4,
+    0.8,
+    1.1,
+    -5.1,
+    -3.1,
+    -5.0,
+    5.45,
+    2.2,
+    -3.8,
+    10.35,
+    -6.6,
+    7.75,
+    -7.4
+  ]
+}
