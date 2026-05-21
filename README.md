@@ -97,7 +97,7 @@ The current web surface is regulation-aware, loads the available regulation cata
 This repository is now structured so you can publish it to GitHub and host it on Vercel without keeping a separate Python host somewhere else. The deploy shape is a monorepo with two Vercel projects:
 
 1. Analyzer API project
-	Deploy the repository root as a Python Vercel project. The Python entrypoint is configured in `pyproject.toml` as `pokemon_team_analyzer.api:app`.
+	Deploy the repository root as a Python Vercel project. The Vercel entry file is `api/index.py`, which re-exports the FastAPI app from `pokemon_team_analyzer.api`.
 2. Frontend project
 	Deploy `web/` as a separate Next.js Vercel project.
 
@@ -115,7 +115,7 @@ The analyzer API project exposes these routes:
 - `GET /api/builder-species`
 - `GET /api/builder-move`
 
-The root `vercel.json` excludes `web/`, tests, and other non-runtime files from the Python bundle so the analyzer project stays inside Vercel's Python function packaging budget.
+The root `vercel.json` configures the Python function as `api/**/*.py` and excludes `web/`, tests, examples, and other non-runtime files from the Python bundle so the analyzer project stays inside Vercel's Python function packaging budget.
 
 ### Accounts and Saved Teams
 

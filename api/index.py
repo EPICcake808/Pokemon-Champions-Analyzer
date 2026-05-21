@@ -1,0 +1,1 @@
+from pokemon_team_analyzer.api import app
