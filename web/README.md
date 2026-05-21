@@ -44,11 +44,11 @@ npm run build
 ## Notes
 
 - The homepage server-renders an initial sample analysis so the UI loads populated.
-- Featured examples are loaded from the parent `examples/` directory.
+- Featured examples are bundled inside `web/examples/`, so the frontend can deploy as a standalone Next.js project.
 - The current UI defaults to `champions_regulation_m_a`, but the request payload already accepts arbitrary regulation ids for future Champions sets.
 - Available regulations are loaded from the analyzer API, so the frontend regulation selector follows the backend catalog instead of hardcoding the format list.
 - For Vercel, deploy this `web/` folder as a Next.js project and set `POKEMON_ANALYZER_API_BASE_URL` to the companion analyzer API project URL.
-- The Next config traces the parent `examples/` directory so curated example teams remain available in production builds.
+- Leave `Include files outside the root directory in the Build Step` disabled for the frontend Vercel project.
 
 ## Docker
 

@@ -1,0 +1,59 @@
+Sneasler @ White Herb
+Ability: Unburden
+Level: 50
+EVs: 2 HP / 32 Atk / 32 Spe
+Adamant Nature
+- Close Combat
+- Dire Claw
+- Fake Out
+- Protect
+
+Garchomp @ Soft Sand
+Ability: Rough Skin
+Level: 50
+EVs: 18 HP / 32 Atk / 2 Def / 14 Spe
+Adamant Nature
+- Dragon Claw
+- Rock Slide
+- Protect
+- Stomping Tantrum
+
+Sinistcha @ Sitrus Berry
+Ability: Hospitality
+Level: 50
+EVs: 32 HP / 2 Def / 32 SpA
+Quiet Nature
+- Matcha Gotcha
+- Rage Powder
+- Trick Room
+- Life Dew
+
+Aerodactyl @ Focus Sash
+Ability: Unnerve
+Level: 50
+EVs: 32 HP / 2 SpD / 32 Spe
+Jolly Nature
+- Rock Slide
+- Protect
+- Dual Wingbeat
+- Tailwind
+
+Scizor-Mega @ Scizorite
+Ability: Technician
+Level: 50
+EVs: 31 HP / 30 Atk / 5 Spe
+Adamant Nature
+- Bullet Punch
+- Protect
+- Bug Bite
+- Swords Dance
+
+Milotic @ Leftovers
+Ability: Competitive
+Level: 50
+EVs: 32 HP / 16 Def / 10 SpA / 8 Spe
+Calm Nature
+- Scald
+- Protect
+- Icy Wind
+- Recover

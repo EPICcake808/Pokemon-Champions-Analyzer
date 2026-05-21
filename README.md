@@ -81,7 +81,7 @@ npm run dev
 
 If you want the Next.js app to use the HTTP analyzer service locally instead of the CLI fallback, set `POKEMON_ANALYZER_API_BASE_URL=http://127.0.0.1:8000` in `web/.env.local`.
 
-The frontend still reads curated example imports from the repository root, so it must be run from this repository. For a production-style sanity check, run:
+The frontend now bundles its curated example imports inside `web/examples/`, so the `web/` app can deploy as a standalone Next.js project. For a production-style sanity check, run:
 
 ```bash
 cd web
@@ -107,6 +107,7 @@ Recommended setup steps:
 2. Import the same GitHub repo again for the frontend project with Root Directory set to `web`.
 3. Set `POKEMON_ANALYZER_API_BASE_URL` in the frontend project to the deployed analyzer API URL.
 4. Set the frontend auth and database variables described below.
+5. Leave `Include files outside the root directory in the Build Step` disabled for the frontend project.
 
 The analyzer API project exposes these routes:
 

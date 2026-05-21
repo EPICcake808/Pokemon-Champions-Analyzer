@@ -4,11 +4,9 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { DEFAULT_REGULATION_ID } from "@/lib/python-analyzer";
-import { resolveRepositoryRoot } from "@/lib/runtime-paths";
 import type { ExampleTeam } from "@/lib/types";
 
-const REPO_ROOT = resolveRepositoryRoot();
-const EXAMPLES_DIR = path.join(REPO_ROOT, "examples");
+const EXAMPLES_DIR = path.join(process.cwd(), "examples");
 
 const FEATURED_EXAMPLES: Array<Omit<ExampleTeam, "teamText"> & { fileName: string }> = [
   {

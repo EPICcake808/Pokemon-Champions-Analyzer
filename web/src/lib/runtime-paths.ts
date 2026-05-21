@@ -17,7 +17,6 @@ export function resolveRepositoryRoot(): string {
     configuredRoot,
     currentWorkingDirectory,
     path.resolve(currentWorkingDirectory, ".."),
-    path.resolve(currentWorkingDirectory, "../.."),
   ]
     .filter((candidate): candidate is string => Boolean(candidate))
     .map((candidate) => path.resolve(candidate));
