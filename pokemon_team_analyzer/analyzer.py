@@ -863,13 +863,13 @@ def _normalized_member_stats(member: TeamMember) -> dict[str, int]:
 
 
 def _normalized_hp_stat(base_stat: int, ev: int, *, level: int) -> int:
-    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV + ev // 4) * level) // 100
-    return base_component + level + 10
+    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV) * level) // 100
+    return base_component + level + 10 + ev
 
 
 def _normalized_non_hp_stat(base_stat: int, ev: int, *, level: int, nature_multiplier: float) -> int:
-    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV + ev // 4) * level) // 100
-    return int((base_component + 5) * nature_multiplier)
+    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV) * level) // 100
+    return int((base_component + 5) * nature_multiplier) + ev
 
 
 def _nature_multiplier(nature: str | None, stat_name: str) -> float:
@@ -4716,11 +4716,11 @@ def _build_team_preview_watch_teams(
 ) -> list[str]:
     watch_teams: list[str] = []
     for mode_name in unfavorable_modes[:3]:
-        rendered = f"{_render_mode_label(mode_name)} teams"
+        rendered = _render_team_preview_watch_team_note(mode_name, is_mode=True)
         if rendered not in watch_teams:
             watch_teams.append(rendered)
     for matchup_name in unfavorable_matchups[:2]:
-        rendered = f"{matchup_name.replace('_', ' ').title()} teams"
+        rendered = _render_team_preview_watch_team_note(matchup_name, is_mode=False)
         if rendered not in watch_teams:
             watch_teams.append(rendered)
     return watch_teams
@@ -4736,6 +4736,7 @@ def _build_team_preview_watch_pokemon(
         for species_token in _species_tokens_for_member(member)
     }
     watch_pokemon: list[str] = []
+    seen_species_tokens: set[str] = set()
     for mode_name in unfavorable_modes[:3]:
         snapshot = TOURNAMENT_MODE_SNAPSHOTS.get(mode_name)
         if snapshot is None:
@@ -4745,14 +4746,101 @@ def _build_team_preview_watch_pokemon(
             key=lambda item: (-item[1], item[0]),
         )
         for species_token, _ in ranked_species:
-            if species_token in own_species_tokens:
+            if species_token in own_species_tokens or species_token in seen_species_tokens:
                 continue
-            rendered = _render_species_token(species_token)
+            rendered = _render_team_preview_watch_pokemon_note(species_token, mode_name)
             if rendered not in watch_pokemon:
                 watch_pokemon.append(rendered)
+                seen_species_tokens.add(species_token)
             if len(watch_pokemon) >= 6:
                 return watch_pokemon
     return watch_pokemon
+
+
+def _render_team_preview_watch_team_note(shell_name: str, *, is_mode: bool) -> str:
+    normalized_name = shell_name.strip().lower()
+    rendered_name = _render_mode_label(shell_name) if is_mode else shell_name.replace("_", " ").title()
+    weather_prefix = next(
+        (prefix for prefix in ("rain", "sun", "sand", "snow") if normalized_name.startswith(prefix)),
+        None,
+    )
+
+    if is_mode:
+        if "tailroom" in normalized_name or normalized_name in {"dual_mode", "semiroom"}:
+            return (
+                f"{rendered_name} teams can switch between fast and slow plans midgame, so do not expose your cleaner "
+                "until you know which speed button they are actually leaning on."
+            )
+        if weather_prefix and "tailwind" in normalized_name:
+            return (
+                f"{rendered_name} teams stack speed and field pressure at the same time, so one passive turn can lose "
+                "both tempo and positioning at once."
+            )
+        if weather_prefix and "room" in normalized_name:
+            return (
+                f"{rendered_name} teams blend weather pressure with a slower board, so preview has to answer both the "
+                "setup turn and the boosted attacker behind it."
+            )
+        if "tailwind" in normalized_name:
+            return (
+                f"{rendered_name} teams try to win the first boosted speed cycle, so plan how you will spend that turn "
+                "before preview ends."
+            )
+        if "room" in normalized_name:
+            return (
+                f"{rendered_name} teams want their slow attackers moving first, so treat the setup turn and the first "
+                "room turn as the real danger window."
+            )
+        if weather_prefix:
+            return (
+                f"{rendered_name} teams gain extra damage or bulk from weather turns, so count those turns carefully "
+                "instead of only focusing on raw type matchups."
+            )
+        if normalized_name.endswith("terrain"):
+            return (
+                f"{rendered_name} teams get value from field turns and positioning, so identify which attacker the "
+                "terrain is meant to boost or protect before you choose your four."
+            )
+        return (
+            f"{rendered_name} teams usually pressure a very specific board state, so avoid autopiloting preview into the "
+            "same four without checking how their shell actually wins."
+        )
+
+    if normalized_name == "hyper_offense":
+        return (
+            "Hyper Offense teams can punish passive openers immediately, so your first two turns need to trade tempo "
+            "rather than just gather information."
+        )
+    if normalized_name == "balance":
+        return (
+            "Balance teams usually force repeated small trades, so preserve your control pieces until you know which "
+            "exchange actually opens your win condition."
+        )
+    if normalized_name in {"stall", "semi_stall"}:
+        return (
+            f"{rendered_name} teams try to stretch the game and tax your support tools, so save your setup or cleaner "
+            "route for the sequence that actually breaks through."
+        )
+    if normalized_name == "bulky_offense":
+        return (
+            "Bulky Offense teams can survive one wrong trade and hit back hard, so do not assume a small early lead is "
+            "enough to snowball safely."
+        )
+    if normalized_name == "trick_room":
+        return (
+            "Trick Room teams punish teams that only function while moving first, so preview should already know which "
+            "of your four can survive the slow turns."
+        )
+    return (
+        f"{rendered_name} teams usually ask whether your default plan still works in a longer game, so make preview "
+        "answer that question before you lock your four."
+    )
+
+
+def _render_team_preview_watch_pokemon_note(species_token: str, mode_name: str) -> str:
+    species_name = _render_species_token(species_token)
+    mode_label = _render_mode_label(mode_name)
+    return f"{species_name} ({mode_label})" if mode_label else species_name
 
 
 def _build_team_preview_strategy_notes(
@@ -4770,7 +4858,8 @@ def _build_team_preview_strategy_notes(
 
     if primary_leads and primary_back:
         notes.append(
-            f"Default to {_render_series(primary_leads)} in front with {_render_series(primary_back)} in back unless preview gives you a clear reason to pivot off that line."
+            f"Default to {_render_series(primary_leads)} in front with {_render_series(primary_back)} in back unless preview gives you a clear reason to pivot off that line. "
+            "That opener keeps your safest first-turn tempo button in front while saving the back pair that usually closes once the board is stable."
         )
 
     primary_win_condition = team_win_condition_labels[0] if team_win_condition_labels else ""
@@ -4796,7 +4885,7 @@ def _build_team_preview_strategy_notes(
         )
     if setter_candidates:
         notes.append(
-            f"Try to keep {_render_series(setter_candidates[:2])} healthy until the board is ready. Those are your cleanest buttons for claiming speed or field control."
+            f"Try to keep {_render_series(setter_candidates[:2])} healthy until the board is ready. Those are your cleanest buttons for claiming speed or field control, so avoid cashing them in for small early chip unless that trade immediately opens your endgame."
         )
 
     if team_win_condition_labels:
@@ -4804,25 +4893,25 @@ def _build_team_preview_strategy_notes(
             closers = _dedupe_preserving_order(primary_back + role_members["setup_sweeper"] + role_members["cleaner"])
             if closers:
                 notes.append(
-                    f"Your clearest endgame is still a setup or cleaner finish, so avoid trading {_render_series(closers[:2])} too early just to win turn two damage."
+                    f"Your clearest endgame is still a setup or cleaner finish, so avoid trading {_render_series(closers[:2])} too early just to win turn two damage. If they disappear before the board is stable, the team often runs out of closing power even after a good start."
                 )
         elif primary_win_condition == "screens_offense":
             screen_members = role_members["screen_setter"]
             if screen_members:
                 notes.append(
-                    f"Use {_render_series(screen_members[:1])} to make the first two turns safer, then hand the game to your setup or cleaner pieces rather than overextending with support."
+                    f"Use {_render_series(screen_members[:1])} to make the first two turns safer, then hand the game to your setup or cleaner pieces rather than overextending with support. The screen turn matters most when it buys two attacks or a setup window, not when it only patches a bad lead for one exchange."
                 )
         elif primary_win_condition == "perish_trap":
             trap_core = _dedupe_preserving_order(role_members["trapper"] + role_members["redirector"] + role_members["bulky_support"])
             if trap_core:
                 notes.append(
-                    f"Perish Trap games are usually won by keeping {_render_series(trap_core[:2])} on the board long enough to lock one sequence, not by chasing every early knockout."
+                    f"Perish Trap games are usually won by keeping {_render_series(trap_core[:2])} on the board long enough to lock one sequence, not by chasing every early knockout. Most losses with this shell come from breaking your own trap sequence too early, not from missing a random knockout."
                 )
         elif primary_win_condition == "psyspam":
             terrain_core = _dedupe_preserving_order(role_members["terrain_setter"] + role_members["special_sweeper"] + role_members["trick_room_setter"])
             if terrain_core:
                 notes.append(
-                    f"Protect the terrain turns for {_render_series(terrain_core[:2])}; once Psychic pressure is online, position to trade from advantage instead of resetting the board."
+                    f"Protect the terrain turns for {_render_series(terrain_core[:2])}; once Psychic pressure is online, position to trade from advantage instead of resetting the board. That usually means preserving the terrain piece or the attack slot that actually cashes the Psychic turns into a knockout."
                 )
 
     if len(bring_plans) > 1:
@@ -4830,13 +4919,13 @@ def _build_team_preview_strategy_notes(
         alternate_leads = cast(list[str], alternate_plan.get("leads", []))
         if alternate_leads:
             notes.append(
-                f"If preview has strong answers to your default opener, pivot early into {_render_series(alternate_leads)} rather than forcing the same four every round."
+                f"If preview has strong answers to your default opener, pivot early into {_render_series(alternate_leads)} rather than forcing the same four every round. That swap is usually better than making your best cleaner defend from turn one."
             )
 
     if not notes:
         fallback_members = [member.pokemon_set.display_name for member in members[:2]]
         notes.append(
-            f"Identify whether {_render_series(fallback_members)} or your backline is meant to win the long game before team preview ends, then bring with that route in mind."
+            f"Identify whether {_render_series(fallback_members)} or your backline is meant to win the long game before team preview ends, then bring with that route in mind. Beginners usually make this harder by choosing four good Pokemon instead of choosing the four that win the same endgame."
         )
     return notes
 
@@ -4856,37 +4945,37 @@ def _build_team_preview_counterplay_notes(
     if any("tailwind" in mode_name for mode_name in unfavorable_modes):
         if role_members["trick_room_setter"]:
             notes.append(
-                f"Against opposing Tailwind shells, keep {_render_series(role_members['trick_room_setter'][:2])} available as a reverse-speed punish instead of racing them every turn."
+                f"Against opposing Tailwind shells, keep {_render_series(role_members['trick_room_setter'][:2])} available as a reverse-speed punish instead of racing them every turn. Your goal is not to outspeed them every turn; it is to make their first Tailwind cycle awkward enough that your own mode can take over."
             )
         elif role_members["speed_control"] or role_members["fake_out_support"]:
             tools = _dedupe_preserving_order(role_members["speed_control"] + role_members["fake_out_support"])
             notes.append(
-                f"Against opposing Tailwind shells, preserve {_render_series(tools[:2])} so the first fast turn cycle does not force your cleaner in too early."
+                f"Against opposing Tailwind shells, preserve {_render_series(tools[:2])} so the first fast turn cycle does not force your cleaner in too early. Use those turns to stall, Fake Out, or force Protects rather than offering a straight damage race."
             )
         elif utility_role_counts["protection"] >= 2:
             notes.append(
-                "Against opposing Tailwind shells, trade Protect turns and positioning first instead of trying to win the first damage race outright."
+                "Against opposing Tailwind shells, trade Protect turns and positioning first instead of trying to win the first damage race outright. If you burn their first boosted turn safely, their speed advantage often expires before the real damage exchange starts."
             )
 
     if any("room" in mode_name for mode_name in unfavorable_modes) or "trick_room" in unfavorable_matchups:
         setup_contesters = _dedupe_preserving_order(role_members["fake_out_support"] + role_members["trick_room_setter"] + role_members["redirector"])
         if setup_contesters:
             notes.append(
-                f"Into Trick Room preview, lean on {_render_series(setup_contesters[:2])} to either contest the setup turn or make the first room turn low-impact."
+                f"Into Trick Room preview, lean on {_render_series(setup_contesters[:2])} to either contest the setup turn or make the first room turn low-impact. Beginners often lose this matchup by aiming only at the sweeper; making the setup turn or first room turn low-value is usually enough."
             )
         else:
             notes.append(
-                "Into Trick Room preview, avoid bringing four frail fast attackers at once. Keep at least one bulkier or slower member that can survive the room turns."
+                "Into Trick Room preview, avoid bringing four frail fast attackers at once. Keep at least one bulkier or slower member that can survive the room turns, because that slot is often worth more than a fourth attacker that only functions while Room is down."
             )
 
     if any(mode_name.startswith(("rain", "sun", "sand", "snow")) for mode_name in unfavorable_modes):
         if role_members["weather_setter"]:
             notes.append(
-                f"Against weather teams, preserve {_render_series(role_members['weather_setter'][:2])} so you can reset the field instead of fighting through every boosted turn."
+                f"Against weather teams, preserve {_render_series(role_members['weather_setter'][:2])} so you can reset the field instead of fighting through every boosted turn. One well-timed weather reset often matters more than winning a single damage trade while their boost is still active."
             )
         else:
             notes.append(
-                "Against weather teams, pressure the setter early and use your protection turns to shorten the window where their boosted attackers get clean swings."
+                "Against weather teams, pressure the setter early and use your protection turns to shorten the window where their boosted attackers get clean swings. The point is to shrink the boosted window, not to win every exchange while weather is active."
             )
 
     if team_win_condition_labels and team_win_condition_labels[0] == "setup_sweep" and (
@@ -4902,23 +4991,23 @@ def _build_team_preview_counterplay_notes(
             + role_members["pivot"]
         )
         notes.append(
-            f"If opponents over-respect your setup line, use {_render_series(setup_helpers[:2])} to buy the setup turn later instead of forcing it immediately."
+            f"If opponents over-respect your setup line, use {_render_series(setup_helpers[:2])} to buy the setup turn later instead of forcing it immediately. That keeps the opponent guessing and forces them to cover both the immediate damage turn and the delayed setup turn."
         )
 
     if top_defensive_weaknesses:
         rendered_types = ", ".join(type_name.replace("_", " ").title() for type_name in top_defensive_weaknesses[:2])
         notes.append(
-            f"If preview is built around {rendered_types} pressure, do not bring four members that all amplify that axis unless your mode advantage is overwhelming."
+            f"If preview is built around {rendered_types} pressure, do not bring four members that all amplify that axis unless your mode advantage is overwhelming. In practice, at least one of your four should resist, pivot around, or disrupt that lane instead of simply racing it."
         )
 
     if not notes:
         if pokemon_role_counts["bulky_support"] + pokemon_role_counts["redirector"] >= 1:
             notes.append(
-                "When the matchup looks rough, lean on your support turns first and make the opponent prove they can break through before you expose the cleaner."
+                "When the matchup looks rough, lean on your support turns first and make the opponent prove they can break through before you expose the cleaner. If they have to spend turns cracking support, you usually buy more chances to find the safer win path."
             )
         else:
             notes.append(
-                "When preview looks bad, favor the line that keeps your speed-control and cleaner options alive longest instead of committing to the most explosive four."
+                "When preview looks bad, favor the line that keeps your speed-control and cleaner options alive longest instead of committing to the most explosive four. The flashiest four is often wrong if it burns your only way back into the speed war."
             )
     return notes
 
@@ -5098,10 +5187,10 @@ def summarize_team_preview(team_preview: dict[str, object]) -> list[str]:
             if reason:
                 lines.append(f"    {member_name}: {reason}")
 
-    if watch_teams:
-        lines.append("  Watch teams: " + ", ".join(watch_teams))
-    if watch_pokemon:
-        lines.append("  Watch Pokemon: " + ", ".join(watch_pokemon))
+    for note in watch_teams:
+        lines.append(f"  Watch team: {note}")
+    for note in watch_pokemon:
+        lines.append(f"  Watch Pokemon: {note}")
     for note in strategy_notes:
         lines.append(f"  Strategy: {note}")
     for note in counterplay_notes:

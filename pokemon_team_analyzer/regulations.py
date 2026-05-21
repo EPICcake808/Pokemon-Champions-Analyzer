@@ -185,6 +185,10 @@ MEGA_TO_BASE_KEYS = {
     mega_name: MEGA_STONE_TO_BASE_KEYS[stone_name]
     for stone_name, mega_name in MEGA_STONE_TO_MEGA_NAME.items()
 }
+MEGA_TO_REQUIRED_ITEM_KEYS = {
+    mega_name: stone_name
+    for stone_name, mega_name in MEGA_STONE_TO_MEGA_NAME.items()
+}
 
 
 @dataclass(frozen=True)
@@ -304,6 +308,13 @@ class RegulationEntry:
             payload["eligible_species"] = list(self.eligible_species)
             payload["allowed_held_items"] = list(self.allowed_held_items)
             payload["allowed_mega_evolutions"] = list(self.allowed_mega_evolutions)
+            payload["required_items_by_mega_species"] = {
+                OFFICIAL_MEGA_BY_KEY[mega_name]: OFFICIAL_ITEM_BY_KEY[required_item_key]
+                for mega_name, required_item_key in sorted(MEGA_TO_REQUIRED_ITEM_KEYS.items())
+                if mega_name in OFFICIAL_MEGA_BY_KEY
+                and required_item_key in OFFICIAL_ITEM_BY_KEY
+                and OFFICIAL_MEGA_BY_KEY[mega_name] in self.allowed_mega_evolutions
+            }
         if include_teams:
             payload["teams"] = [team.to_dict(include_team_text=include_team_text) for team in self.teams]
         return payload
@@ -373,6 +384,18 @@ def resolve_regulation_species_name(
 
 def resolve_builder_option_source_species_name(species_name: str) -> str:
     return _base_species_from_mega_species(species_name) or species_name
+
+
+def resolve_required_item_for_species(species_name: str) -> str | None:
+    canonical_mega_name = _canonical_mega_name(species_name)
+    if canonical_mega_name is None:
+        return None
+
+    required_item_key = MEGA_TO_REQUIRED_ITEM_KEYS.get(canonical_mega_name)
+    if required_item_key is None:
+        return None
+
+    return OFFICIAL_ITEM_BY_KEY.get(required_item_key, required_item_key)
 
 
 def regulation_catalog_as_dict(

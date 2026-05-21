@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 
 CHAMPIONS_FIXED_IV = 31
+CHAMPIONS_TOTAL_SPS = 66
 
 
 @dataclass(frozen=True)
@@ -30,12 +31,12 @@ class RegulationSpeedBenchmarkCatalog:
     groups: tuple[SpeedBenchmarkGroup, ...]
 
 
-def _level_50_speed(base_speed: int, *, ev: int = 252, positive_nature: bool = True) -> int:
-    base_component = ((2 * base_speed + CHAMPIONS_FIXED_IV + ev // 4) * 50) // 100
+def _level_50_speed(base_speed: int, *, ev: int = CHAMPIONS_TOTAL_SPS, positive_nature: bool = True) -> int:
+    base_component = ((2 * base_speed + CHAMPIONS_FIXED_IV) * 50) // 100
     stat = base_component + 5
     if positive_nature:
-        return stat * 11 // 10
-    return stat
+        return stat * 11 // 10 + ev
+    return stat + ev
 
 
 def _choice_scarf_speed(speed: int) -> int:

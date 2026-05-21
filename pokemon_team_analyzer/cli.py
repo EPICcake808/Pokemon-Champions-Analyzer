@@ -26,6 +26,7 @@ from .regulations import (
     IllegalTeamError,
     get_regulation,
     list_regulations,
+    resolve_required_item_for_species,
     resolve_builder_option_source_species_name,
     resolve_regulation_species_name,
 )
@@ -135,10 +136,21 @@ def _builder_species_options_as_dict(species_name: str, regulation_id: str) -> d
 
     provider = CachedPokeApiClient()
     move_source_species = resolve_builder_option_source_species_name(canonical_species)
+    species_data = provider.get_species(canonical_species)
     return {
         "species": canonical_species,
+        "types": list(species_data.types),
         "abilities": list(provider.get_species_abilities(canonical_species)),
         "moves": list(get_allowed_moves_for_species(move_source_species)),
+        "base_stats": {
+            "hp": species_data.base_hp,
+            "attack": species_data.base_attack,
+            "defense": species_data.base_defense,
+            "special_attack": species_data.base_special_attack,
+            "special_defense": species_data.base_special_defense,
+            "speed": species_data.base_speed,
+        },
+        "required_item": resolve_required_item_for_species(canonical_species),
     }
 
 

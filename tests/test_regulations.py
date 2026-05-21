@@ -9,6 +9,7 @@ from unittest.mock import patch
 
 from pokemon_team_analyzer.analyzer import analyze_team_text
 from pokemon_team_analyzer.cli import main as cli_main
+from pokemon_team_analyzer.data import pokemon_name_candidates
 from pokemon_team_analyzer.models import MoveData, MoveStatChange, SpeciesData
 from pokemon_team_analyzer.regulations import (
     DEFAULT_REGULATION_ID,
@@ -456,6 +457,17 @@ class RegulationTests(unittest.TestCase):
         _mock_get_allowed_moves: object,
     ) -> None:
         mock_provider = mock_provider_factory.return_value
+        mock_provider.get_species.return_value = SpeciesData(
+            "Mega Scizor",
+            "scizor-mega",
+            ("bug", "steel"),
+            70,
+            150,
+            140,
+            65,
+            100,
+            75,
+        )
         mock_provider.get_species_abilities.return_value = ("technician",)
         stdout = StringIO()
 
@@ -466,8 +478,47 @@ class RegulationTests(unittest.TestCase):
 
         self.assertEqual(exit_code, 0)
         self.assertEqual(payload["species"], "Mega Scizor")
+        self.assertEqual(payload["types"], ["bug", "steel"])
         self.assertEqual(payload["abilities"], ["technician"])
         self.assertIn("bullet-punch", payload["moves"])
+        self.assertEqual(payload["required_item"], "Scizorite")
+        self.assertEqual(payload["base_stats"]["attack"], 150)
+
+    @patch("pokemon_team_analyzer.cli.CachedPokeApiClient")
+    def test_cli_builder_species_keeps_mega_specific_stats_for_custom_mega(
+        self,
+        mock_provider_factory: object,
+    ) -> None:
+        mock_provider = mock_provider_factory.return_value
+        mock_provider.get_species.return_value = SpeciesData(
+            "Mega Chimecho",
+            "mega-chimecho",
+            ("psychic",),
+            75,
+            50,
+            110,
+            135,
+            120,
+            65,
+        )
+        mock_provider.get_species_abilities.return_value = ("levitate",)
+        stdout = StringIO()
+
+        with patch(
+            "pokemon_team_analyzer.cli.get_allowed_moves_for_species",
+            side_effect=lambda species_name: ("heal-bell", "protect") if species_name == "Chimecho" else (),
+        ):
+            with redirect_stdout(stdout):
+                exit_code = cli_main(["--builder-species-json", "Mega Chimecho", "--regulation", DEFAULT_REGULATION_ID])
+
+        payload = json.loads(stdout.getvalue())
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["species"], "Mega Chimecho")
+        self.assertEqual(payload["types"], ["psychic"])
+        self.assertEqual(payload["base_stats"]["defense"], 110)
+        self.assertEqual(payload["base_stats"]["special_attack"], 135)
+        mock_provider.get_species.assert_called_once_with("Mega Chimecho")
 
     def test_regulation_m_a_metadata_tracks_official_sources(self) -> None:
         regulation = get_regulation(DEFAULT_REGULATION_ID)
@@ -480,6 +531,21 @@ class RegulationTests(unittest.TestCase):
         self.assertGreater(len(regulation.allowed_held_items), 100)
         self.assertEqual(len(regulation.allowed_mega_evolutions), 59)
         self.assertEqual(len(regulation.teams), 0)
+
+    def test_pokeapi_name_candidates_cover_legal_forms(self) -> None:
+        self.assertEqual(pokemon_name_candidates("Raichu (Alolan Form)")[0], "raichu-alola")
+        self.assertEqual(pokemon_name_candidates("Arcanine (Hisuian Form)")[0], "arcanine-hisui")
+        self.assertEqual(pokemon_name_candidates("Rotom (Heat Rotom)")[0], "rotom-heat")
+        self.assertEqual(pokemon_name_candidates("Gourgeist (Jumbo Variety)")[0], "gourgeist-super")
+        self.assertEqual(pokemon_name_candidates("Lycanroc (Dusk Form)")[0], "lycanroc-dusk")
+        self.assertEqual(pokemon_name_candidates("Aegislash")[0], "aegislash-shield")
+        self.assertEqual(pokemon_name_candidates("Meowstic (Female)")[0], "meowstic-female")
+        self.assertEqual(pokemon_name_candidates("Maushold")[0], "maushold-family-of-four")
+        self.assertEqual(pokemon_name_candidates("Palafin")[0], "palafin-zero")
+        self.assertEqual(
+            pokemon_name_candidates("Tauros (Paldean Form (Combat Breed))")[0],
+            "tauros-paldea-combat-breed",
+        )
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_validate_team_legality_accepts_legal_m_a_team(self, _mock_get_allowed_moves: object) -> None:

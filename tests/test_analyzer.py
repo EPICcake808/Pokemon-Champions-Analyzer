@@ -4,7 +4,13 @@ from pathlib import Path
 import unittest
 
 from pokemon_team_analyzer.champions_m_a_meta import MODE_LABEL_ORDER
-from pokemon_team_analyzer.analyzer import _render_mode_label, analyze_team_text, classify_utility_roles
+from pokemon_team_analyzer.analyzer import (
+    _normalized_hp_stat,
+    _normalized_non_hp_stat,
+    _render_mode_label,
+    analyze_team_text,
+    classify_utility_roles,
+)
 from pokemon_team_analyzer.cli import render_text_report
 from pokemon_team_analyzer.models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
@@ -1056,6 +1062,13 @@ class FakeMetadataProvider:
 
 
 class AnalyzerTests(unittest.TestCase):
+    def test_champions_stat_normalizers_add_one_per_sp(self) -> None:
+        self.assertEqual(_normalized_hp_stat(70, 0, level=50), 145)
+        self.assertEqual(_normalized_hp_stat(70, 1, level=50), 146)
+        self.assertEqual(_normalized_non_hp_stat(112, 0, level=50, nature_multiplier=1.0), 132)
+        self.assertEqual(_normalized_non_hp_stat(112, 2, level=50, nature_multiplier=1.0), 134)
+        self.assertEqual(_normalized_non_hp_stat(88, 32, level=50, nature_multiplier=1.1), 150)
+
     def test_parser_reads_six_sets(self) -> None:
         team = parse_showdown_team(SAMPLE_TEAM)
         self.assertEqual(len(team), 6)
@@ -1075,25 +1088,25 @@ class AnalyzerTests(unittest.TestCase):
 
     def test_analysis_builds_expected_summary_and_vector(self) -> None:
         analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
-
         self.assertEqual(analysis.team_size, 6)
         self.assertEqual(analysis.typing_counts["ghost"], 3)
         self.assertEqual(analysis.typing_counts["steel"], 2)
         self.assertEqual(analysis.offensive_coverage["water"], 2)
         self.assertEqual(analysis.offensive_coverage["fighting"], 1)
         self.assertEqual(analysis.average_base_speed, 87.5)
-        self.assertAlmostEqual(analysis.average_battle_speed, 110.33, places=2)
-        self.assertAlmostEqual(analysis.median_battle_speed, 108.5, places=2)
-        self.assertAlmostEqual(analysis.speed_standard_deviation, 34.26, places=2)
+        self.assertAlmostEqual(analysis.average_battle_speed, 120.33, places=2)
+        self.assertAlmostEqual(analysis.median_battle_speed, 121.0, places=2)
+        self.assertAlmostEqual(analysis.speed_standard_deviation, 43.59, places=2)
         self.assertEqual(analysis.team_speed_tier, "mixed")
         self.assertEqual(analysis.fastest_pokemon, ("Aerodactyl", 130))
         self.assertEqual(analysis.slowest_pokemon, ("Sableye", 50))
-        self.assertEqual(analysis.fastest_battle_speed_pokemon, ("Aerodactyl", 169))
+        self.assertEqual(analysis.fastest_battle_speed_pokemon, ("Aerodactyl", 197))
         self.assertEqual(analysis.slowest_battle_speed_pokemon, ("Sableye", 63))
-        self.assertEqual(analysis.member_battle_speeds["Lucario-Mega"], 132)
+        self.assertEqual(analysis.member_battle_speeds["Lucario-Mega"], 134)
         self.assertEqual(analysis.member_battle_speeds["Sinistcha"], 81)
         self.assertEqual(analysis.member_speed_tiers["Sableye"], "trick_room_slow")
-        self.assertEqual(analysis.member_speed_tiers["Aerodactyl"], "very_fast")
+        self.assertEqual(analysis.member_speed_tiers["Aerodactyl"], "elite_fast")
+
         self.assertEqual(
             analysis.speed_benchmark_catalog,
             {
@@ -1121,23 +1134,20 @@ class AnalyzerTests(unittest.TestCase):
             benchmark["slug"]: benchmark["status"]
             for benchmark in analysis.speed_benchmark_groups["trick_room"]["benchmarks"]
         }
-        self.assertEqual(natural_statuses["jolly_garchomp"], "tie")
+        self.assertEqual(natural_statuses["jolly_garchomp"], "miss")
         self.assertEqual(natural_statuses["timid_whimsicott"], "miss")
-        self.assertEqual(tailwind_statuses["tailwind_garchomp"], "tie")
+        self.assertEqual(tailwind_statuses["tailwind_garchomp"], "miss")
         self.assertEqual(tailwind_statuses["tailwind_sneasler"], "miss")
         self.assertEqual(choice_scarf_statuses["choice_scarf_basculegion"], "miss")
         self.assertEqual(trick_room_statuses["min_speed_torkoal"], "miss")
-        self.assertEqual(
-            [tag["benchmark_slug"] for tag in analysis.member_speed_benchmark_tags["Aerodactyl"]],
-            ["jolly_garchomp", "tailwind_garchomp"],
-        )
+        self.assertEqual([tag["benchmark_slug"] for tag in analysis.member_speed_benchmark_tags["Aerodactyl"]], [])
         self.assertEqual(analysis.member_speed_benchmark_tags["Basculegion (M)"], [])
         self.assertGreaterEqual(len(analysis.speed_benchmark_notes), 6)
         self.assertTrue(any(note.startswith("Team speed shape:") for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("fastest unboosted line at 169" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("ties Jolly Garchomp (169)" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("Tailwind Jolly Sneasler at 378" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("below Choice Scarf Jolly Basculegion (214)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("fastest unboosted line at 197" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("below Jolly Garchomp (200)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("Tailwind line at 394" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("below Choice Scarf Jolly Basculegion (259)" in note for note in analysis.speed_benchmark_notes))
         self.assertIn(
             "Trick Room underspeed: the team has no Trick Room setter, so it cannot create its own slower-first mode.",
             analysis.speed_benchmark_notes,
@@ -1149,10 +1159,10 @@ class AnalyzerTests(unittest.TestCase):
             {
                 "trick_room_slow": 1,
                 "slow": 1,
-                "midrange": 2,
-                "fast": 1,
-                "very_fast": 1,
-                "elite_fast": 0,
+                "midrange": 1,
+                "fast": 2,
+                "very_fast": 0,
+                "elite_fast": 1,
             },
         )
         self.assertEqual(analysis.speed_tier_members["trick_room_slow"], ["Sableye"])
@@ -1177,8 +1187,8 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(set(analysis.team_win_condition_scores), set(WIN_CONDITION_PACKAGE_ORDER))
         self.assertTrue(analysis.team_mode_labels)
         self.assertTrue(analysis.team_mode_packages)
-        self.assertEqual(analysis.member_stats["Lucario-Mega"]["defense"], 123)
-        self.assertEqual(analysis.member_stats["Basculegion (M)"]["speed"], 112)
+        self.assertEqual(analysis.member_stats["Lucario-Mega"]["defense"], 150)
+        self.assertEqual(analysis.member_stats["Basculegion (M)"]["speed"], 139)
         self.assertEqual(
             {context["slug"] for context in analysis.member_speed_contexts["Basculegion (M)"]},
             {"choice_scarf", "tailwind", "tailwind_choice_scarf"},
@@ -1455,8 +1465,8 @@ class AnalyzerTests(unittest.TestCase):
             context["slug"]: context["speed"]
             for context in analysis.member_speed_contexts["Sneasler"]
         }
-        self.assertEqual(sneasler_contexts["unburden"], 310)
-        self.assertEqual(sneasler_contexts["tailwind_unburden"], 620)
+        self.assertEqual(sneasler_contexts["unburden"], 320)
+        self.assertEqual(sneasler_contexts["tailwind_unburden"], 640)
 
     def test_analysis_predicts_matchups_and_team_difficulty(self) -> None:
         provider = FakeMetadataProvider()
@@ -1605,6 +1615,10 @@ class AnalyzerTests(unittest.TestCase):
         self.assertTrue(analysis.team_preview_watch_pokemon)
         self.assertTrue(analysis.team_preview_strategy_notes)
         self.assertTrue(analysis.team_preview_counterplay_notes)
+        self.assertTrue(any(" so " in note for note in analysis.team_preview_watch_teams))
+        self.assertTrue(any("(" in note and ")" in note for note in analysis.team_preview_watch_pokemon))
+        self.assertTrue(any("That opener keeps" in note for note in analysis.team_preview_strategy_notes))
+        self.assertTrue(any("In practice" in note for note in analysis.team_preview_counterplay_notes))
 
         primary_plan = analysis.team_preview_plans[0]
         self.assertIn("Room", primary_plan["label"])
@@ -1771,7 +1785,7 @@ class AnalyzerTests(unittest.TestCase):
         self.assertIn("Team mode labels:", report)
         self.assertIn("Label:", report)
         self.assertIn("Builder guidance:", report)
-        self.assertIn("Watch teams:", report)
+        self.assertIn("Watch team:", report)
         self.assertIn("Ground: best 1.0x, 0 super-effective lines, 9 neutral-or-better lines", report)
         self.assertIn("Hazard Removal: 1 (Defog)", report)
         self.assertIn("Setup Sweeper: 1 (Volcarona)", report)
