@@ -11,11 +11,12 @@ from urllib.request import Request, urlopen
 
 import certifi
 
+from .cache_paths import resolve_cache_path
 from .models import MoveData, MoveStatChange, SpeciesData
 
 
 API_BASE = "https://pokeapi.co/api/v2"
-DEFAULT_CACHE_PATH = Path.home() / ".cache" / "pokemon_team_analyzer" / "pokeapi_cache.json"
+DEFAULT_CACHE_PATH = resolve_cache_path("pokeapi_cache.json")
 
 SPECIES_ALIAS_OVERRIDES = {
     "aegislash": "aegislash-shield",
@@ -190,11 +191,19 @@ class CachedPokeApiClient:
     def _load_cache(self) -> dict[str, dict[str, dict[str, Any]]]:
         if not self.cache_path.exists():
             return {"pokemon": {}, "move": {}}
-        return json.loads(self.cache_path.read_text(encoding="utf-8"))
+
+        try:
+            return json.loads(self.cache_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return {"pokemon": {}, "move": {}}
 
     def _save_cache(self) -> None:
-        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-        self.cache_path.write_text(json.dumps(self._cache, indent=2, sort_keys=True), encoding="utf-8")
+        try:
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self.cache_path.write_text(json.dumps(self._cache, indent=2, sort_keys=True), encoding="utf-8")
+        except OSError:
+            # Keep the request alive even if the runtime filesystem is read-only.
+            return
 
 
 def pokemon_name_candidates(species_name: str) -> list[str]:

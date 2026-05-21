@@ -11,10 +11,11 @@ from urllib.request import Request, urlopen
 import certifi
 from bs4 import BeautifulSoup
 
+from .cache_paths import resolve_cache_path
 from .champions_m_a_data import ELIGIBLE_SPECIES
 
 
-MOVE_CACHE_PATH = Path.home() / ".cache" / "pokemon_team_analyzer" / "champions_m_a_moves_cache.json"
+MOVE_CACHE_PATH = resolve_cache_path("champions_m_a_moves_cache.json")
 POKEDEX_BASE_URL = "https://www.serebii.net/pokedex-champions"
 USER_AGENT = "Mozilla/5.0"
 
@@ -73,7 +74,7 @@ class CachedChampionsMoveListProvider:
 
         try:
             raw = json.loads(self.cache_path.read_text(encoding="utf-8"))
-        except json.JSONDecodeError:
+        except (OSError, json.JSONDecodeError):
             return {}
 
         if not isinstance(raw, dict):
@@ -86,8 +87,12 @@ class CachedChampionsMoveListProvider:
         return cache
 
     def _save_cache(self) -> None:
-        self.cache_path.parent.mkdir(parents=True, exist_ok=True)
-        self.cache_path.write_text(json.dumps(self._cache, indent=2, sort_keys=True), encoding="utf-8")
+        try:
+            self.cache_path.parent.mkdir(parents=True, exist_ok=True)
+            self.cache_path.write_text(json.dumps(self._cache, indent=2, sort_keys=True), encoding="utf-8")
+        except OSError:
+            # Keep the request alive even if the runtime filesystem is read-only.
+            return
 
 
 _DEFAULT_MOVE_PROVIDER = CachedChampionsMoveListProvider()
