@@ -1,8 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "functions": {
-    "api/index.py": {
-      "excludeFiles": "{tests/**,web/**,examples/**,node_modules/**,.next/**,pokemon_team_analyzer.egg-info/**,__pycache__/**,**/*.pyc,.git/**,output.json,result.json,analyze_snippet.py,evaluate_variants.py,run_analysis.py,solution.py,task_run.py,task_script.py}"
-    }
-  }
-}

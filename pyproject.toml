@@ -15,3 +15,6 @@ pokemon-team-analyzer = "pokemon_team_analyzer.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["pokemon_team_analyzer*"]
+
+[tool.vercel]
+entrypoint = "pokemon_team_analyzer.api:app"
