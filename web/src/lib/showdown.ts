@@ -23,6 +23,8 @@ const SHOWDOWN_EV_LABEL_TO_STAT: Record<string, EffortValueStat> = {
   Spe: "speed",
 };
 
+const FORM_DESCRIPTOR_PATTERN = /^(?:M|F|Male|Female|Rotom|[A-Za-z-]+ Form|[A-Za-z-]+ Variety|[A-Za-z-]+ Rotom|Paldean Form \((?:Combat|Blaze|Aqua) Breed\)|(?:Combat|Blaze|Aqua) Breed)$/;
+
 export function parseShowdownTeam(teamText: string): ParsedTeamMember[] {
   if (!teamText.trim()) {
     return [];
@@ -107,15 +109,50 @@ function parseSpecies(speciesText: string): { displayName: string; species: stri
     return { displayName: stripped, species: stripped };
   }
 
-  const nicknameMatch = stripped.match(/^(.*) \((.*)\)$/);
-  if (nicknameMatch) {
+  const nicknameSplit = splitNicknameAndSpecies(stripped);
+  if (nicknameSplit && !looksLikeFormDescriptor(nicknameSplit.species)) {
     return {
-      displayName: nicknameMatch[1].trim(),
-      species: nicknameMatch[2].trim(),
+      displayName: nicknameSplit.nickname,
+      species: nicknameSplit.species,
     };
   }
 
   return { displayName: stripped, species: stripped };
+}
+
+function splitNicknameAndSpecies(speciesText: string): { nickname: string; species: string } | null {
+  if (!speciesText.endsWith(")")) {
+    return null;
+  }
+
+  let depth = 0;
+  for (let index = speciesText.length - 1; index >= 0; index -= 1) {
+    const character = speciesText[index];
+    if (character === ")") {
+      depth += 1;
+    } else if (character === "(") {
+      depth -= 1;
+      if (depth === 0) {
+        if (index === 0 || speciesText[index - 1] !== " ") {
+          return null;
+        }
+
+        const nickname = speciesText.slice(0, index - 1).trim();
+        const species = speciesText.slice(index + 1, -1).trim();
+        if (!nickname || !species) {
+          return null;
+        }
+
+        return { nickname, species };
+      }
+    }
+  }
+
+  return null;
+}
+
+function looksLikeFormDescriptor(speciesText: string): boolean {
+  return FORM_DESCRIPTOR_PATTERN.test(speciesText.trim());
 }
 
 function parseEvs(evsText: string): Partial<Record<EffortValueStat, number>> {

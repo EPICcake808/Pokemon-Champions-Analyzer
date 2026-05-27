@@ -1086,6 +1086,43 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(team[-1].item, "White Herb")
         self.assertEqual(team[-1].nature, "Adamant")
 
+    def test_parser_preserves_canonical_parenthesized_form_species(self) -> None:
+        team = parse_showdown_team(
+            """Zoroark (Hisuian Form) @ Focus Sash
+Ability: Illusion
+- Hyper Voice
+- Shadow Ball
+- Protect
+- Bitter Malice
+
+Tauros (Paldean Form (Aqua Breed)) @ Mystic Water
+Ability: Intimidate
+- Wave Crash
+- Close Combat
+- Protect
+- Aqua Jet
+"""
+        )
+
+        self.assertEqual(team[0].species, "Zoroark (Hisuian Form)")
+        self.assertIsNone(team[0].nickname)
+        self.assertEqual(team[1].species, "Tauros (Paldean Form (Aqua Breed))")
+        self.assertIsNone(team[1].nickname)
+
+    def test_parser_supports_nicknamed_parenthesized_form_species(self) -> None:
+        team = parse_showdown_team(
+            """Fox Ghost (Zoroark (Hisuian Form)) @ Focus Sash
+Ability: Illusion
+- Hyper Voice
+- Shadow Ball
+- Protect
+- Bitter Malice
+"""
+        )
+
+        self.assertEqual(team[0].nickname, "Fox Ghost")
+        self.assertEqual(team[0].species, "Zoroark (Hisuian Form)")
+
     def test_analysis_builds_expected_summary_and_vector(self) -> None:
         analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
         self.assertEqual(analysis.team_size, 6)

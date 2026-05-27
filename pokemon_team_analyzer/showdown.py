@@ -5,6 +5,11 @@ import re
 from .models import PokemonSet
 
 
+FORM_DESCRIPTOR_PATTERN = re.compile(
+    r"^(?:M|F|Male|Female|Rotom|[A-Za-z-]+ Form|[A-Za-z-]+ Variety|[A-Za-z-]+ Rotom|Paldean Form \((?:Combat|Blaze|Aqua) Breed\)|(?:Combat|Blaze|Aqua) Breed)$"
+)
+
+
 def parse_showdown_team(team_text: str) -> list[PokemonSet]:
     blocks = [block.strip() for block in re.split(r"\n\s*\n", team_text.strip()) if block.strip()]
     team: list[PokemonSet] = []
@@ -70,11 +75,40 @@ def _parse_species(species_text: str) -> tuple[str | None, str]:
     if stripped.endswith(" (M)") or stripped.endswith(" (F)"):
         return None, stripped
 
-    match = re.match(r"^(?P<nickname>.+) \((?P<species>.+)\)$", stripped)
-    if match:
-        return match.group("nickname").strip(), match.group("species").strip()
+    split = _split_nickname_and_species(stripped)
+    if split is not None:
+        nickname, species = split
+        if not _looks_like_form_descriptor(species):
+            return nickname, species
 
     return None, stripped
+
+
+def _split_nickname_and_species(species_text: str) -> tuple[str, str] | None:
+    if not species_text.endswith(")"):
+        return None
+
+    depth = 0
+    for index in range(len(species_text) - 1, -1, -1):
+        character = species_text[index]
+        if character == ")":
+            depth += 1
+        elif character == "(":
+            depth -= 1
+            if depth == 0:
+                if index == 0 or species_text[index - 1] != " ":
+                    return None
+                nickname = species_text[: index - 1].strip()
+                species = species_text[index + 1 : -1].strip()
+                if not nickname or not species:
+                    return None
+                return nickname, species
+
+    return None
+
+
+def _looks_like_form_descriptor(species_text: str) -> bool:
+    return FORM_DESCRIPTOR_PATTERN.fullmatch(species_text.strip()) is not None
 
 
 def _parse_evs(ev_text: str) -> dict[str, int]:
