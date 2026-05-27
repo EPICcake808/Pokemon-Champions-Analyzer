@@ -1901,7 +1901,8 @@
           "Glimmora",
           "Mega Charizard Y",
           "Garchomp",
-          "Basculegion"
+          "Basculegion",
+          "Kingambit"
         ],
         "popularity_score": 86.0,
         "result_score": 84.0,
@@ -1954,7 +1955,11 @@
         ],
         "key_pokemon": [
           "Mega Venusaur",
-          "Kommo O"
+          "Kommo O",
+          "Torkoal",
+          "Whimsicott",
+          "Sinistcha",
+          "Incineroar"
         ],
         "popularity_score": 73.0,
         "result_score": 91.0,
@@ -1979,7 +1984,11 @@
         ],
         "key_pokemon": [
           "Venusaur",
-          "Mega Charizard Y"
+          "Mega Charizard Y",
+          "Torkoal",
+          "Whimsicott",
+          "Garchomp",
+          "Incineroar"
         ],
         "popularity_score": 76.0,
         "result_score": 88.0,
@@ -2004,7 +2013,11 @@
         ],
         "key_pokemon": [
           "Vivillon",
-          "Mega Blastoise"
+          "Mega Blastoise",
+          "Whimsicott",
+          "Garchomp",
+          "Kingambit",
+          "Sinistcha"
         ],
         "popularity_score": 74.0,
         "result_score": 80.0,
@@ -2030,7 +2043,10 @@
         "key_pokemon": [
           "Sableye",
           "Archaludon",
-          "Sinistcha"
+          "Sinistcha",
+          "Pelipper",
+          "Basculegion",
+          "Incineroar"
         ],
         "popularity_score": 69.0,
         "result_score": 69.0,

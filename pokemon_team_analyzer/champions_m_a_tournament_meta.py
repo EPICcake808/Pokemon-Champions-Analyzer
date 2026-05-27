@@ -63,7 +63,7 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "modes": ("sun", "sun_tailwind"),
         "mode_weights": {"sun": 0.65, "sun_tailwind": 0.35},
         "broad_mix": {"bulky_offense": 0.44, "hyper_offense": 0.36, "balance": 0.2},
-        "key_pokemon": ("venusaur", "charizard-mega-y"),
+        "key_pokemon": ("venusaur", "charizard-mega-y", "torkoal", "whimsicott", "garchomp", "incineroar"),
         "key_cores": ("Venusaur + Mega Charizard Y", "Helping Hand + Leaf Storm"),
     },
     {
@@ -77,7 +77,7 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "modes": ("tailwind", "sun_tailwind"),
         "mode_weights": {"tailwind": 0.7, "sun_tailwind": 0.3},
         "broad_mix": {"hyper_offense": 0.52, "bulky_offense": 0.32, "balance": 0.16},
-        "key_pokemon": ("whimsicott", "glimmora", "charizard-mega-y", "garchomp", "basculegion"),
+        "key_pokemon": ("whimsicott", "glimmora", "charizard-mega-y", "garchomp", "basculegion", "kingambit"),
         "key_cores": ("Whimsicott + Glimmora", "Glimmora + Mega Charizard Y"),
     },
     {
@@ -105,7 +105,7 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "modes": ("dual_mode", "sun"),
         "mode_weights": {"dual_mode": 0.7, "sun": 0.3},
         "broad_mix": {"balance": 0.52, "bulky_offense": 0.33, "hyper_offense": 0.15},
-        "key_pokemon": ("venusaur-mega", "kommo-o"),
+        "key_pokemon": ("venusaur-mega", "kommo-o", "torkoal", "whimsicott", "sinistcha", "incineroar"),
         "key_cores": ("Mega Venusaur + Kommo-o",),
     },
     {
@@ -133,7 +133,7 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "modes": ("dual_mode", "rain"),
         "mode_weights": {"dual_mode": 0.65, "rain": 0.35},
         "broad_mix": {"bulky_offense": 0.48, "balance": 0.37, "hyper_offense": 0.15},
-        "key_pokemon": ("sableye", "archaludon", "sinistcha"),
+        "key_pokemon": ("sableye", "archaludon", "sinistcha", "pelipper", "basculegion", "incineroar"),
         "key_cores": ("Sableye + Archaludon", "Dual Screens + Healing support"),
     },
     {
@@ -147,7 +147,7 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "modes": ("dual_mode", "tailwind"),
         "mode_weights": {"dual_mode": 0.7, "tailwind": 0.3},
         "broad_mix": {"hyper_offense": 0.58, "bulky_offense": 0.32, "balance": 0.1},
-        "key_pokemon": ("vivillon", "blastoise-mega"),
+        "key_pokemon": ("vivillon", "blastoise-mega", "whimsicott", "garchomp", "kingambit", "sinistcha"),
         "key_cores": ("Choice Scarf Vivillon + Mega Blastoise", "Sleep Powder + Shell Smash"),
     },
     {

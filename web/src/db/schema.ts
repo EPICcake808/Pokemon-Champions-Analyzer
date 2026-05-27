@@ -3,6 +3,7 @@ import type { AdapterAccountType } from "next-auth/adapters";
 import {
   index,
   integer,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -79,5 +80,24 @@ export const savedTeams = pgTable(
   },
   (table) => ({
     userUpdatedAtIndex: index("saved_team_user_updated_at_idx").on(table.userId, table.updatedAt),
+  }),
+);
+
+export const publishedMetaSnapshots = pgTable(
+  "published_meta_snapshot",
+  {
+    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    regulationId: varchar("regulation_id", { length: 120 }).notNull().unique(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    sourceUrl: text("source_url"),
+    refreshedAt: timestamp("refreshed_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    createdAt: timestamp("created_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { mode: "date", withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => ({
+    regulationUpdatedAtIndex: index("published_meta_snapshot_regulation_updated_at_idx").on(
+      table.regulationId,
+      table.updatedAt,
+    ),
   }),
 );

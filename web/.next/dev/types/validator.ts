@@ -101,6 +101,24 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../src/app/api/meta-snapshot/refresh/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/meta-snapshot/refresh">> = Specific
+  const handler = {} as typeof import("../../../src/app/api/meta-snapshot/refresh/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../src/app/api/meta-snapshot/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/meta-snapshot">> = Specific
+  const handler = {} as typeof import("../../../src/app/api/meta-snapshot/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../src/app/api/saved-teams/[teamId]/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/saved-teams/[teamId]">> = Specific

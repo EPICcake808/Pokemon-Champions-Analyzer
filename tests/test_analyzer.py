@@ -1762,6 +1762,20 @@ Ability: Illusion
         self.assertNotIn("Mega Scizor Balance", tournament_labels)
         self.assertNotIn("Hydrapple Grassy Balance", tournament_labels)
 
+        tournament_key_pokemon = {
+            row["label"]: row["key_pokemon"] for row in analysis.meta_analysis["tournament_rows"]
+        }
+        self.assertGreaterEqual(len(tournament_key_pokemon["Venusaur Charizard Sun"]), 5)
+        self.assertGreaterEqual(len(tournament_key_pokemon["Whimsicott Glimmora"]), 5)
+        self.assertGreaterEqual(len(tournament_key_pokemon["Mega Venusaur Kommo-o"]), 5)
+        self.assertGreaterEqual(len(tournament_key_pokemon["Vivillon Mega Blastoise"]), 5)
+        self.assertGreaterEqual(len(tournament_key_pokemon["Sableye Archaludon Screens"]), 5)
+        self.assertIn("Torkoal", tournament_key_pokemon["Venusaur Charizard Sun"])
+        self.assertIn("Kingambit", tournament_key_pokemon["Whimsicott Glimmora"])
+        self.assertIn("Incineroar", tournament_key_pokemon["Mega Venusaur Kommo-o"])
+        self.assertIn("Pelipper", tournament_key_pokemon["Sableye Archaludon Screens"])
+        self.assertIn("Whimsicott", tournament_key_pokemon["Vivillon Mega Blastoise"])
+
         payload = analysis.to_dict()["meta_analysis"]
         self.assertEqual(payload, analysis.meta_analysis)
 
@@ -1851,6 +1865,14 @@ Ability: Illusion
         self.assertNotIn("Hydrapple Grassy Balance", report)
         self.assertIn("Cores:", report)
         self.assertIn("Pokemon:", report)
+        self.assertIn(
+            "Pokemon: Pelipper, Archaludon, Basculegion, Sinistcha, Incineroar, and Scizor",
+            report,
+        )
+        self.assertIn(
+            "Pokemon: Mega Venusaur, Kommo O, Torkoal, Whimsicott, Sinistcha, and Incineroar",
+            report,
+        )
         self.assertIn("Recommended into:", report)
         self.assertIn("Into Rain", report)
         self.assertIn("Pressures common rain pieces with direct coverage.", report)

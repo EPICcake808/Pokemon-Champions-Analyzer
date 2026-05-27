@@ -48,7 +48,19 @@ npm run build
 - The current UI defaults to `champions_regulation_m_a`, but the request payload already accepts arbitrary regulation ids for future Champions sets.
 - Available regulations are loaded from the analyzer API, so the frontend regulation selector follows the backend catalog instead of hardcoding the format list.
 - For Vercel, deploy this `web/` folder as a Next.js project and set `POKEMON_ANALYZER_API_BASE_URL` to the companion analyzer API project URL.
+- If you want the hosted site to publish a runtime meta board, set `DATABASE_URL`, `META_SNAPSHOT_SOURCE_URL`, and `CRON_SECRET`, then point the analyzer API's `POKEMON_ANALYZER_META_SNAPSHOT_URL` at `https://your-frontend-domain/api/meta-snapshot`.
 - Leave `Include files outside the root directory in the Build Step` disabled for the frontend Vercel project.
+
+### Automated Meta Board Refresh
+
+The frontend now includes two server routes for the hosted meta board:
+
+- `GET /api/meta-snapshot` returns the latest published snapshot for a regulation.
+- `GET /api/meta-snapshot/refresh` refreshes the stored snapshot from `META_SNAPSHOT_SOURCE_URL` and is intended to be called by Vercel Cron.
+
+The included `web/vercel.json` schedules the refresh route once per day. The refresh route is secret-protected and checks `META_SNAPSHOT_REFRESH_SECRET` first, then falls back to `CRON_SECRET`.
+
+The refresh layer expects a curated JSON feed. It does not try to scrape social or tournament sources directly, because that would lower the evidence bar and be much harder to keep reliable.
 
 ## Docker
 

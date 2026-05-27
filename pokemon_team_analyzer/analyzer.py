@@ -6,8 +6,8 @@ from statistics import median, pstdev
 from typing import Iterable, cast
 
 from .champions_m_a_meta import MODE_LABEL_ORDER, TOURNAMENT_MODE_SNAPSHOTS
-from .champions_m_a_tournament_meta import TOURNAMENT_TEAM_SNAPSHOTS
 from .data import CachedPokeApiClient, MetadataProvider
+from .meta_snapshots import get_tournament_team_snapshots
 from .models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
     MODE_PACKAGE_ORDER,
@@ -606,6 +606,7 @@ def analyze_team(
         matchup_scores,
         favorable_modes,
         unfavorable_modes,
+        regulation_id=regulation_id,
     )
     team_difficulty_label, team_difficulty_score, team_difficulty_factors = infer_team_difficulty(
         members,
@@ -2824,6 +2825,7 @@ def infer_meta_analysis(
     broad_matchup_scores: dict[str, float],
     favorable_modes: list[str],
     unfavorable_modes: list[str],
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> dict[str, object]:
     total_mode_weight = sum(TOURNAMENT_MODE_SNAPSHOTS[mode]["tournament_weight"] for mode in MODE_LABEL_ORDER)
     weighted_entries: list[dict[str, object]] = []
@@ -2866,7 +2868,11 @@ def infer_meta_analysis(
         weighted_entries,
         key=lambda entry: (-cast(float, entry["tournament_weight"]), -abs(cast(float, entry["impact_score"])), cast(str, entry["mode"])),
     )
-    tournament_rows = _build_tournament_meta_rows(mode_matchup_scores, broad_matchup_scores)
+    tournament_rows = _build_tournament_meta_rows(
+        mode_matchup_scores,
+        broad_matchup_scores,
+        regulation_id=regulation_id,
+    )
     high_presence_team_modes = [
         mode_name
         for mode_name in team_mode_labels
@@ -3077,9 +3083,12 @@ def infer_meta_analysis(
 def _build_tournament_meta_rows(
     mode_matchup_scores: dict[str, float],
     broad_matchup_scores: dict[str, float],
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> list[dict[str, object]]:
     eligible_snapshots = [
-        snapshot for snapshot in TOURNAMENT_TEAM_SNAPSHOTS if _is_meta_board_snapshot(snapshot)
+        snapshot
+        for snapshot in get_tournament_team_snapshots(regulation_id)
+        if _is_meta_board_snapshot(snapshot)
     ]
     total_weight = sum(_tournament_snapshot_weight(snapshot) for snapshot in eligible_snapshots) or 1.0
     rows: list[dict[str, object]] = []
@@ -5139,7 +5148,7 @@ def summarize_meta_analysis(meta_analysis: dict[str, object]) -> list[str]:
             lines.append(f"    Cores: {_render_series(cores[:2])}")
         key_pokemon = cast(list[str], entry.get("key_pokemon", []))
         if key_pokemon:
-            lines.append(f"    Pokemon: {_render_series(key_pokemon[:4])}")
+            lines.append(f"    Pokemon: {_render_series(key_pokemon)}")
     return lines
 
 

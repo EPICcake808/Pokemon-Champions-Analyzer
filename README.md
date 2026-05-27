@@ -116,6 +116,8 @@ The analyzer API project exposes these routes:
 - `GET /api/builder-species`
 - `GET /api/builder-move`
 
+To let the hosted analyzer consume a live meta-team board instead of only the built-in curated Python module, set `POKEMON_ANALYZER_META_SNAPSHOT_URL` on the analyzer API project to the frontend route `https://your-frontend-domain/api/meta-snapshot`. The analyzer keeps using the built-in snapshots if that URL is absent or temporarily unavailable. You can also tune the fetch cache with `POKEMON_ANALYZER_META_SNAPSHOT_TTL_SECONDS`.
+
 The API project no longer relies on a `functions` matcher in `vercel.json`. Instead, bundle exclusions live in `.vercelignore`, which keeps `web/`, tests, examples, and other non-runtime files out of the Python deployment without tripping Vercel's Serverless Function pattern validation.
 
 ### Accounts and Saved Teams
@@ -143,6 +145,13 @@ AUTH_TRUST_HOST=true
 POKEMON_ANALYZER_API_BASE_URL=https://your-analyzer-api.vercel.app
 ```
 
+Optional for automated hosted meta-board refreshes:
+
+```bash
+META_SNAPSHOT_SOURCE_URL=https://your-curated-feed.example.com/meta-snapshots.json
+CRON_SECRET=replace-with-a-shared-secret
+```
+
 Required to enable Google OAuth as well:
 
 ```bash
@@ -165,8 +174,55 @@ npm run db:push
 Local development and deployment notes:
 
 - Vercel should receive the same `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST`, `POKEMON_ANALYZER_API_BASE_URL`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` values.
+- Add `META_SNAPSHOT_SOURCE_URL` and `CRON_SECRET` to the frontend project if you want the hosted site to refresh the meta board automatically from a curated JSON feed.
+- Add `POKEMON_ANALYZER_META_SNAPSHOT_URL=https://your-frontend-domain/api/meta-snapshot` to the analyzer API project so live analysis uses the published board.
 - The saved-team and auth routes use the Node runtime, while the analyzer itself now runs as a separate Python Vercel project in the same GitHub repository.
 - If you want to inspect or evolve the database schema locally, `cd web && npm run db:studio` opens Drizzle Studio.
+
+### Automated Meta Snapshot Refresh
+
+The hosted site can now publish the meta board from a runtime JSON feed instead of only from the checked-in Python snapshot module.
+
+1. The frontend project stores the latest published meta snapshot in Neon.
+2. `GET /api/meta-snapshot` exposes the latest published snapshot for a regulation.
+3. `GET /api/meta-snapshot/refresh` is a secured route intended for Vercel Cron and manual admin calls.
+4. The included `web/vercel.json` schedules that refresh route once per day.
+5. The analyzer API project can read the published snapshot by setting `POKEMON_ANALYZER_META_SNAPSHOT_URL` to the frontend route.
+
+The refresh route is intentionally conservative: it does not scrape X, YouTube, Reddit, or tournament pages on its own. To preserve the tournament-backed quality bar you asked for, it only ingests a curated JSON feed supplied through `META_SNAPSHOT_SOURCE_URL`. That feed is where your evidence and ranking rules should be enforced.
+
+Expected JSON feed shape:
+
+```json
+{
+	"version": 1,
+	"generatedAt": "2026-05-27T12:00:00Z",
+	"regulations": [
+		{
+			"regulationId": "champions_regulation_m_a",
+			"updatedAt": "2026-05-27T12:00:00Z",
+			"sourceLabel": "Daily curated tournament board",
+			"notes": ["Tournament-backed only; ladder-only teams weighted conservatively."],
+			"tournamentTeamSnapshots": [
+				{
+					"slug": "rain-archaludon",
+					"label": "Rain Archaludon",
+					"source": "Repeated May 2026 M-A top-cut shell",
+					"result_label": "multiple top cuts",
+					"field_relevance": 1.0,
+					"popularity_weight": 0.92,
+					"result_weight": 0.94,
+					"modes": ["rain_tailwind", "rain"],
+					"mode_weights": {"rain_tailwind": 0.7, "rain": 0.3},
+					"broad_mix": {"bulky_offense": 0.55, "balance": 0.25, "hyper_offense": 0.2},
+					"key_pokemon": ["pelipper", "archaludon", "basculegion", "sinistcha", "incineroar", "scizor"],
+					"key_cores": ["Pelipper + Archaludon", "Archaludon + Basculegion"]
+				}
+			]
+		}
+	]
+}
+```
 
 ### Docker Runtime
 
