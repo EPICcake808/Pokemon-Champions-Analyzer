@@ -4,9 +4,10 @@ import { fileURLToPath } from "node:url";
 import type { NextConfig } from "next";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+const isProduction = process.env.NODE_ENV === "production";
 
 const nextConfig: NextConfig = {
-  reactCompiler: true,
+  reactCompiler: isProduction,
   images: {
     remotePatterns: [
       {

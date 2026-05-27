@@ -16,29 +16,39 @@ import type {
 
 export const dynamic = "force-dynamic";
 
+const USE_BUNDLED_DEV_SNAPSHOT = process.env.NODE_ENV !== "production";
+
 export default async function Home() {
-  let regulationCatalog: RegulationCatalogPayload;
+  let regulationCatalog = fallbackRegulationCatalog as unknown as RegulationCatalogPayload;
   const initialLoadIssues: string[] = [];
 
-  try {
-    regulationCatalog = await getRegulationCatalog();
-  } catch {
-    regulationCatalog = fallbackRegulationCatalog as unknown as RegulationCatalogPayload;
+  if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(
-      "The Next.js app could not reach the analyzer API for the regulation catalog. Showing the bundled Regulation M-A snapshot instead.",
+      "Development mode is using the bundled Regulation M-A snapshot to keep the Next.js dev server responsive. Run the analyzer after editing the team to fetch live results.",
     );
+  } else {
+    try {
+      regulationCatalog = await getRegulationCatalog();
+    } catch {
+      initialLoadIssues.push(
+        "The Next.js app could not reach the analyzer API for the regulation catalog. Showing the bundled Regulation M-A snapshot instead.",
+      );
+    }
   }
 
   const exampleTeams = await getFeaturedExampleTeams();
   const initialRegulationId = regulationCatalog.default_regulation_id;
   const initialExample =
     exampleTeams.find((example) => example.regulationId === initialRegulationId) ?? exampleTeams[0];
-  const initialResult = await runPokemonAnalyzer(initialExample.teamText, initialExample.regulationId);
-  const initialAnalysis = initialResult.ok
-    ? initialResult.analysis
-    : (fallbackSampleAnalysis as unknown as PokemonTeamAnalysis);
-  if (!initialResult.ok) {
-    initialLoadIssues.push(initialResult.message);
+
+  let initialAnalysis = fallbackSampleAnalysis as unknown as PokemonTeamAnalysis;
+  if (!USE_BUNDLED_DEV_SNAPSHOT) {
+    const initialResult = await runPokemonAnalyzer(initialExample.teamText, initialExample.regulationId);
+    if (initialResult.ok) {
+      initialAnalysis = initialResult.analysis;
+    } else {
+      initialLoadIssues.push(initialResult.message);
+    }
   }
 
   const initialAnalysisError = initialLoadIssues.length ? initialLoadIssues.join(" ") : null;

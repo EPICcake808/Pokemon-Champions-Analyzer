@@ -1831,13 +1831,13 @@
   },
   "meta_analysis": {
     "label": "strong",
-    "overall_score": 0.76,
-    "positive_weight_share": 56.0,
-    "negative_weight_share": 31.8,
+    "overall_score": 0.62,
+    "positive_weight_share": 63.4,
+    "negative_weight_share": 14.2,
     "strongest_modes": [
       "rain_tailwind",
       "tailwind",
-      "sun_tailwind"
+      "rain"
     ],
     "pressured_modes": [
       "trick_room",
@@ -1845,45 +1845,15 @@
       "semiroom"
     ],
     "strongest_targets": [
-      "Mega Charizard Y Aerodactyl",
       "Rain Archaludon",
-      "Mega Glimmora Offense"
+      "Whimsicott Glimmora",
+      "Venusaur Charizard Sun"
     ],
     "pressured_targets": [
       "Farigiraf Torkoal Room",
-      "Mega Gardevoir Tailroom"
+      "Mega Venusaur Kommo-o"
     ],
     "tournament_rows": [
-      {
-        "slug": "mega-charizard-y-aerodactyl",
-        "label": "Mega Charizard Y Aerodactyl",
-        "source": "Recent May 2026 M-A tournament front-runner",
-        "result_label": "top-table finish",
-        "modes": [
-          "Sun Tailwind",
-          "Tailwind",
-          "Sun"
-        ],
-        "key_cores": [
-          "Mega Charizard Y + Aerodactyl",
-          "Garchomp + Basculegion"
-        ],
-        "key_pokemon": [
-          "Mega Charizard Y",
-          "Aerodactyl",
-          "Sylveon",
-          "Garchomp",
-          "Kingambit",
-          "Basculegion"
-        ],
-        "popularity_score": 96.0,
-        "result_score": 95.0,
-        "meta_weight": 0.9568,
-        "meta_share": 23.1,
-        "matchup_score": 1.91,
-        "impact_score": 1.83,
-        "standing": "favored"
-      },
       {
         "slug": "rain-archaludon",
         "label": "Rain Archaludon",
@@ -1908,9 +1878,37 @@
         "popularity_score": 92.0,
         "result_score": 94.0,
         "meta_weight": 0.9264,
-        "meta_share": 22.3,
-        "matchup_score": 1.95,
-        "impact_score": 1.81,
+        "meta_share": 17.4,
+        "matchup_score": 2.1,
+        "impact_score": 1.95,
+        "standing": "favored"
+      },
+      {
+        "slug": "whimsicott-glimmora",
+        "label": "Whimsicott Glimmora",
+        "source": "Late May 2026 rank-one and top-team recap shell",
+        "result_label": "rank-one finish",
+        "modes": [
+          "Tailwind",
+          "Sun Tailwind"
+        ],
+        "key_cores": [
+          "Whimsicott + Glimmora",
+          "Glimmora + Mega Charizard Y"
+        ],
+        "key_pokemon": [
+          "Whimsicott",
+          "Glimmora",
+          "Mega Charizard Y",
+          "Garchomp",
+          "Basculegion"
+        ],
+        "popularity_score": 86.0,
+        "result_score": 84.0,
+        "meta_weight": 0.7597,
+        "meta_share": 14.3,
+        "matchup_score": 1.88,
+        "impact_score": 1.43,
         "standing": "favored"
       },
       {
@@ -1937,96 +1935,138 @@
         "popularity_score": 84.0,
         "result_score": 91.0,
         "meta_weight": 0.7589,
-        "meta_share": 18.3,
-        "matchup_score": -1.79,
-        "impact_score": -1.36,
+        "meta_share": 14.2,
+        "matchup_score": -2.2,
+        "impact_score": -1.67,
         "standing": "pressured"
       },
       {
-        "slug": "mega-gardevoir-tailroom",
-        "label": "Mega Gardevoir Tailroom",
-        "source": "Live May 2026 M-A tournament snapshot",
-        "result_label": "recent top cut",
+        "slug": "mega-venusaur-kommo-o",
+        "label": "Mega Venusaur Kommo-o",
+        "source": "Late May 2026 nationals winner and rank-one carry shell",
+        "result_label": "nationals winner",
         "modes": [
-          "Tailroom",
-          "Trick Room",
+          "Dual Mode",
+          "Sun"
+        ],
+        "key_cores": [
+          "Mega Venusaur + Kommo-o"
+        ],
+        "key_pokemon": [
+          "Mega Venusaur",
+          "Kommo O"
+        ],
+        "popularity_score": 73.0,
+        "result_score": 91.0,
+        "meta_weight": 0.6931,
+        "meta_share": 13.0,
+        "matchup_score": -0.13,
+        "impact_score": -0.09,
+        "standing": "even"
+      },
+      {
+        "slug": "venusaur-charizard-sun",
+        "label": "Venusaur Charizard Sun",
+        "source": "Late May 2026 weekend winner and sun recap shell",
+        "result_label": "weekend winner",
+        "modes": [
+          "Sun",
+          "Sun Tailwind"
+        ],
+        "key_cores": [
+          "Venusaur + Mega Charizard Y",
+          "Helping Hand + Leaf Storm"
+        ],
+        "key_pokemon": [
+          "Venusaur",
+          "Mega Charizard Y"
+        ],
+        "popularity_score": 76.0,
+        "result_score": 88.0,
+        "meta_weight": 0.6866,
+        "meta_share": 12.9,
+        "matchup_score": 1.09,
+        "impact_score": 0.75,
+        "standing": "favored"
+      },
+      {
+        "slug": "vivillon-mega-blastoise",
+        "label": "Vivillon Mega Blastoise",
+        "source": "Late May 2026 Thailand recap and Shell Smash trend shell",
+        "result_label": "multiple high finishes",
+        "modes": [
+          "Dual Mode",
           "Tailwind"
         ],
         "key_cores": [
-          "Gardevoir-Mega + Whimsicott",
-          "Sneasler + Kingambit"
+          "Choice Scarf Vivillon + Mega Blastoise",
+          "Sleep Powder + Shell Smash"
         ],
         "key_pokemon": [
-          "Mega Gardevoir",
-          "Whimsicott",
-          "Sneasler",
-          "Kingambit",
-          "Primarina"
+          "Vivillon",
+          "Mega Blastoise"
         ],
-        "popularity_score": 62.0,
-        "result_score": 82.0,
-        "meta_weight": 0.5609,
-        "meta_share": 13.5,
-        "matchup_score": -0.45,
-        "impact_score": -0.25,
-        "standing": "slightly_pressured"
-      },
-      {
-        "slug": "mega-scizor-balance",
-        "label": "Mega Scizor Balance",
-        "source": "Live May 2026 M-A tournament snapshot",
-        "result_label": "recent top cut",
-        "modes": [
-          "Tailwind",
-          "Tailroom",
-          "Trick Room"
-        ],
-        "key_cores": [
-          "Sneasler + Scizor-Mega",
-          "Garchomp + Aerodactyl"
-        ],
-        "key_pokemon": [
-          "Mega Scizor",
-          "Sneasler",
-          "Garchomp",
-          "Aerodactyl",
-          "Sinistcha",
-          "Milotic"
-        ],
-        "popularity_score": 58.0,
-        "result_score": 79.0,
-        "meta_weight": 0.5048,
-        "meta_share": 12.2,
-        "matchup_score": 0.15,
-        "impact_score": 0.08,
+        "popularity_score": 74.0,
+        "result_score": 80.0,
+        "meta_weight": 0.615,
+        "meta_share": 11.5,
+        "matchup_score": 0.54,
+        "impact_score": 0.33,
         "standing": "slightly_favored"
       },
       {
-        "slug": "mega-glimmora-offense",
-        "label": "Mega Glimmora Offense",
-        "source": "Recent May 2026 M-A high-result shell",
-        "result_label": "recent strong finishes",
+        "slug": "sableye-archaludon-screens",
+        "label": "Sableye Archaludon Screens",
+        "source": "Late May 2026 high-ladder surge and metagame recap shell",
+        "result_label": "high-ladder surge",
         "modes": [
-          "Tailwind"
+          "Dual Mode",
+          "Rain"
         ],
         "key_cores": [
-          "Mega Glimmora + Aerodactyl",
-          "Mega Glimmora + Garchomp"
+          "Sableye + Archaludon",
+          "Dual Screens + Healing support"
         ],
         "key_pokemon": [
-          "Mega Glimmora",
-          "Aerodactyl",
-          "Garchomp",
-          "Kingambit",
-          "Sneasler",
-          "Basculegion"
+          "Sableye",
+          "Archaludon",
+          "Sinistcha"
         ],
-        "popularity_score": 54.0,
-        "result_score": 77.0,
-        "meta_weight": 0.4418,
-        "meta_share": 10.6,
-        "matchup_score": 2.36,
-        "impact_score": 1.04,
+        "popularity_score": 69.0,
+        "result_score": 69.0,
+        "meta_weight": 0.4968,
+        "meta_share": 9.3,
+        "matchup_score": 0.18,
+        "impact_score": 0.09,
+        "standing": "slightly_favored"
+      },
+      {
+        "slug": "sand-garchomp-balance",
+        "label": "Sand Garchomp Balance",
+        "source": "Repeated May 2026 M-A tournament shell",
+        "result_label": "repeated day two",
+        "modes": [
+          "Sand",
+          "Sand Tailwind"
+        ],
+        "key_cores": [
+          "Tyranitar + Garchomp",
+          "Corviknight + Garchomp"
+        ],
+        "key_pokemon": [
+          "Tyranitar",
+          "Garchomp",
+          "Corviknight",
+          "Mega Scizor",
+          "Sinistcha",
+          "Milotic"
+        ],
+        "popularity_score": 46.0,
+        "result_score": 68.0,
+        "meta_weight": 0.3925,
+        "meta_share": 7.4,
+        "matchup_score": 1.32,
+        "impact_score": 0.52,
         "standing": "favored"
       }
     ],
@@ -2035,8 +2075,8 @@
         "mode": "tailwind",
         "tournament_weight": 1.0,
         "meta_share": 12.8,
-        "matchup_score": 2.52,
-        "impact_score": 2.52,
+        "matchup_score": 2.15,
+        "impact_score": 2.15,
         "identity_score": 5.5,
         "standing": "favored"
       },
@@ -2044,8 +2084,8 @@
         "mode": "rain_tailwind",
         "tournament_weight": 0.82,
         "meta_share": 10.5,
-        "matchup_score": 3.08,
-        "impact_score": 2.53,
+        "matchup_score": 3.15,
+        "impact_score": 2.58,
         "identity_score": 7.55,
         "standing": "favored"
       },
@@ -2053,8 +2093,8 @@
         "mode": "trick_room",
         "tournament_weight": 0.7,
         "meta_share": 9.0,
-        "matchup_score": -2.8,
-        "impact_score": -1.96,
+        "matchup_score": -3.39,
+        "impact_score": -2.37,
         "identity_score": 1.15,
         "standing": "pressured"
       },
@@ -2062,17 +2102,17 @@
         "mode": "tailroom",
         "tournament_weight": 0.64,
         "meta_share": 8.2,
-        "matchup_score": -0.07,
-        "impact_score": -0.04,
+        "matchup_score": -0.56,
+        "impact_score": -0.36,
         "identity_score": 3.29,
-        "standing": "even"
+        "standing": "slightly_pressured"
       },
       {
         "mode": "rain_room",
         "tournament_weight": 0.48,
         "meta_share": 6.1,
-        "matchup_score": -1.24,
-        "impact_score": -0.6,
+        "matchup_score": -1.45,
+        "impact_score": -0.7,
         "identity_score": 2.73,
         "standing": "pressured"
       },
@@ -2080,8 +2120,8 @@
         "mode": "rain",
         "tournament_weight": 0.42,
         "meta_share": 5.4,
-        "matchup_score": 0.97,
-        "impact_score": 0.41,
+        "matchup_score": 1.35,
+        "impact_score": 0.57,
         "identity_score": 4.94,
         "standing": "favored"
       },
@@ -2089,8 +2129,8 @@
         "mode": "sand",
         "tournament_weight": 0.36,
         "meta_share": 4.6,
-        "matchup_score": 0.97,
-        "impact_score": 0.35,
+        "matchup_score": 1.22,
+        "impact_score": 0.44,
         "identity_score": -0.08,
         "standing": "favored"
       },
@@ -2098,8 +2138,8 @@
         "mode": "rain_tailroom",
         "tournament_weight": 0.36,
         "meta_share": 4.6,
-        "matchup_score": 0.69,
-        "impact_score": 0.25,
+        "matchup_score": 0.5,
+        "impact_score": 0.18,
         "identity_score": 5.18,
         "standing": "slightly_favored"
       },
@@ -2107,8 +2147,8 @@
         "mode": "dual_mode",
         "tournament_weight": 0.34,
         "meta_share": 4.4,
-        "matchup_score": -0.65,
-        "impact_score": -0.22,
+        "matchup_score": -0.63,
+        "impact_score": -0.21,
         "identity_score": 4.83,
         "standing": "slightly_pressured"
       },
@@ -2125,8 +2165,8 @@
         "mode": "sun_room",
         "tournament_weight": 0.28,
         "meta_share": 3.6,
-        "matchup_score": -0.3,
-        "impact_score": -0.08,
+        "matchup_score": -0.57,
+        "impact_score": -0.16,
         "identity_score": -1.17,
         "standing": "slightly_pressured"
       },
@@ -2134,8 +2174,8 @@
         "mode": "semiroom",
         "tournament_weight": 0.26,
         "meta_share": 3.3,
-        "matchup_score": -2.1,
-        "impact_score": -0.55,
+        "matchup_score": -2.21,
+        "impact_score": -0.57,
         "identity_score": 0.7,
         "standing": "pressured"
       },
@@ -2143,8 +2183,8 @@
         "mode": "sun_tailwind",
         "tournament_weight": 0.24,
         "meta_share": 3.1,
-        "matchup_score": 1.99,
-        "impact_score": 0.48,
+        "matchup_score": 2.06,
+        "impact_score": 0.49,
         "identity_score": 2.09,
         "standing": "favored"
       },
@@ -2152,8 +2192,8 @@
         "mode": "sand_tailwind",
         "tournament_weight": 0.22,
         "meta_share": 2.8,
-        "matchup_score": 2.11,
-        "impact_score": 0.46,
+        "matchup_score": 2.17,
+        "impact_score": 0.48,
         "identity_score": 2.15,
         "standing": "favored"
       },
@@ -2161,8 +2201,8 @@
         "mode": "sun_tailroom",
         "tournament_weight": 0.22,
         "meta_share": 2.8,
-        "matchup_score": 0.44,
-        "impact_score": 0.1,
+        "matchup_score": 0.29,
+        "impact_score": 0.06,
         "identity_score": 0.48,
         "standing": "slightly_favored"
       },
@@ -2170,8 +2210,8 @@
         "mode": "psychic_terrain",
         "tournament_weight": 0.18,
         "meta_share": 2.3,
-        "matchup_score": -0.99,
-        "impact_score": -0.18,
+        "matchup_score": -0.96,
+        "impact_score": -0.17,
         "identity_score": -0.62,
         "standing": "pressured"
       },
@@ -2179,8 +2219,8 @@
         "mode": "sand_room",
         "tournament_weight": 0.18,
         "meta_share": 2.3,
-        "matchup_score": -0.88,
-        "impact_score": -0.16,
+        "matchup_score": -0.96,
+        "impact_score": -0.17,
         "identity_score": -0.9,
         "standing": "pressured"
       },
@@ -2188,8 +2228,8 @@
         "mode": "snow",
         "tournament_weight": 0.18,
         "meta_share": 2.3,
-        "matchup_score": -0.52,
-        "impact_score": -0.09,
+        "matchup_score": -0.21,
+        "impact_score": -0.04,
         "identity_score": -0.52,
         "standing": "slightly_pressured"
       },
@@ -2197,8 +2237,8 @@
         "mode": "sun",
         "tournament_weight": 0.16,
         "meta_share": 2.0,
-        "matchup_score": 0.34,
-        "impact_score": 0.05,
+        "matchup_score": 0.62,
+        "impact_score": 0.1,
         "identity_score": -0.45,
         "standing": "slightly_favored"
       },
@@ -2206,8 +2246,8 @@
         "mode": "snow_room",
         "tournament_weight": 0.14,
         "meta_share": 1.8,
-        "matchup_score": -1.8,
-        "impact_score": -0.25,
+        "matchup_score": -1.87,
+        "impact_score": -0.26,
         "identity_score": -1.1,
         "standing": "pressured"
       },
@@ -2215,17 +2255,17 @@
         "mode": "electric_terrain",
         "tournament_weight": 0.12,
         "meta_share": 1.5,
-        "matchup_score": -0.26,
-        "impact_score": -0.03,
+        "matchup_score": -0.09,
+        "impact_score": -0.01,
         "identity_score": -0.31,
-        "standing": "slightly_pressured"
+        "standing": "even"
       },
       {
         "mode": "grassy_terrain",
         "tournament_weight": 0.11,
         "meta_share": 1.4,
-        "matchup_score": -1.18,
-        "impact_score": -0.13,
+        "matchup_score": -0.78,
+        "impact_score": -0.09,
         "identity_score": 0.32,
         "standing": "pressured"
       },
@@ -2233,22 +2273,22 @@
         "mode": "misty_terrain",
         "tournament_weight": 0.09,
         "meta_share": 1.2,
-        "matchup_score": -1.83,
-        "impact_score": -0.16,
+        "matchup_score": -1.37,
+        "impact_score": -0.12,
         "identity_score": -0.58,
         "standing": "pressured"
       }
     ],
     "notes": [
-      "Weighted against current Regulation M-A tournament-result teams, this team grades as strong at 0.76, with 56.0% of the tracked board scoring favorable and 31.8% scoring pressured.",
-      "The cleanest current team-level edges are into Mega Charizard Y Aerodactyl, Rain Archaludon, and Mega Glimmora Offense, which together represent about 56.0% of the tracked high-performing field.",
-      "The heaviest current team-level pressure comes from Farigiraf Torkoal Room and Mega Gardevoir Tailroom, which together account for about 31.8% of the tracked high-performing field.",
-      "Across the 6 current results-backed board teams, 3 are favorable, 1 land in the even band, and 2 are currently pressured by the board thresholds.",
-      "At the mode layer, the cleanest weighted edges are into Rain Tailwind, Tailwind, and Sun Tailwind, which together make up about 26.4% of tracked mode share.",
+      "Weighted against current Regulation M-A tournament-result teams, this team grades as strong at 0.62, with 63.4% of the tracked board scoring favorable and 14.2% scoring pressured.",
+      "The cleanest current team-level edges are into Rain Archaludon, Whimsicott Glimmora, and Venusaur Charizard Sun, which together represent about 44.5% of the tracked high-performing field.",
+      "The heaviest current team-level pressure comes from Farigiraf Torkoal Room and Mega Venusaur Kommo-o, which together account for about 27.2% of the tracked high-performing field.",
+      "Across the 8 current results-backed board teams, 5 are favorable, 2 land in the even band, and 1 are currently pressured by the board thresholds.",
+      "At the mode layer, the cleanest weighted edges are into Rain Tailwind, Tailwind, and Rain, which together make up about 28.7% of tracked mode share.",
       "The most relevant mode-level checks come from Trick Room, Rain Room, and Semiroom, which together account for about 18.4% of tracked mode share.",
-      "The single best weighted mode edge is Rain Tailwind at matchup 3.08 over 10.5% of mode share.",
-      "The sharpest mode-level check is Trick Room at matchup -2.80 over 9.0% of mode share.",
-      "The biggest current board anchors are Mega Charizard Y Aerodactyl (23.1% share, +1.91 matchup) and Rain Archaludon (22.3% share, +1.95 matchup), so those shells define a large share of the live-field positioning check by themselves.",
+      "The single best weighted mode edge is Rain Tailwind at matchup 3.15 over 10.5% of mode share.",
+      "The sharpest mode-level check is Trick Room at matchup -3.39 over 9.0% of mode share.",
+      "The biggest current board anchors are Rain Archaludon (17.4% share, +2.10 matchup) and Whimsicott Glimmora (14.3% share, +1.88 matchup), so those shells define a large share of the live-field positioning check by themselves.",
       "The roster itself already overlaps with high-traffic M-A shells like Rain Tailwind, so it is not trying to win from a completely off-meta position."
     ]
   },

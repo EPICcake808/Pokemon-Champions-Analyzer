@@ -2,20 +2,20 @@ from __future__ import annotations
 
 
 # These snapshots are the concrete team shells the current M-A field keeps
-# returning to in May 2026 tournament-result tracking. They intentionally sit
-# one layer below the broader mode snapshots so the analyzer can surface real
-# teams, their defining cores, and the Pokemon repeatedly attached to those
-# results. `field_relevance` controls whether a shell is meta-board worthy:
-# core, established, and rising teams stay user-facing, while fringe and deep
-# cut shells can remain curated here without being presented as central field
-# pillars.
+# returning to in May 2026 event recaps, tournament reports, and late-season
+# high-ladder tracking. They intentionally sit one layer below the broader mode
+# snapshots so the analyzer can surface real teams, their defining cores, and
+# the Pokemon repeatedly attached to those results. `field_relevance` controls
+# whether a shell is meta-board worthy: core, established, and rising teams stay
+# user-facing, while fringe and older shells can remain curated here without
+# being presented as central field pillars.
 TOURNAMENT_TEAM_SNAPSHOTS = (
     {
         "slug": "mega-gardevoir-tailroom",
         "label": "Mega Gardevoir Tailroom",
-        "source": "Live May 2026 M-A tournament snapshot",
-        "result_label": "recent top cut",
-        "field_relevance": 0.82,
+        "source": "Early May 2026 M-A tournament snapshot",
+        "result_label": "earlier top cut",
+        "field_relevance": 0.58,
         "popularity_weight": 0.62,
         "result_weight": 0.82,
         "modes": ("tailroom", "trick_room", "tailwind"),
@@ -27,9 +27,9 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
     {
         "slug": "mega-scizor-balance",
         "label": "Mega Scizor Balance",
-        "source": "Live May 2026 M-A tournament snapshot",
-        "result_label": "recent top cut",
-        "field_relevance": 0.78,
+        "source": "Earlier May 2026 M-A tournament snapshot",
+        "result_label": "earlier top cut",
+        "field_relevance": 0.56,
         "popularity_weight": 0.58,
         "result_weight": 0.79,
         "modes": ("tailwind", "tailroom", "trick_room"),
@@ -53,32 +53,32 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "key_cores": ("Pelipper + Archaludon", "Archaludon + Basculegion"),
     },
     {
-        "slug": "mega-charizard-y-aerodactyl",
-        "label": "Mega Charizard Y Aerodactyl",
-        "source": "Recent May 2026 M-A tournament front-runner",
-        "result_label": "top-table finish",
-        "field_relevance": 1.0,
-        "popularity_weight": 0.96,
-        "result_weight": 0.95,
-        "modes": ("sun_tailwind", "tailwind", "sun"),
-        "mode_weights": {"sun_tailwind": 0.45, "tailwind": 0.4, "sun": 0.15},
-        "broad_mix": {"hyper_offense": 0.62, "bulky_offense": 0.38},
-        "key_pokemon": ("charizard-mega-y", "aerodactyl", "sylveon", "garchomp", "kingambit", "basculegion"),
-        "key_cores": ("Mega Charizard Y + Aerodactyl", "Garchomp + Basculegion"),
+        "slug": "venusaur-charizard-sun",
+        "label": "Venusaur Charizard Sun",
+        "source": "Late May 2026 weekend winner and sun recap shell",
+        "result_label": "weekend winner",
+        "field_relevance": 0.86,
+        "popularity_weight": 0.76,
+        "result_weight": 0.88,
+        "modes": ("sun", "sun_tailwind"),
+        "mode_weights": {"sun": 0.65, "sun_tailwind": 0.35},
+        "broad_mix": {"bulky_offense": 0.44, "hyper_offense": 0.36, "balance": 0.2},
+        "key_pokemon": ("venusaur", "charizard-mega-y"),
+        "key_cores": ("Venusaur + Mega Charizard Y", "Helping Hand + Leaf Storm"),
     },
     {
-        "slug": "mega-glimmora-offense",
-        "label": "Mega Glimmora Offense",
-        "source": "Recent May 2026 M-A high-result shell",
-        "result_label": "recent strong finishes",
-        "field_relevance": 0.72,
-        "popularity_weight": 0.54,
-        "result_weight": 0.77,
-        "modes": ("tailwind",),
-        "mode_weights": {"tailwind": 1.0},
-        "broad_mix": {"hyper_offense": 0.72, "bulky_offense": 0.28},
-        "key_pokemon": ("glimmora-mega", "aerodactyl", "garchomp", "kingambit", "sneasler", "basculegion"),
-        "key_cores": ("Mega Glimmora + Aerodactyl", "Mega Glimmora + Garchomp"),
+        "slug": "whimsicott-glimmora",
+        "label": "Whimsicott Glimmora",
+        "source": "Late May 2026 rank-one and top-team recap shell",
+        "result_label": "rank-one finish",
+        "field_relevance": 0.89,
+        "popularity_weight": 0.86,
+        "result_weight": 0.84,
+        "modes": ("tailwind", "sun_tailwind"),
+        "mode_weights": {"tailwind": 0.7, "sun_tailwind": 0.3},
+        "broad_mix": {"hyper_offense": 0.52, "bulky_offense": 0.32, "balance": 0.16},
+        "key_pokemon": ("whimsicott", "glimmora", "charizard-mega-y", "garchomp", "basculegion"),
+        "key_cores": ("Whimsicott + Glimmora", "Glimmora + Mega Charizard Y"),
     },
     {
         "slug": "farigiraf-torkoal-room",
@@ -95,11 +95,25 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "key_cores": ("Farigiraf + Torkoal", "Farigiraf + Sinistcha"),
     },
     {
+        "slug": "mega-venusaur-kommo-o",
+        "label": "Mega Venusaur Kommo-o",
+        "source": "Late May 2026 nationals winner and rank-one carry shell",
+        "result_label": "nationals winner",
+        "field_relevance": 0.88,
+        "popularity_weight": 0.73,
+        "result_weight": 0.91,
+        "modes": ("dual_mode", "sun"),
+        "mode_weights": {"dual_mode": 0.7, "sun": 0.3},
+        "broad_mix": {"balance": 0.52, "bulky_offense": 0.33, "hyper_offense": 0.15},
+        "key_pokemon": ("venusaur-mega", "kommo-o"),
+        "key_cores": ("Mega Venusaur + Kommo-o",),
+    },
+    {
         "slug": "sand-garchomp-balance",
         "label": "Sand Garchomp Balance",
         "source": "Repeated May 2026 M-A tournament shell",
         "result_label": "repeated day two",
-        "field_relevance": 0.48,
+        "field_relevance": 0.74,
         "popularity_weight": 0.46,
         "result_weight": 0.68,
         "modes": ("sand", "sand_tailwind"),
@@ -107,6 +121,34 @@ TOURNAMENT_TEAM_SNAPSHOTS = (
         "broad_mix": {"balance": 0.4, "bulky_offense": 0.4, "hyper_offense": 0.2},
         "key_pokemon": ("tyranitar", "garchomp", "corviknight", "scizor-mega", "sinistcha", "milotic"),
         "key_cores": ("Tyranitar + Garchomp", "Corviknight + Garchomp"),
+    },
+    {
+        "slug": "sableye-archaludon-screens",
+        "label": "Sableye Archaludon Screens",
+        "source": "Late May 2026 high-ladder surge and metagame recap shell",
+        "result_label": "high-ladder surge",
+        "field_relevance": 0.72,
+        "popularity_weight": 0.69,
+        "result_weight": 0.69,
+        "modes": ("dual_mode", "rain"),
+        "mode_weights": {"dual_mode": 0.65, "rain": 0.35},
+        "broad_mix": {"bulky_offense": 0.48, "balance": 0.37, "hyper_offense": 0.15},
+        "key_pokemon": ("sableye", "archaludon", "sinistcha"),
+        "key_cores": ("Sableye + Archaludon", "Dual Screens + Healing support"),
+    },
+    {
+        "slug": "vivillon-mega-blastoise",
+        "label": "Vivillon Mega Blastoise",
+        "source": "Late May 2026 Thailand recap and Shell Smash trend shell",
+        "result_label": "multiple high finishes",
+        "field_relevance": 0.81,
+        "popularity_weight": 0.74,
+        "result_weight": 0.8,
+        "modes": ("dual_mode", "tailwind"),
+        "mode_weights": {"dual_mode": 0.7, "tailwind": 0.3},
+        "broad_mix": {"hyper_offense": 0.58, "bulky_offense": 0.32, "balance": 0.1},
+        "key_pokemon": ("vivillon", "blastoise-mega"),
+        "key_cores": ("Choice Scarf Vivillon + Mega Blastoise", "Sleep Powder + Shell Smash"),
     },
     {
         "slug": "hydrapple-grassy-balance",
