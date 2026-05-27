@@ -16,6 +16,7 @@ from pokemon_team_analyzer.regulations import (
     IllegalTeamError,
     get_regulation,
     regulation_catalog_as_dict,
+    resolve_regulation_species_name,
     validate_team_legality_text,
 )
 
@@ -270,6 +271,7 @@ MOCK_ALLOWED_MOVES_BY_SPECIES = {
     "Torterra": ("grassy-terrain", "protect", "stomping-tantrum", "wood-hammer"),
     "Tyranitar": ("knock-off", "protect", "rock-slide", "roar", "stealth-rock", "stone-edge"),
     "Venusaur": ("giga-drain", "growth", "protect", "sludge-bomb"),
+    "Zoroark (Hisuian Form)": ("bitter-malice", "hyper-voice", "protect", "shadow-ball"),
 }
 
 
@@ -284,10 +286,43 @@ class ChampionsMetadataProvider:
             "Garchomp": SpeciesData("Garchomp", "garchomp", ("dragon", "ground"), 108, 130, 95, 80, 85, 102),
             "Gengar": SpeciesData("Gengar", "gengar", ("ghost", "poison"), 60, 65, 60, 130, 75, 110),
             "Incineroar": SpeciesData("Incineroar", "incineroar", ("fire", "dark"), 95, 115, 90, 80, 90, 60),
-            "Rotom-Wash": SpeciesData("Rotom-Wash", "rotom-wash", ("electric", "water"), 50, 65, 107, 105, 107, 86),
             "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
+            "Rotom (Wash Rotom)": SpeciesData(
+                "Rotom (Wash Rotom)",
+                "rotom-wash",
+                ("electric", "water"),
+                50,
+                65,
+                107,
+                105,
+                107,
+                86,
+            ),
+            "Zoroark (Hisuian Form)": SpeciesData(
+                "Zoroark (Hisuian Form)",
+                "zoroark-hisui",
+                ("normal", "ghost"),
+                55,
+                100,
+                60,
+                125,
+                60,
+                110,
+            ),
         }
         self.moves = {
+            "Bitter Malice": MoveData(
+                "Bitter Malice",
+                "bitter-malice",
+                "ghost",
+                "special",
+                short_effect="May lower the target's Attack.",
+                effect_chance=100,
+                category_name="damage-lower",
+                stat_chance=100,
+                stat_changes=(MoveStatChange("attack", -1),),
+                target_name="selected-pokemon",
+            ),
             "Body Press": MoveData("Body Press", "body-press", "fighting", "physical"),
             "Dragon Claw": MoveData("Dragon Claw", "dragon-claw", "dragon", "physical"),
             "Earthquake": MoveData("Earthquake", "earthquake", "ground", "physical"),
@@ -305,6 +340,7 @@ class ChampionsMetadataProvider:
             "Flare Blitz": MoveData("Flare Blitz", "flare-blitz", "fire", "physical"),
             "Gigaton Hammer": MoveData("Gigaton Hammer", "gigaton-hammer", "steel", "physical"),
             "Hydro Pump": MoveData("Hydro Pump", "hydro-pump", "water", "special"),
+            "Hyper Voice": MoveData("Hyper Voice", "hyper-voice", "normal", "special"),
             "Icy Wind": MoveData(
                 "Icy Wind",
                 "icy-wind",
@@ -407,6 +443,7 @@ class ChampionsMetadataProvider:
                 ailment_chance=100,
                 target_name="selected-pokemon",
             ),
+            "Shadow Ball": MoveData("Shadow Ball", "shadow-ball", "ghost", "special"),
         }
 
     def get_species(self, species_name: str) -> SpeciesData:
@@ -546,6 +583,62 @@ class RegulationTests(unittest.TestCase):
             pokemon_name_candidates("Tauros (Paldean Form (Combat Breed))")[0],
             "tauros-paldea-combat-breed",
         )
+
+    def test_regulation_species_resolution_accepts_common_regional_aliases(self) -> None:
+        self.assertEqual(resolve_regulation_species_name("Hisuian Zoroark"), "Zoroark (Hisuian Form)")
+        self.assertEqual(resolve_regulation_species_name("Alolan Raichu"), "Raichu (Alolan Form)")
+        self.assertEqual(resolve_regulation_species_name("Galarian Slowbro"), "Slowbro (Galarian Form)")
+        self.assertEqual(resolve_regulation_species_name("Paldean Tauros Aqua"), "Tauros (Paldean Form (Aqua Breed))")
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
+    def test_analysis_canonicalizes_common_regional_aliases_before_metadata_lookup(self, _mock_get_allowed_moves: object) -> None:
+        alias_team = """Hisuian Zoroark @ Spell Tag
+Ability: Illusion
+- Hyper Voice
+- Shadow Ball
+- Protect
+- Bitter Malice
+
+Incineroar @ Sitrus Berry
+Ability: Intimidate
+- Fake Out
+- Flare Blitz
+- Knock Off
+- Parting Shot
+
+Garchomp @ Focus Sash
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Swords Dance
+
+Rotom-Wash @ Leftovers
+Ability: Levitate
+- Thunderbolt
+- Hydro Pump
+- Will-O-Wisp
+- Protect
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+"""
+
+        analysis = analyze_team_text(alias_team, metadata_provider=ChampionsMetadataProvider())
+
+        self.assertEqual(analysis.team_size, 6)
+        self.assertIn(analysis.team_archetype, analysis.team_archetype_scores)
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_validate_team_legality_accepts_legal_m_a_team(self, _mock_get_allowed_moves: object) -> None:

@@ -358,8 +358,51 @@ def _extract_english_short_effect(payload: dict[str, Any]) -> str:
     for effect_entry in payload.get("effect_entries", []):
         language = effect_entry.get("language", {})
         if language.get("name") == "en":
-            return str(effect_entry.get("short_effect", ""))
-    return ""
+            short_effect = _normalize_effect_text(effect_entry.get("short_effect", ""))
+            if short_effect:
+                return short_effect
+            effect_text = _normalize_effect_text(effect_entry.get("effect", ""))
+            if effect_text:
+                return effect_text
+
+    flavor_text = _extract_english_flavor_text(payload)
+    if flavor_text:
+        return flavor_text
+
+    if payload.get("damage_class", {}).get("name") == "status":
+        return "Applies its status effect."
+    return "Inflicts regular damage."
+
+
+def _extract_english_flavor_text(payload: dict[str, Any]) -> str:
+    preferred_version_groups = {
+        "scarlet-violet",
+        "the-indigo-disk",
+        "the-teal-mask",
+        "legends-arceus",
+        "sword-shield",
+    }
+    fallback_text = ""
+
+    for flavor_entry in payload.get("flavor_text_entries", []):
+        language = flavor_entry.get("language", {})
+        if language.get("name") != "en":
+            continue
+
+        flavor_text = _normalize_effect_text(flavor_entry.get("flavor_text", ""))
+        if not flavor_text:
+            continue
+
+        version_group = flavor_entry.get("version_group", {}).get("name")
+        if version_group in preferred_version_groups:
+            return flavor_text
+        fallback_text = flavor_text
+
+    return fallback_text
+
+
+def _normalize_effect_text(text: Any) -> str:
+    return re.sub(r"\s+", " ", str(text or "")).strip()
 
 
 def _as_int(value: Any, *, default: int) -> int:
@@ -413,4 +456,4 @@ def _cached_move_has_full_metadata(payload: dict[str, Any]) -> bool:
             "priority",
             "target_name",
         )
-    )
+    ) and bool(str(payload.get("short_effect", "")).strip())

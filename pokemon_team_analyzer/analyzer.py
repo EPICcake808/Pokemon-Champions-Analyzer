@@ -23,7 +23,7 @@ from .models import (
     UTILITY_ROLE_ORDER,
     WIN_CONDITION_PACKAGE_ORDER,
 )
-from .regulations import DEFAULT_REGULATION_ID, IllegalTeamError, validate_team_legality
+from .regulations import DEFAULT_REGULATION_ID, IllegalTeamError, resolve_regulation_species_name, validate_team_legality
 from .showdown import parse_showdown_team
 from .speed_benchmarks import SpeedBenchmarkGroup, RegulationSpeedBenchmarkCatalog, get_speed_benchmark_catalog
 
@@ -422,7 +422,7 @@ def analyze_team(
         legality = validate_team_legality(team_sets, regulation_id=regulation_id)
         if not legality.is_legal:
             raise IllegalTeamError(legality)
-    members = _resolve_members(team_sets, provider)
+    members = _resolve_members(team_sets, provider, regulation_id=regulation_id)
     typing_counts = {type_name: 0 for type_name in TYPE_ORDER}
     offensive_coverage = {type_name: 0 for type_name in TYPE_ORDER}
     defensive_profile: dict[str, dict[str, float | int]] = {}
@@ -1463,10 +1463,17 @@ def _render_series(values: list[str]) -> str:
     return f"{', '.join(values[:-1])}, and {values[-1]}"
 
 
-def _resolve_members(team_sets: list[PokemonSet], provider: MetadataProvider) -> list[TeamMember]:
+def _resolve_members(
+    team_sets: list[PokemonSet],
+    provider: MetadataProvider,
+    regulation_id: str | None = None,
+) -> list[TeamMember]:
     members: list[TeamMember] = []
     for pokemon_set in team_sets:
-        species_data = provider.get_species(pokemon_set.species)
+        species_name = pokemon_set.species
+        if regulation_id is not None:
+            species_name = resolve_regulation_species_name(pokemon_set.species, regulation_id=regulation_id) or species_name
+        species_data = provider.get_species(species_name)
         move_data = tuple(provider.get_move(move_name) for move_name in pokemon_set.moves)
         members.append(TeamMember(pokemon_set=pokemon_set, species_data=species_data, move_data=move_data))
     return members

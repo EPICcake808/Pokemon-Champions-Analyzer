@@ -173,6 +173,116 @@ class CachedMoveRefreshTests(unittest.TestCase):
             self.assertEqual(move.healing, 0)
             self.assertEqual(move.target_name, "selected-pokemon")
 
+    def test_get_move_falls_back_to_flavor_text_when_effect_entries_are_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "pokeapi_cache.json"
+            cache_path.write_text(json.dumps({"pokemon": {}, "move": {}}), encoding="utf-8")
+            client = StubbedPokeApiClient(
+                cache_path=cache_path,
+                responses={
+                    "move/electro-shot": {
+                        "name": "electro-shot",
+                        "type": {"name": "electric"},
+                        "damage_class": {"name": "special"},
+                        "effect_entries": [],
+                        "flavor_text_entries": [
+                            {
+                                "language": {"name": "en"},
+                                "version_group": {"name": "scarlet-violet"},
+                                "flavor_text": (
+                                    "The user gathers electricity on the first turn, boosting its Sp. Atk stat, "
+                                    "then fires a high-voltage shot on the next turn. The shot will be fired immediately in rain."
+                                ),
+                            }
+                        ],
+                        "effect_chance": None,
+                        "meta": None,
+                        "stat_changes": [{"stat": {"name": "special-attack"}, "change": 1}],
+                        "priority": 0,
+                        "target": {"name": "selected-pokemon"},
+                        "power": 130,
+                        "accuracy": 100,
+                        "pp": 10,
+                    }
+                },
+            )
+
+            move = client.get_move("Electro Shot")
+
+            self.assertIn("first turn", move.short_effect)
+            self.assertIn("immediately in rain", move.short_effect)
+            self.assertEqual(move.power, 130)
+            self.assertEqual(move.target_name, "selected-pokemon")
+
+    def test_get_move_refreshes_cached_blank_short_effect_entry(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "pokeapi_cache.json"
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "pokemon": {},
+                        "move": {
+                            "electro-shot": {
+                                "name": "Electro Shot",
+                                "api_name": "electro-shot",
+                                "type_name": "electric",
+                                "damage_class": "special",
+                                "power": 130,
+                                "accuracy": 100,
+                                "pp": 10,
+                                "short_effect": "",
+                                "effect_chance": None,
+                                "category_name": "unknown",
+                                "ailment_name": "none",
+                                "ailment_chance": 0,
+                                "flinch_chance": 0,
+                                "healing": 0,
+                                "stat_chance": 0,
+                                "stat_changes": [],
+                                "priority": 0,
+                                "target_name": "selected-pokemon",
+                            }
+                        },
+                    }
+                ),
+                encoding="utf-8",
+            )
+            client = StubbedPokeApiClient(
+                cache_path=cache_path,
+                responses={
+                    "move/electro-shot": {
+                        "name": "electro-shot",
+                        "type": {"name": "electric"},
+                        "damage_class": {"name": "special"},
+                        "effect_entries": [],
+                        "flavor_text_entries": [
+                            {
+                                "language": {"name": "en"},
+                                "version_group": {"name": "scarlet-violet"},
+                                "flavor_text": "Charges on the first turn and fires immediately in rain.",
+                            }
+                        ],
+                        "effect_chance": None,
+                        "meta": None,
+                        "stat_changes": [],
+                        "priority": 0,
+                        "target": {"name": "selected-pokemon"},
+                        "power": 130,
+                        "accuracy": 100,
+                        "pp": 10,
+                    }
+                },
+            )
+
+            move = client.get_move("Electro Shot")
+
+            self.assertEqual(move.short_effect, "Charges on the first turn and fires immediately in rain.")
+            refreshed_cache = json.loads(cache_path.read_text(encoding="utf-8"))
+            self.assertEqual(
+                refreshed_cache["move"]["electro-shot"]["short_effect"],
+                "Charges on the first turn and fires immediately in rain.",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

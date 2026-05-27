@@ -63,6 +63,49 @@ SHOWDOWN_SPECIES_ALIASES = {
     "zoroark-hisui": "zoroark (hisuian form)",
 }
 
+REGIONAL_FORM_SYNONYMS = {
+    "alolan": ("alolan", "alola"),
+    "galarian": ("galarian", "galar"),
+    "hisuian": ("hisuian", "hisui"),
+}
+
+
+def _build_generated_species_aliases() -> dict[str, str]:
+    aliases: dict[str, str] = {}
+
+    regional_form_pattern = re.compile(r"^(?P<base>.+) \((?P<form>Alolan|Galarian|Hisuian) Form\)$", re.IGNORECASE)
+    paldean_form_pattern = re.compile(
+        r"^(?P<base>.+) \(Paldean Form \((?P<breed>Combat Breed|Blaze Breed|Aqua Breed)\)\)$",
+        re.IGNORECASE,
+    )
+
+    for species_name in ELIGIBLE_SPECIES:
+        canonical_name = species_name.lower()
+
+        regional_match = regional_form_pattern.match(species_name)
+        if regional_match is not None:
+            base_name = regional_match.group("base")
+            form_name = regional_match.group("form").lower()
+            for synonym in REGIONAL_FORM_SYNONYMS[form_name]:
+                aliases[normalize_showdown_name(f"{synonym} {base_name}", convert_gender_suffix=True)] = canonical_name
+                aliases[normalize_showdown_name(f"{base_name} {synonym}", convert_gender_suffix=True)] = canonical_name
+            continue
+
+        paldean_match = paldean_form_pattern.match(species_name)
+        if paldean_match is not None:
+            base_name = paldean_match.group("base")
+            breed_name = paldean_match.group("breed")
+            breed_variants = {breed_name, breed_name.removesuffix(" Breed")}
+            for region_name in ("paldean", "paldea"):
+                for breed_variant in breed_variants:
+                    aliases[normalize_showdown_name(f"{region_name} {base_name} {breed_variant}", convert_gender_suffix=True)] = canonical_name
+                    aliases[normalize_showdown_name(f"{base_name} {region_name} {breed_variant}", convert_gender_suffix=True)] = canonical_name
+
+    return aliases
+
+
+GENERATED_SPECIES_ALIASES = _build_generated_species_aliases()
+
 MEGA_STONE_TO_MEGA_NAME = {
     "abomasite": "mega abomasnow",
     "absolite": "mega absol",
@@ -134,6 +177,11 @@ def _normalized_species_name(species_name: str) -> str:
     lowered = species_name.strip().lower()
     if lowered in SHOWDOWN_SPECIES_ALIASES:
         return SHOWDOWN_SPECIES_ALIASES[lowered]
+    normalized = normalize_showdown_name(species_name, convert_gender_suffix=True)
+    if normalized in SHOWDOWN_SPECIES_ALIASES:
+        return SHOWDOWN_SPECIES_ALIASES[normalized]
+    if normalized in GENERATED_SPECIES_ALIASES:
+        return GENERATED_SPECIES_ALIASES[normalized]
     return lowered
 
 
