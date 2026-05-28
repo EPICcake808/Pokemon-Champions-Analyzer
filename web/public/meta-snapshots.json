@@ -1,0 +1,270 @@
+{
+  "version": 1,
+  "generatedAt": "2026-05-28T07:00:58.929146Z",
+  "regulations": [
+    {
+      "regulationId": "champions_regulation_m_a",
+      "updatedAt": "2026-05-28T07:00:58.929241Z",
+      "sourceLabel": "Pokemon Champions Analyzer built-in Regulation M-A meta board",
+      "notes": [
+        "Hosted from the frontend so Vercel Cron can refresh the published meta snapshot without maintaining a separate feed service.",
+        "Seeded directly from the repository's current curated Champions Regulation M-A tournament team snapshots."
+      ],
+      "tournamentTeamSnapshots": [
+        {
+          "slug": "mega-gardevoir-tailroom",
+          "label": "Mega Gardevoir Tailroom",
+          "source": "Early May 2026 M-A tournament snapshot",
+          "result_label": "earlier top cut",
+          "field_relevance": 0.58,
+          "popularity_weight": 0.62,
+          "result_weight": 0.82,
+          "modes": ["tailroom", "trick_room", "tailwind"],
+          "mode_weights": {
+            "tailroom": 0.5,
+            "trick_room": 0.3,
+            "tailwind": 0.2
+          },
+          "broad_mix": {
+            "balance": 0.45,
+            "bulky_offense": 0.35,
+            "trick_room": 0.2
+          },
+          "key_pokemon": ["gardevoir-mega", "whimsicott", "sneasler", "kingambit", "primarina"],
+          "key_cores": ["Gardevoir-Mega + Whimsicott", "Sneasler + Kingambit"]
+        },
+        {
+          "slug": "mega-scizor-balance",
+          "label": "Mega Scizor Balance",
+          "source": "Earlier May 2026 M-A tournament snapshot",
+          "result_label": "earlier top cut",
+          "field_relevance": 0.56,
+          "popularity_weight": 0.58,
+          "result_weight": 0.79,
+          "modes": ["tailwind", "tailroom", "trick_room"],
+          "mode_weights": {
+            "tailwind": 0.45,
+            "tailroom": 0.3,
+            "trick_room": 0.25
+          },
+          "broad_mix": {
+            "balance": 0.55,
+            "bulky_offense": 0.35,
+            "trick_room": 0.1
+          },
+          "key_pokemon": ["scizor-mega", "sneasler", "garchomp", "aerodactyl", "sinistcha", "milotic"],
+          "key_cores": ["Sneasler + Scizor-Mega", "Garchomp + Aerodactyl"]
+        },
+        {
+          "slug": "rain-archaludon",
+          "label": "Rain Archaludon",
+          "source": "Repeated May 2026 M-A top-cut shell",
+          "result_label": "multiple top cuts",
+          "field_relevance": 1.0,
+          "popularity_weight": 0.92,
+          "result_weight": 0.94,
+          "modes": ["rain_tailwind", "rain"],
+          "mode_weights": {
+            "rain_tailwind": 0.7,
+            "rain": 0.3
+          },
+          "broad_mix": {
+            "bulky_offense": 0.55,
+            "balance": 0.25,
+            "hyper_offense": 0.2
+          },
+          "key_pokemon": ["pelipper", "archaludon", "basculegion", "sinistcha", "incineroar", "scizor"],
+          "key_cores": ["Pelipper + Archaludon", "Archaludon + Basculegion"]
+        },
+        {
+          "slug": "venusaur-charizard-sun",
+          "label": "Venusaur Charizard Sun",
+          "source": "Late May 2026 weekend winner and sun recap shell",
+          "result_label": "weekend winner",
+          "field_relevance": 0.86,
+          "popularity_weight": 0.76,
+          "result_weight": 0.88,
+          "modes": ["sun", "sun_tailwind"],
+          "mode_weights": {
+            "sun": 0.65,
+            "sun_tailwind": 0.35
+          },
+          "broad_mix": {
+            "bulky_offense": 0.44,
+            "hyper_offense": 0.36,
+            "balance": 0.2
+          },
+          "key_pokemon": ["venusaur", "charizard-mega-y", "torkoal", "whimsicott", "garchomp", "incineroar"],
+          "key_cores": ["Venusaur + Mega Charizard Y", "Helping Hand + Leaf Storm"]
+        },
+        {
+          "slug": "whimsicott-glimmora",
+          "label": "Whimsicott Glimmora",
+          "source": "Late May 2026 rank-one and top-team recap shell",
+          "result_label": "rank-one finish",
+          "field_relevance": 0.89,
+          "popularity_weight": 0.86,
+          "result_weight": 0.84,
+          "modes": ["tailwind", "sun_tailwind"],
+          "mode_weights": {
+            "tailwind": 0.7,
+            "sun_tailwind": 0.3
+          },
+          "broad_mix": {
+            "hyper_offense": 0.52,
+            "bulky_offense": 0.32,
+            "balance": 0.16
+          },
+          "key_pokemon": ["whimsicott", "glimmora", "charizard-mega-y", "garchomp", "basculegion", "kingambit"],
+          "key_cores": ["Whimsicott + Glimmora", "Glimmora + Mega Charizard Y"]
+        },
+        {
+          "slug": "farigiraf-torkoal-room",
+          "label": "Farigiraf Torkoal Room",
+          "source": "Repeated May 2026 M-A top-cut shell",
+          "result_label": "repeated deep runs",
+          "field_relevance": 0.88,
+          "popularity_weight": 0.84,
+          "result_weight": 0.91,
+          "modes": ["trick_room", "sun_room"],
+          "mode_weights": {
+            "trick_room": 0.65,
+            "sun_room": 0.35
+          },
+          "broad_mix": {
+            "trick_room": 0.65,
+            "bulky_offense": 0.2,
+            "balance": 0.15
+          },
+          "key_pokemon": ["farigiraf", "torkoal", "sinistcha", "kangaskhan", "hatterene", "aegislash"],
+          "key_cores": ["Farigiraf + Torkoal", "Farigiraf + Sinistcha"]
+        },
+        {
+          "slug": "mega-venusaur-kommo-o",
+          "label": "Mega Venusaur Kommo-o",
+          "source": "Late May 2026 nationals winner and rank-one carry shell",
+          "result_label": "nationals winner",
+          "field_relevance": 0.88,
+          "popularity_weight": 0.73,
+          "result_weight": 0.91,
+          "modes": ["dual_mode", "sun"],
+          "mode_weights": {
+            "dual_mode": 0.7,
+            "sun": 0.3
+          },
+          "broad_mix": {
+            "balance": 0.52,
+            "bulky_offense": 0.33,
+            "hyper_offense": 0.15
+          },
+          "key_pokemon": ["venusaur-mega", "kommo-o", "torkoal", "whimsicott", "sinistcha", "incineroar"],
+          "key_cores": ["Mega Venusaur + Kommo-o"]
+        },
+        {
+          "slug": "sand-garchomp-balance",
+          "label": "Sand Garchomp Balance",
+          "source": "Repeated May 2026 M-A tournament shell",
+          "result_label": "repeated day two",
+          "field_relevance": 0.74,
+          "popularity_weight": 0.46,
+          "result_weight": 0.68,
+          "modes": ["sand", "sand_tailwind"],
+          "mode_weights": {
+            "sand": 0.55,
+            "sand_tailwind": 0.45
+          },
+          "broad_mix": {
+            "balance": 0.4,
+            "bulky_offense": 0.4,
+            "hyper_offense": 0.2
+          },
+          "key_pokemon": ["tyranitar", "garchomp", "corviknight", "scizor-mega", "sinistcha", "milotic"],
+          "key_cores": ["Tyranitar + Garchomp", "Corviknight + Garchomp"]
+        },
+        {
+          "slug": "sableye-archaludon-screens",
+          "label": "Sableye Archaludon Screens",
+          "source": "Late May 2026 high-ladder surge and metagame recap shell",
+          "result_label": "high-ladder surge",
+          "field_relevance": 0.72,
+          "popularity_weight": 0.69,
+          "result_weight": 0.69,
+          "modes": ["dual_mode", "rain"],
+          "mode_weights": {
+            "dual_mode": 0.65,
+            "rain": 0.35
+          },
+          "broad_mix": {
+            "bulky_offense": 0.48,
+            "balance": 0.37,
+            "hyper_offense": 0.15
+          },
+          "key_pokemon": ["sableye", "archaludon", "sinistcha", "pelipper", "basculegion", "incineroar"],
+          "key_cores": ["Sableye + Archaludon", "Dual Screens + Healing support"]
+        },
+        {
+          "slug": "vivillon-mega-blastoise",
+          "label": "Vivillon Mega Blastoise",
+          "source": "Late May 2026 Thailand recap and Shell Smash trend shell",
+          "result_label": "multiple high finishes",
+          "field_relevance": 0.81,
+          "popularity_weight": 0.74,
+          "result_weight": 0.8,
+          "modes": ["dual_mode", "tailwind"],
+          "mode_weights": {
+            "dual_mode": 0.7,
+            "tailwind": 0.3
+          },
+          "broad_mix": {
+            "hyper_offense": 0.58,
+            "bulky_offense": 0.32,
+            "balance": 0.1
+          },
+          "key_pokemon": ["vivillon", "blastoise-mega", "whimsicott", "garchomp", "kingambit", "sinistcha"],
+          "key_cores": ["Choice Scarf Vivillon + Mega Blastoise", "Sleep Powder + Shell Smash"]
+        },
+        {
+          "slug": "hydrapple-grassy-balance",
+          "label": "Hydrapple Grassy Balance",
+          "source": "Repeated May 2026 M-A tournament shell",
+          "result_label": "recent deep cut",
+          "field_relevance": 0.36,
+          "popularity_weight": 0.4,
+          "result_weight": 0.65,
+          "modes": ["grassy_terrain"],
+          "mode_weights": {
+            "grassy_terrain": 1.0
+          },
+          "broad_mix": {
+            "balance": 0.45,
+            "bulky_offense": 0.25,
+            "semi_stall": 0.3
+          },
+          "key_pokemon": ["hydrapple", "sinistcha", "venusaur", "torterra", "roserade", "whimsicott"],
+          "key_cores": ["Hydrapple + Sinistcha", "Hydrapple + Venusaur"]
+        },
+        {
+          "slug": "ninetales-snow-room",
+          "label": "Ninetales-A Snow Room",
+          "source": "Repeated May 2026 M-A tournament shell",
+          "result_label": "recent deep cut",
+          "field_relevance": 0.3,
+          "popularity_weight": 0.34,
+          "result_weight": 0.61,
+          "modes": ["snow_room", "snow"],
+          "mode_weights": {
+            "snow_room": 0.65,
+            "snow": 0.35
+          },
+          "broad_mix": {
+            "trick_room": 0.45,
+            "balance": 0.25,
+            "bulky_offense": 0.3
+          },
+          "key_pokemon": ["ninetales-alola", "farigiraf", "sinistcha", "primarina", "kingambit", "abomasnow"],
+          "key_cores": ["Ninetales-A + Farigiraf", "Ninetales-A + Sinistcha"]
+        }
+      ]
+    }
+  ]
+}
