@@ -146,7 +146,27 @@ PREVIEW_SUPPORT_ROLES = {
     "trapper",
     "redirector",
 }
-PREVIEW_PRIMARY_WIN_CONDITIONS = {"perish_trap", "psyspam"}
+PREVIEW_SETUP_ENABLER_ROLES = {
+    "pivot",
+    "bulky_pivot",
+    "bulky_support",
+    "support",
+    "fake_out_support",
+    "screen_setter",
+    "weather_setter",
+    "terrain_setter",
+    "speed_control",
+    "healing_support",
+    "redirector",
+}
+PREVIEW_SETUP_PAYOFF_ROLES = {
+    "setup_sweeper",
+    "physical_sweeper",
+    "special_sweeper",
+    "bulky_attacker",
+    "cleaner",
+}
+PREVIEW_PRIMARY_WIN_CONDITIONS = {"perish_trap", "psyspam", "screens_offense"}
 DEFENSIVE_ITEMS = {
     "assault vest",
     "black sludge",
@@ -3616,7 +3636,14 @@ def infer_team_preview(
         bring_plans.append(
             {
                 "label": _render_team_preview_plan_label(focus, index, opponent_mode),
-                "summary": _summarize_team_preview_plan(focus, lead_pair, back_line, opponent_mode),
+                "summary": _summarize_team_preview_plan(
+                    focus,
+                    lead_pair,
+                    back_line,
+                    opponent_mode,
+                    member_lookup,
+                    member_roles,
+                ),
                 "leads": lead_pair,
                 "back": back_line,
                 "pick_four": pick_four,
@@ -3632,7 +3659,14 @@ def infer_team_preview(
         bring_plans.append(
             {
                 "label": "Default plan",
-                "summary": _summarize_team_preview_plan("safe_default", fallback_leads, fallback_back, None),
+                "summary": _summarize_team_preview_plan(
+                    "safe_default",
+                    fallback_leads,
+                    fallback_back,
+                    None,
+                    member_lookup,
+                    member_roles,
+                ),
                 "leads": fallback_leads,
                 "back": fallback_back,
                 "pick_four": fallback_pick_four,
@@ -4053,6 +4087,14 @@ def _team_preview_signature(members: list[str]) -> tuple[str, ...]:
     return tuple(sorted(members))
 
 
+def _team_preview_is_setup_enabler(roles: set[str]) -> bool:
+    return bool(roles & PREVIEW_SETUP_ENABLER_ROLES)
+
+
+def _team_preview_is_setup_payoff(roles: set[str]) -> bool:
+    return bool(roles & PREVIEW_SETUP_PAYOFF_ROLES)
+
+
 def _score_team_preview_pair(
     pair: tuple[str, str],
     members: list[TeamMember],
@@ -4072,6 +4114,8 @@ def _score_team_preview_pair(
     focus_flags = _team_preview_focus_flags(focus)
     attacker_count = sum(1 for roles in (first_roles, second_roles) if roles & PREVIEW_ATTACKER_ROLES)
     support_count = sum(1 for roles in (first_roles, second_roles) if roles & PREVIEW_SUPPORT_ROLES)
+    setup_enabler_count = sum(1 for roles in (first_roles, second_roles) if _team_preview_is_setup_enabler(roles))
+    setup_payoff_count = sum(1 for roles in (first_roles, second_roles) if _team_preview_is_setup_payoff(roles))
     tailwind_setter_count = sum(1 for roles in (first_roles, second_roles) if "tailwind_setter" in roles)
     trick_room_setter_count = sum(1 for roles in (first_roles, second_roles) if "trick_room_setter" in roles)
     perish_user_count = sum(1 for move_names in (first_move_names, second_move_names) if "perish-song" in move_names)
@@ -4111,6 +4155,23 @@ def _score_team_preview_pair(
         score += 1.8
     if attacker_count == 0:
         score -= 1.5
+    if focus_flags["setup"]:
+        if setup_enabler_count == 0:
+            score -= 3.8
+        else:
+            score += 2.4
+        if setup_payoff_count == 0:
+            score -= 2.8
+        else:
+            score += 1.5 * setup_payoff_count
+        if setup_enabler_count >= 1 and setup_payoff_count >= 1:
+            score += 3.1
+        if "screen_setter" in pair_roles and setup_payoff_count >= 1:
+            score += 2.2
+        if pair_roles & {"fake_out_support", "redirector", "bulky_support"} and setup_payoff_count >= 1:
+            score += 1.7
+        if "weather_setter" in pair_roles and setup_payoff_count >= 1:
+            score += 1.2
     if focus_flags["tailwind"]:
         if tailwind_setter_count == 0:
             score -= 4.2
@@ -4198,6 +4259,8 @@ def _score_team_preview_member_selection(
     selected_role_sets = [set(member_roles.get(member_name, [])) for member_name in selected]
     selected_attackers = sum(1 for role_set in selected_role_sets if role_set & PREVIEW_ATTACKER_ROLES)
     selected_supports = sum(1 for role_set in selected_role_sets if role_set & PREVIEW_SUPPORT_ROLES)
+    selected_has_setup_enabler = any(_team_preview_is_setup_enabler(role_set) for role_set in selected_role_sets)
+    selected_setup_payoff_count = sum(1 for role_set in selected_role_sets if _team_preview_is_setup_payoff(role_set))
     focus_flags = _team_preview_focus_flags(focus)
     move_names = _team_preview_move_names(member)
 
@@ -4205,6 +4268,17 @@ def _score_team_preview_member_selection(
         score += 1.3
     if selected_supports == 0 and roles & PREVIEW_SUPPORT_ROLES:
         score += 1.2
+    if focus_flags["setup"]:
+        if not selected_has_setup_enabler and _team_preview_is_setup_enabler(roles):
+            score += 2.6
+        if selected_setup_payoff_count == 0 and _team_preview_is_setup_payoff(roles):
+            score += 2.4
+        if selected_has_setup_enabler and _team_preview_is_setup_payoff(roles):
+            score += 1.8
+        if selected_setup_payoff_count >= 1 and _team_preview_is_setup_enabler(roles):
+            score += 1.3
+        if "screen_setter" in roles and selected_setup_payoff_count >= 1:
+            score += 1.6
     if focus_flags["tailwind"] and not any("tailwind_setter" in role_set for role_set in selected_role_sets) and "tailwind_setter" in roles:
         score += 2.0
     if focus_flags["trick_room"] and not any("trick_room_setter" in role_set for role_set in selected_role_sets) and "trick_room_setter" in roles:
@@ -4289,6 +4363,18 @@ def _score_team_preview_member_base(
     if item_name == "light clay" and focus_flags["screens"]:
         score += 1.1
 
+    if focus_flags["setup"]:
+        if _team_preview_is_setup_enabler(roles):
+            score += 1.8 if lead_slot else 0.8
+        if _team_preview_is_setup_payoff(roles):
+            score += 1.0 if lead_slot else 1.7
+        if "screen_setter" in roles:
+            score += 2.6 if lead_slot else 0.9
+        if roles & {"fake_out_support", "redirector", "healing_support", "bulky_support"}:
+            score += 1.3 if lead_slot else 0.6
+        if roles & {"setup_sweeper"}:
+            score += 1.3
+
     if focus_flags["tailwind"]:
         score += 0.7 * speed_rank
         if "tailwind_setter" in roles:
@@ -4369,6 +4455,7 @@ def _team_preview_focus_flags(focus: str) -> dict[str, str | bool | None]:
     flags: dict[str, str | bool | None] = {
         "tailwind": False,
         "trick_room": False,
+        "setup": focus in {"setup_sweep", "screens_offense"},
         "screens": focus == "screens_offense",
         "perish": focus == "perish_trap",
         "psyspam": focus == "psyspam",
@@ -4685,6 +4772,12 @@ def _describe_team_preview_member_reason(
             return "Gives the line its Trick Room button."
         if focus_flags["trick_room"] and roles & {"fake_out_support", "redirector", "bulky_support"}:
             return "Buys the Trick Room turn so the slow backline can enter cleanly."
+        if focus_flags["setup"] and "screen_setter" in roles:
+            return "Sets the support turns that let the main sweepers boost or trade safely."
+        if focus_flags["setup"] and roles & PREVIEW_SETUP_PAYOFF_ROLES:
+            return "Turns the early support turns into immediate pressure without exposing the closer too soon."
+        if focus_flags["setup"] and roles & {"weather_setter", "fake_out_support", "redirector", "bulky_support", "support", "healing_support"}:
+            return "Opens the setup window that the team's main win conditions want."
         if focus_flags["tailwind"] and "tailwind_setter" in roles:
             return "Gets Tailwind online immediately."
         if focus_flags["tailwind"] and roles & PREVIEW_ATTACKER_ROLES:
@@ -4705,6 +4798,12 @@ def _describe_team_preview_member_reason(
             return "Stays in back to cash in terrain turns or reset the mode later."
         if focus_flags["trick_room"] and member.species_data.base_speed <= 70 and roles & PREVIEW_ATTACKER_ROLES:
             return "Stays in back as the slow breaker once Trick Room is active."
+        if focus_flags["setup"] and roles & {"setup_sweeper"}:
+            return "Stays in back as the main setup win condition once support is established."
+        if focus_flags["setup"] and roles & PREVIEW_SETUP_PAYOFF_ROLES:
+            return "Stays in back as the payoff piece that cashes in the support turns."
+        if focus_flags["setup"] and _team_preview_is_setup_enabler(roles):
+            return "Stays in back as the fallback support button if the first setup line gets disrupted."
         if roles & {"setup_sweeper", "cleaner"}:
             return "Stays in back as the main cleaner once the opener has forced trades."
         if roles & {"bulky_attacker", "bulky_support", "redirector"}:
@@ -4764,33 +4863,83 @@ def _describe_team_preview_counter_reason(
     return None
 
 
-def _summarize_team_preview_plan(focus: str, lead_pair: list[str], back_line: list[str], opponent_mode: str | None) -> str:
+def _summarize_team_preview_plan(
+    focus: str,
+    lead_pair: list[str],
+    back_line: list[str],
+    opponent_mode: str | None,
+    member_lookup: dict[str, TeamMember],
+    member_roles: dict[str, list[str]],
+) -> str:
     if not lead_pair:
         return "No clear preview plan was inferred."
     lead_text = _render_series(lead_pair)
     back_text = _render_series(back_line) if back_line else "the remaining flex slots"
-    focus_flags = _team_preview_focus_flags(focus)
-    opener_prefix = f"Into {_render_mode_label(opponent_mode)}, " if opponent_mode else ""
-
-    if focus_flags["perish"]:
-        opener = f"{opener_prefix}lead {lead_text} to start the trap or positioning sequence without exposing the whole endgame at once."
-    elif focus_flags["screens"]:
-        opener = f"{opener_prefix}lead {lead_text} to establish screens or immediate setup support before your main closer comes in."
-    elif focus_flags["trick_room"] and focus_flags["tailwind"]:
-        opener = f"{opener_prefix}lead {lead_text} to keep both speed modes available while you read which branch preview is really asking for."
-    elif focus_flags["trick_room"]:
-        opener = f"{opener_prefix}lead {lead_text} to contest the opening turn and establish Trick Room or its support turn cleanly."
-    elif focus_flags["tailwind"]:
-        opener = f"{opener_prefix}lead {lead_text} to get the fast mode online quickly and force early tempo."
-    elif focus_flags["weather"]:
-        opener = f"{opener_prefix}lead {lead_text} to secure weather first and make the opponent respect boosted damage immediately."
-    elif focus_flags["terrain"]:
-        opener = f"{opener_prefix}lead {lead_text} to claim terrain early and route the game through your strongest terrain turns."
-    else:
-        opener = f"{opener_prefix}lead {lead_text} as the most stable default pair when preview does not force a hard adaptation."
+    opener = _summarize_team_preview_opener(focus, lead_pair, opponent_mode, member_lookup, member_roles)
 
     opener = opener[0].upper() + opener[1:]
     return f"{opener} Keep {back_text} in back as the cleaner or stabilizing endgame line."
+
+
+def _summarize_team_preview_opener(
+    focus: str,
+    lead_pair: list[str],
+    opponent_mode: str | None,
+    member_lookup: dict[str, TeamMember],
+    member_roles: dict[str, list[str]],
+) -> str:
+    lead_text = _render_series(lead_pair)
+    focus_flags = _team_preview_focus_flags(focus)
+    opener_prefix = f"Into {_render_mode_label(opponent_mode)}, " if opponent_mode else ""
+    lead_members = [member_lookup[member_name] for member_name in lead_pair if member_name in member_lookup]
+    lead_role_sets = [set(member_roles.get(member_name, [])) for member_name in lead_pair]
+    lead_roles = set().union(*lead_role_sets) if lead_role_sets else set()
+    lead_move_names = set().union(*(_team_preview_move_names(member) for member in lead_members)) if lead_members else set()
+    attacker_count = sum(1 for roles in lead_role_sets if roles & PREVIEW_ATTACKER_ROLES)
+    support_count = sum(1 for roles in lead_role_sets if roles & PREVIEW_SUPPORT_ROLES)
+    has_screens = "screen_setter" in lead_roles or bool(lead_move_names & {"reflect", "light-screen"})
+    has_tailwind = "tailwind_setter" in lead_roles or "tailwind" in lead_move_names
+    has_disruption = bool(lead_move_names & {"fake-out", "icy-wind", "electroweb", "quash", "taunt", "encore", "wide-guard"})
+    has_redirection = "redirector" in lead_roles or bool(lead_move_names & REDIRECTION_MOVES)
+    has_fake_out = "fake_out_support" in lead_roles or "fake-out" in lead_move_names
+
+    if focus_flags["perish"]:
+        return f"{opener_prefix}lead {lead_text} to start the trap or positioning sequence without exposing the whole endgame at once."
+    if focus_flags["screens"]:
+        if has_screens and (has_disruption or has_redirection or has_fake_out):
+            return f"{opener_prefix}lead {lead_text} to stall out the first burst of pressure with screens and utility, then buy clean setup or damage turns for the backline."
+        if has_screens and attacker_count >= 1:
+            return f"{opener_prefix}lead {lead_text} to get screens up without giving away the board, while still forcing the opponent to respect immediate damage."
+        if has_disruption or has_redirection or has_fake_out or support_count >= attacker_count:
+            return f"{opener_prefix}lead {lead_text} to disrupt the first few turns and buy cleaner setup or damage windows before the real closer has to commit."
+        return f"{opener_prefix}lead {lead_text} to establish screens or immediate setup support before your main closer comes in."
+    if focus_flags["setup"]:
+        if has_disruption or has_redirection or support_count > attacker_count:
+            return f"{opener_prefix}lead {lead_text} to disrupt the first few turns and buy clean setup or damage windows for the backline."
+        return f"{opener_prefix}lead {lead_text} to create the support turns your main win condition needs before you commit the closer."
+    if focus_flags["trick_room"] and focus_flags["tailwind"]:
+        return f"{opener_prefix}lead {lead_text} to keep both speed modes available while you read which branch preview is really asking for."
+    if focus_flags["trick_room"]:
+        return f"{opener_prefix}lead {lead_text} to contest the opening turn and establish Trick Room or its support turn cleanly."
+    if focus_flags["tailwind"]:
+        if has_tailwind and attacker_count >= 1:
+            if has_disruption or has_redirection or has_fake_out:
+                return f"{opener_prefix}lead {lead_text} to get Tailwind online while still contesting the opening turn with utility and early pressure."
+            return f"{opener_prefix}lead {lead_text} to get the fast mode online quickly and force early tempo."
+        if has_disruption or has_redirection or has_fake_out:
+            return f"{opener_prefix}lead {lead_text} to disrupt the opposing fast start and buy cleaner setup or damage turns later."
+        return f"{opener_prefix}lead {lead_text} to keep speed control available without overcommitting your closer on turn one."
+    if focus_flags["weather"]:
+        if has_disruption or has_redirection:
+            return f"{opener_prefix}lead {lead_text} to slow the first exchanges, then reset or exploit weather once the board is easier to control."
+        return f"{opener_prefix}lead {lead_text} to secure weather first and make the opponent respect boosted damage immediately."
+    if focus_flags["terrain"]:
+        if has_disruption or has_redirection:
+            return f"{opener_prefix}lead {lead_text} to contest the first exchanges and create safer terrain turns for the real payoff pieces."
+        return f"{opener_prefix}lead {lead_text} to claim terrain early and route the game through your strongest terrain turns."
+    if has_disruption or has_redirection or has_fake_out:
+        return f"{opener_prefix}lead {lead_text} as the safer utility pair to stall out early pressure before the backline has to commit."
+    return f"{opener_prefix}lead {lead_text} as the most stable default pair when preview does not force a hard adaptation."
 
 
 def _build_team_preview_watch_teams(

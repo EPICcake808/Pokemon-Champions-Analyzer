@@ -16,7 +16,7 @@ import type {
 
 export const dynamic = "force-dynamic";
 
-const USE_BUNDLED_DEV_SNAPSHOT = process.env.NODE_ENV !== "production";
+const USE_BUNDLED_DEV_SNAPSHOT = process.env.POKEMON_ANALYZER_USE_BUNDLED_DEV_SNAPSHOT?.trim() === "1";
 
 export default async function Home() {
   let regulationCatalog = fallbackRegulationCatalog as unknown as RegulationCatalogPayload;
@@ -24,7 +24,7 @@ export default async function Home() {
 
   if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(
-      "Development mode is using the bundled Regulation M-A snapshot to keep the Next.js dev server responsive. Run the analyzer after editing the team to fetch live results.",
+      "The app is using the bundled Regulation M-A snapshot for its initial load because POKEMON_ANALYZER_USE_BUNDLED_DEV_SNAPSHOT=1. Refresh analysis to fetch live results.",
     );
   } else {
     try {
@@ -47,7 +47,7 @@ export default async function Home() {
     if (initialResult.ok) {
       initialAnalysis = initialResult.analysis;
     } else {
-      initialLoadIssues.push(initialResult.message);
+      initialLoadIssues.push(`${initialResult.message} Showing the bundled Regulation M-A analysis snapshot instead.`);
     }
   }
 

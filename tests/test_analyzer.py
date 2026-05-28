@@ -366,6 +366,49 @@ Ability: Defiant
 - Iron Head
 """
 
+TAILWIND_UTILITY_TEAM = """Sneasler @ White Herb
+Ability: Unburden
+- Close Combat
+- Dire Claw
+- Fake Out
+- Protect
+
+Garchomp @ Soft Sand
+Ability: Rough Skin
+- Dragon Claw
+- Rock Slide
+- Protect
+- Stomping Tantrum
+
+Sinistcha @ Sitrus Berry
+Ability: Hospitality
+- Matcha Gotcha
+- Rage Powder
+- Trick Room
+- Life Dew
+
+Aerodactyl @ Focus Sash
+Ability: Unnerve
+- Rock Slide
+- Protect
+- Dual Wingbeat
+- Tailwind
+
+Scizor-Mega @ Scizorite
+Ability: Technician
+- Bullet Punch
+- Protect
+- Bug Bite
+- Swords Dance
+
+Milotic @ Leftovers
+Ability: Competitive
+- Scald
+- Protect
+- Icy Wind
+- Recover
+"""
+
 SUN_TAILWIND_TEAM = """Whimsicott @ Focus Sash
 Ability: Prankster
 - Tailwind
@@ -1855,6 +1898,44 @@ Ability: Illusion
         self.assertTrue(
             any("Indeedee-F and Hatterene" in note for note in psyspam_analysis.team_preview_strategy_notes)
         )
+
+    def test_team_preview_defaults_to_setup_support_core_for_setup_shells(self) -> None:
+        analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+
+        primary_plan = analysis.team_preview_plans[0]
+        non_primary_summaries = [plan["summary"].lower() for plan in analysis.team_preview_plans[1:]]
+
+        self.assertTrue(
+            "Screens Offense" in primary_plan["label"] or "Setup Sweep" in primary_plan["label"]
+        )
+        self.assertIn("Sableye", primary_plan["leads"])
+        self.assertTrue(
+            {"Sableye", "Archaludon", "Lucario-Mega"}.issubset(set(primary_plan["pick_four"]))
+        )
+        self.assertTrue(
+            any(
+                "setup" in reason.lower() or "support" in reason.lower() or "screen" in reason.lower()
+                for reason in primary_plan["member_reasons"].values()
+            )
+        )
+        self.assertTrue(
+            any(
+                "disrupt" in summary or "stall out" in summary or "buy clean" in summary
+                for summary in non_primary_summaries
+            )
+        )
+
+    def test_team_preview_tailwind_summaries_keep_tailwind_language_with_utility_leads(self) -> None:
+        analysis = analyze_team_text(TAILWIND_UTILITY_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+
+        primary_plan = analysis.team_preview_plans[0]
+        summary = primary_plan["summary"].lower()
+
+        self.assertIn("Tailwind", primary_plan["label"])
+        self.assertIn("Aerodactyl", primary_plan["leads"])
+        self.assertIn("Gets Tailwind online immediately.", primary_plan["member_reasons"]["Aerodactyl"])
+        self.assertTrue("tailwind online" in summary or "fast mode" in summary)
+        self.assertNotIn("disrupt the opposing fast start", summary)
 
     def test_text_report_includes_utility_role_breakdown(self) -> None:
         analysis = analyze_team_text(ROLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
