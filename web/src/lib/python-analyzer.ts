@@ -33,13 +33,14 @@ function shouldUseRemoteAnalyzerApi() {
 }
 
 function buildAnalyzerApiUrl(pathname: string, searchParams?: Record<string, string | boolean | undefined>) {
-  if (!shouldUseRemoteAnalyzerApi()) {
+  const baseUrl = ANALYZER_API_BASE_URL;
+  if (!baseUrl || !shouldUseRemoteAnalyzerApi()) {
     return null;
   }
 
-  const normalizedBaseUrl = ANALYZER_API_BASE_URL.endsWith("/")
-    ? ANALYZER_API_BASE_URL
-    : `${ANALYZER_API_BASE_URL}/`;
+  const normalizedBaseUrl = baseUrl.endsWith("/")
+    ? baseUrl
+    : `${baseUrl}/`;
   const url = new URL(pathname.replace(/^\//, ""), normalizedBaseUrl);
   for (const [key, value] of Object.entries(searchParams ?? {})) {
     if (value === undefined) {
