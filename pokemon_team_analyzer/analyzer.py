@@ -369,6 +369,12 @@ ARCHETYPE_MATCHUP_BIAS = {
     },
 }
 
+
+def _has_persistent_trapping(member: TeamMember, ability_name: str, item_name: str) -> bool:
+    return ability_name == "shadow tag" or (
+        item_name == "gengarite" and member.species_data.api_name == "gengar"
+    )
+
 # Calibrated from ChampionsMeta Regulation M-A usage and recent tournament tags,
 # where Tailwind offense, weather offense, and hybrid Trick Room shells are the
 # most common pressure patterns.
@@ -1589,6 +1595,7 @@ def infer_pokemon_roles(
     has_eviolite = item_name == "eviolite"
     has_pivot_ability = ability_name in PIVOT_ABILITIES
     has_support_ability = ability_name in SUPPORT_ABILITIES
+    has_persistent_trapping = _has_persistent_trapping(member, ability_name, item_name)
     wall_bulk_threshold = 260 if has_eviolite else 280
 
     offense = max(member.species_data.base_attack, member.species_data.base_special_attack)
@@ -1621,7 +1628,7 @@ def infer_pokemon_roles(
         roles.append("fake_out_support")
     if "healing_support" in role_presence:
         roles.append("healing_support")
-    if "trapping" in role_presence:
+    if "trapping" in role_presence or has_persistent_trapping:
         roles.append("trapper")
     if "redirection" in role_presence:
         roles.append("redirector")
@@ -1773,6 +1780,9 @@ def infer_team_archetype(
 
     offense_core = sweepers + setup_sweepers + pivots + 0.5 * cleaners
     balanced_defense = bulky_supports + bulky_attackers + bulky_pivots + supports
+    offensive_roles = sweepers + setup_sweepers + cleaners
+    support_load = supports + bulky_supports + healing_supports + screen_setters + speed_control_roles
+    distinct_weather_modes = sum(1 for source_count in (rain_sources, sun_sources, sand_sources, snow_sources) if source_count > 0)
 
     scores = {
         "hyper_offense": (
@@ -2141,6 +2151,28 @@ def infer_team_archetype(
     if psychic_terrain_sources == 0:
         scores["psychic_terrain"] -= 4.0
         scores["psyspam"] -= 5.0
+    if offensive_roles <= 2 and offense_core < 3 and support_load >= 4:
+        scores["hyper_offense"] -= 4.0
+    if distinct_weather_modes > 1:
+        competing_weather_penalty = 2.0 * (distinct_weather_modes - 1)
+        for weather_archetype in (
+            "rain",
+            "sun",
+            "sand",
+            "snow",
+            "rain_tailwind",
+            "sun_tailwind",
+            "sand_tailwind",
+            "snow_tailwind",
+            "rain_room",
+            "sun_room",
+            "sand_room",
+            "snow_room",
+            "rain_tailroom",
+            "sun_tailroom",
+        ):
+            scores[weather_archetype] -= competing_weather_penalty
+        scores["dual_mode"] -= 1.5 * (distinct_weather_modes - 1)
     if psychic_pressure < 2 and move_counts["expanding-force"] == 0:
         scores["psyspam"] -= 4.0
     if screen_setters == 0:
@@ -2149,8 +2181,8 @@ def infer_team_archetype(
         scores["screens_offense"] -= 2.0
     if perish_song_moves == 0:
         scores["perish_trap"] -= 6.0
-    if trapping_moves == 0 and trappers == 0:
-        scores["perish_trap"] -= 5.0
+    if trappers == 0:
+        scores["perish_trap"] -= 9.0
     if redirectors == 0 and supports < 2:
         scores["perish_trap"] -= 1.5
     if bulky_supports < 2:
@@ -2385,6 +2417,7 @@ def infer_matchup_profile(
     team_archetype_scores: dict[str, float],
 ) -> tuple[dict[str, float], list[str], list[str]]:
     move_counts = Counter()
+    ability_counts = Counter()
     item_counts = Counter()
     fast_members = 0
     slow_members = 0
@@ -2392,6 +2425,10 @@ def infer_matchup_profile(
     priority_attack_count = 0
 
     for member, classified_moves in classified_members:
+        ability_name = _normalized_ability_name(member.pokemon_set.ability)
+        if ability_name:
+            ability_counts[ability_name] += 1
+
         item_name = _normalized_item_name(member.pokemon_set.item)
         if item_name:
             item_counts[item_name] += 1
@@ -2438,6 +2475,18 @@ def infer_matchup_profile(
     taunt_count = move_counts["taunt"]
     encore_count = move_counts["encore"]
     imprison_count = move_counts["imprison"]
+    distinct_weather_modes = sum(
+        1
+        for source_count in (
+            ability_counts["drizzle"] + move_counts["rain-dance"],
+            ability_counts["drought"] + move_counts["sunny-day"],
+            ability_counts["sand stream"] + move_counts["sandstorm"],
+            ability_counts["snow warning"] + move_counts["hail"] + move_counts["snowscape"],
+        )
+        if source_count > 0
+    )
+    competing_weather_count = max(0, distinct_weather_modes - 1)
+    mode_sprawl_penalty = competing_weather_count * (1.1 + 0.4 * int(move_counts["tailwind"] > 0 and trick_room_moves > 0))
     bias = ARCHETYPE_MATCHUP_BIAS[own_archetype]
 
     tailwind_counterplay = (
@@ -2451,12 +2500,14 @@ def infer_matchup_profile(
         + 0.2 * hazard_control
     )
     weather_counterplay = (
-        0.6 * (pokemon_role_counts["weather_setter"] + utility_role_counts["weather"])
+        0.6 * min(2, pokemon_role_counts["weather_setter"] + utility_role_counts["weather"])
         + 0.8 * wide_guard_count
         + 0.4 * offensive_coverage["electric"]
         + 0.4 * offensive_coverage["grass"]
         + 0.3 * offensive_coverage["rock"]
     )
+    if competing_weather_count:
+        weather_counterplay = max(0.0, weather_counterplay - 1.1 * competing_weather_count)
     trick_room_counterplay = (
         1.0 * taunt_count
         + 1.0 * encore_count
@@ -2509,6 +2560,7 @@ def infer_matchup_profile(
             - 0.45 * tailwind_exposure
             - 0.15 * weather_exposure
             - 0.5 * max(0, very_slow_members - trick_room_moves)
+            - 0.75 * mode_sprawl_penalty
         ),
         "bulky_offense": (
             bias["bulky_offense"]
@@ -2521,6 +2573,7 @@ def infer_matchup_profile(
             + 0.1 * coverage_breadth
             - 0.35 * tailwind_exposure
             - 0.5 * weather_exposure
+            - 0.4 * mode_sprawl_penalty
         ),
         "balance": (
             bias["balance"]
@@ -2532,6 +2585,7 @@ def infer_matchup_profile(
             - 0.2 * supports
             - 0.2 * tailwind_exposure
             - 0.15 * trick_room_exposure
+            - 0.2 * mode_sprawl_penalty
         ),
         "semi_stall": (
             bias["semi_stall"]
@@ -2566,6 +2620,7 @@ def infer_matchup_profile(
             - 0.35 * trick_room_mode_tension
             - 0.6 * choice_items
             + 0.3 * slow_members
+            - 0.8 * mode_sprawl_penalty
         ),
     }
 

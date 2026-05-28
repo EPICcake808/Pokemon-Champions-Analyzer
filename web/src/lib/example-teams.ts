@@ -71,63 +71,63 @@ Jolly Nature
   },
   {
     slug: "hyper-offense",
-    title: "Hyper Offense",
-    note: "Fast hazard pressure built to win short damage races.",
+    title: "Whimsicott Glimmora",
+        note: "Fast current-field offense built around Whimsicott support, Glimmora chip, and Mega Charizard Y pressure.",
     regulationId: DEFAULT_REGULATION_ID,
-    teamText: `Glimmora @ Focus Sash
+    teamText: `Whimsicott @ Focus Sash
+Ability: Prankster
+Level: 50
+EVs: 10 HP / 24 SpA / 32 Spe
+Timid Nature
+- Tailwind
+- Encore
+- Moonblast
+- Protect
+
+Glimmora @ Poison Barb
 Ability: Toxic Debris
 Level: 50
-EVs: 4 Def / 252 SpA / 252 Spe
+EVs: 10 HP / 32 SpA / 24 Spe
 Timid Nature
 - Stealth Rock
 - Power Gem
 - Sludge Wave
 - Earth Power
 
+Charizard @ Charizardite Y
+Ability: Blaze
+Level: 50
+EVs: 2 Def / 32 SpA / 32 Spe
+Timid Nature
+- Heat Wave
+- Air Slash
+- Solar Beam
+- Protect
+
 Garchomp @ Soft Sand
 Ability: Rough Skin
 Level: 50
-EVs: 156 HP / 252 Atk / 100 Spe
+EVs: 18 HP / 32 Atk / 2 Def / 14 Spe
 Adamant Nature
-- Swords Dance
 - Dragon Claw
 - Rock Slide
+- Protect
 - Stomping Tantrum
 
-Sneasler @ White Herb
-Ability: Unburden
+Basculegion (M) @ Choice Scarf
+Ability: Adaptability
 Level: 50
-EVs: 4 HP / 252 Atk / 252 Spe
+EVs: 32 Atk / 2 Def / 32 Spe
 Jolly Nature
-- Close Combat
-- Dire Claw
-- Fake Out
-- Protect
-
-Aerodactyl @ Sharp Beak
-Ability: Unnerve
-Level: 50
-EVs: 32 HP / 2 SpD / 32 Spe
-Jolly Nature
-- Rock Slide
-- Dual Wingbeat
-- Tailwind
-- Protect
-
-Scizor-Mega @ Scizorite
-Ability: Technician
-Level: 50
-EVs: 220 HP / 252 Atk / 36 Spe
-Adamant Nature
-- Bullet Punch
-- Protect
-- Bug Bite
-- Swords Dance
+- Last Respects
+- Aqua Jet
+- Wave Crash
+- Psychic Fangs
 
 Kingambit @ Black Glasses
 Ability: Defiant
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 Spe
 Adamant Nature
 - Kowtow Cleave
 - Protect
@@ -136,8 +136,8 @@ Adamant Nature
   },
   {
     slug: "trick-room",
-    title: "Trick Room",
-    note: "Slow-mode pressure calibrated to current Regulation M-A Trick Room shells.",
+    title: "Farigiraf Torkoal Room",
+    note: "Established Trick Room pressure shell with redirection, healing, and hard sun turns.",
     regulationId: DEFAULT_REGULATION_ID,
     teamText: `Farigiraf @ Sitrus Berry
 Ability: Armor Tail
@@ -202,7 +202,7 @@ Adamant Nature
   {
     slug: "perish-trap",
     title: "Perish Trap",
-    note: "Trap-centric routing built around forced endgames and protected clocks.",
+    note: "Specialized endgame shell that trades broad flexibility for forced clocks and trap lines.",
     regulationId: DEFAULT_REGULATION_ID,
     teamText: `Gengar @ Gengarite
 Ability: Cursed Body
@@ -266,57 +266,57 @@ Adamant Nature
   },
   {
     slug: "master-ball",
-    title: "Master Ball Ready",
-    note: "Tournament hybrid pulled from live Regulation M-A play with mixed speed modes.",
+    title: "Sableye Archaludon",
+    note: "Current dual-mode shell with screens, rain support, and Archaludon + Basculegion pressure.",
     regulationId: DEFAULT_REGULATION_ID,
-    teamText: `Gardevoir-Mega @ Gardevoirite
-Ability: Pixilate
+        teamText: `Sableye @ Roseli Berry
+Ability: Prankster
+Level: 50
+EVs: 32 HP / 9 Def / 25 SpD
+Careful Nature
+- Fake Out
+- Light Screen
+- Reflect
+- Quash
+
+Pelipper @ Focus Sash
+Ability: Drizzle
 Level: 50
 EVs: 2 HP / 32 SpA / 32 Spe
 Timid Nature
-- Hyper Voice
-- Psychic
-- Trick Room
-- Protect
-
-Primarina @ Leftovers
-Ability: Liquid Voice
-Level: 50
-EVs: 32 HP / 24 SpA / 10 Spe
-Modest Nature
-- Hyper Voice
-- Moonblast
-- Calm Mind
-- Protect
-
-Whimsicott @ Focus Sash
-Ability: Prankster
-Level: 50
-EVs: 10 HP / 24 SpA / 32 Spe
-Timid Nature
+- Hurricane
 - Tailwind
-- Moonblast
-- Encore
+- Wide Guard
 - Protect
 
-Sneasler @ White Herb
-Ability: Unburden
+Archaludon @ Leftovers
+Ability: Stamina
 Level: 50
-EVs: 28 HP / 32 Atk / 6 Spe
+EVs: 32 HP / 4 Def / 28 SpA
+Modest Nature
+- Electro Shot
+- Dragon Pulse
+- Flash Cannon
+- Protect
+
+Basculegion (M) @ Choice Scarf
+Ability: Adaptability
+Level: 50
+EVs: 32 Atk / 2 Def / 32 Spe
 Jolly Nature
-- Close Combat
-- Dire Claw
-- Fake Out
-- Protect
+- Last Respects
+- Aqua Jet
+- Wave Crash
+- Psychic Fangs
 
-Arcanine-Hisui @ Sitrus Berry
-Ability: Intimidate
+Sinistcha @ Sitrus Berry
+Ability: Hospitality
 Level: 50
-EVs: 28 HP / 32 Atk / 6 Spe
-Adamant Nature
-- Rock Slide
-- Flare Blitz
-- Extreme Speed
+EVs: 32 HP / 2 Def / 32 SpA
+Quiet Nature
+- Matcha Gotcha
+- Rage Powder
+- Life Dew
 - Protect
 
 Kingambit @ Black Glasses
@@ -332,7 +332,7 @@ Adamant Nature
   {
     slug: "mega-scizor",
     title: "Mega Scizor",
-    note: "Modern balance shell with Tailwind support, priority, and mode-flex lines.",
+    note: "Earlier top-cut balance reference with Tailwind pressure and emergency Trick Room coverage.",
     regulationId: DEFAULT_REGULATION_ID,
     teamText: `Sneasler @ White Herb
 Ability: Unburden
@@ -393,6 +393,71 @@ Calm Nature
 - Protect
 - Icy Wind
 - Recover`,
+  },
+  {
+    slug: "incoherent-stress-test",
+    title: "Incoherent Stress Test",
+    note: "Legal on paper, strategically self-sabotaging, and packed with conflicting weather and speed plans.",
+    regulationId: DEFAULT_REGULATION_ID,
+    teamText: `Tyranitar @ Leftovers
+Ability: Sand Stream
+Level: 50
+EVs: 32 HP / 32 Atk / 2 Spe
+Adamant Nature
+- Sandstorm
+- Stealth Rock
+- Roar
+- Protect
+
+Politoed @ Mystic Water
+Ability: Drizzle
+Level: 50
+EVs: 32 HP / 16 Def / 16 SpD
+Calm Nature
+- Rain Dance
+- Perish Song
+- Icy Wind
+- Protect
+
+Torkoal @ Charcoal
+Ability: Drought
+Level: 50
+EVs: 32 HP / 32 SpA / 2 SpD
+Quiet Nature
+- Eruption
+- Sunny Day
+- Earth Power
+- Protect
+
+Alolan Ninetales @ Mental Herb
+Ability: Snow Warning
+Level: 50
+EVs: 32 HP / 24 SpA / 10 Spe
+Timid Nature
+- Aurora Veil
+- Blizzard
+- Freeze-Dry
+- Protect
+
+Farigiraf @ Sitrus Berry
+Ability: Armor Tail
+Level: 50
+EVs: 32 HP / 24 SpA / 8 Def
+Modest Nature
+- Trick Room
+- Psychic
+- Dazzling Gleam
+- Protect
+
+Whimsicott @ Focus Sash
+Ability: Prankster
+Level: 50
+EVs: 10 HP / 24 SpA / 32 Spe
+Timid Nature
+- Tailwind
+- Encore
+- Moonblast
+- Protect`,
   },
 ];
 

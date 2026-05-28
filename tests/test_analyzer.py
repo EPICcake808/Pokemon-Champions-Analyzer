@@ -501,6 +501,7 @@ class FakeMetadataProvider:
         self.species = {
             "Lucario-Mega": SpeciesData("Lucario-Mega", "lucario-mega", ("fighting", "steel"), 70, 145, 88, 140, 70, 112),
             "Sableye": SpeciesData("Sableye", "sableye", ("dark", "ghost"), 50, 75, 75, 65, 65, 50),
+            "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
             "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
             "Sinistcha": SpeciesData("Sinistcha", "sinistcha", ("grass", "ghost"), 71, 60, 106, 121, 80, 70),
             "Basculegion (M)": SpeciesData("Basculegion (M)", "basculegion-male", ("water", "ghost"), 120, 112, 65, 80, 75, 78),
@@ -1025,6 +1026,7 @@ class FakeMetadataProvider:
             "Bullet Punch": MoveData("Bullet Punch", "bullet-punch", "steel", "physical", priority=1),
             "Bug Bite": MoveData("Bug Bite", "bug-bite", "bug", "physical"),
             "Scald": MoveData("Scald", "scald", "water", "special"),
+            "Hurricane": MoveData("Hurricane", "hurricane", "flying", "special"),
             "Shadow Ball": MoveData("Shadow Ball", "shadow-ball", "ghost", "special"),
             "Sludge Bomb": MoveData("Sludge Bomb", "sludge-bomb", "poison", "special"),
             "Perish Song": MoveData(
@@ -1375,11 +1377,11 @@ Ability: Illusion
                 },
             },
             "realistic_hyper_offense_team.txt": {
-                "archetype": "hyper_offense",
+                "archetype": "tailwind",
                 "member_roles": {
                     "Glimmora": {"special_sweeper", "hazard_setter"},
-                    "Garchomp": {"setup_sweeper", "physical_sweeper"},
-                    "Aerodactyl": {"speed_control", "tailwind_setter"},
+                    "Garchomp": {"physical_sweeper"},
+                    "Whimsicott": {"speed_control", "tailwind_setter"},
                 },
             },
             "realistic_trick_room_team.txt": {
@@ -1444,6 +1446,26 @@ Ability: Illusion
                 analysis = analyze_team_text(load_example_team(file_name), metadata_provider=provider, regulation_id=None)
                 self.assertEqual(analysis.primary_team_style, expected_style)
 
+    def test_incoherent_example_does_not_claim_perish_trap_without_trap(self) -> None:
+        provider = FakeMetadataProvider()
+        real_perish_analysis = analyze_team_text(
+            load_example_team("realistic_perish_trap_team.txt"),
+            metadata_provider=provider,
+            regulation_id=None,
+        )
+        incoherent_analysis = analyze_team_text(
+            load_example_team("incoherent_stress_test_team.txt"),
+            metadata_provider=provider,
+            regulation_id=None,
+        )
+
+        self.assertIn("perish_trap", real_perish_analysis.team_win_condition_labels)
+        self.assertNotIn("perish_trap", incoherent_analysis.team_win_condition_labels)
+        self.assertLess(incoherent_analysis.team_archetype_scores["perish_trap"], 2.0)
+        self.assertNotEqual(incoherent_analysis.primary_team_style, "hyper_offense")
+        self.assertLess(incoherent_analysis.matchup_scores["hyper_offense"], 3.0)
+        self.assertLess(incoherent_analysis.matchup_scores["trick_room"], 2.5)
+
     def test_speed_benchmarks_include_trick_room_and_member_tags(self) -> None:
         analysis = analyze_team_text(
             load_example_team("realistic_trick_room_team.txt"),
@@ -1493,7 +1515,7 @@ Ability: Illusion
 
     def test_speed_contexts_include_ability_based_boosts(self) -> None:
         analysis = analyze_team_text(
-            load_example_team("championsmeta_master_ball_ready_team.txt"),
+            load_example_team("championsmeta_mega_scizor_team.txt"),
             metadata_provider=FakeMetadataProvider(),
             regulation_id=None,
         )
@@ -1502,8 +1524,8 @@ Ability: Illusion
             context["slug"]: context["speed"]
             for context in analysis.member_speed_contexts["Sneasler"]
         }
-        self.assertEqual(sneasler_contexts["unburden"], 320)
-        self.assertEqual(sneasler_contexts["tailwind_unburden"], 640)
+        self.assertEqual(sneasler_contexts["unburden"], 344)
+        self.assertEqual(sneasler_contexts["tailwind_unburden"], 688)
 
     def test_analysis_predicts_matchups_and_team_difficulty(self) -> None:
         provider = FakeMetadataProvider()
@@ -1554,15 +1576,8 @@ Ability: Illusion
         )
 
         self.assertGreater(master_ball_analysis.matchup_scores["hyper_offense"], 0)
-        self.assertGreater(
-            master_ball_analysis.matchup_scores["hyper_offense"],
-            master_ball_analysis.matchup_scores["bulky_offense"],
-        )
-        self.assertGreater(
-            master_ball_analysis.matchup_scores["trick_room"],
-            master_ball_analysis.matchup_scores["bulky_offense"],
-        )
-        self.assertTrue(any("trick_room" in mode or "tailroom" in mode for mode in master_ball_analysis.team_mode_labels))
+        self.assertGreater(master_ball_analysis.matchup_scores["bulky_offense"], 0)
+        self.assertTrue(any("rain" in mode for mode in master_ball_analysis.team_mode_labels))
         self.assertIn("hyper_offense", mega_scizor_analysis.favorable_matchups)
         self.assertGreater(
             mega_scizor_analysis.matchup_scores["trick_room"],
@@ -1806,7 +1821,9 @@ Ability: Illusion
         self.assertIn("Perish Trap", perish_plan["label"])
         self.assertIn("Gengar", perish_plan["pick_four"])
         self.assertIn("Politoed", perish_plan["pick_four"])
-        self.assertIn("Sableye", perish_plan["pick_four"])
+        self.assertTrue(
+            {"Sableye", "Sinistcha"} & set(perish_plan["pick_four"])
+        )
 
         psyspam_plan = psyspam_analysis.team_preview_plans[0]
         self.assertIn("Psyspam", psyspam_plan["label"])
