@@ -500,6 +500,7 @@ class FakeMetadataProvider:
     def __init__(self) -> None:
         self.species = {
             "Lucario-Mega": SpeciesData("Lucario-Mega", "lucario-mega", ("fighting", "steel"), 70, 145, 88, 140, 70, 112),
+            "Mega Lucario": SpeciesData("Mega Lucario", "lucario-mega", ("fighting", "steel"), 70, 145, 88, 140, 70, 112),
             "Sableye": SpeciesData("Sableye", "sableye", ("dark", "ghost"), 50, 75, 75, 65, 65, 50),
             "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
             "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
@@ -534,6 +535,8 @@ class FakeMetadataProvider:
             "Scizor": SpeciesData("Scizor", "scizor", ("bug", "steel"), 70, 130, 100, 55, 80, 65),
             "Milotic": SpeciesData("Milotic", "milotic", ("water",), 95, 60, 79, 100, 125, 81),
             "Gengar": SpeciesData("Gengar", "gengar", ("ghost", "poison"), 60, 65, 60, 130, 75, 110),
+            "Mega Gengar": SpeciesData("Mega Gengar", "gengar-mega", ("ghost", "poison"), 60, 65, 80, 170, 95, 130),
+            "Gengar-Mega": SpeciesData("Gengar-Mega", "gengar-mega", ("ghost", "poison"), 60, 65, 80, 170, 95, 130),
             "Politoed": SpeciesData("Politoed", "politoed", ("water",), 90, 75, 75, 90, 100, 70),
             "Hydrapple": SpeciesData("Hydrapple", "hydrapple", ("grass", "dragon"), 106, 80, 110, 120, 80, 44),
             "Venusaur": SpeciesData("Venusaur", "venusaur", ("grass", "poison"), 80, 82, 83, 100, 100, 80),
@@ -544,6 +547,8 @@ class FakeMetadataProvider:
             "Hippowdon": SpeciesData("Hippowdon", "hippowdon", ("ground",), 108, 112, 118, 68, 72, 47),
             "Rhyperior": SpeciesData("Rhyperior", "rhyperior", ("ground", "rock"), 115, 140, 130, 55, 55, 40),
             "Charizard": SpeciesData("Charizard", "charizard", ("fire", "flying"), 78, 84, 78, 109, 85, 100),
+            "Mega Charizard Y": SpeciesData("Mega Charizard Y", "charizard-mega-y", ("fire", "flying"), 78, 104, 78, 159, 115, 100),
+            "Charizard-Mega-Y": SpeciesData("Charizard-Mega-Y", "charizard-mega-y", ("fire", "flying"), 78, 104, 78, 159, 115, 100),
             "Ninetales-Alola": SpeciesData("Ninetales-Alola", "ninetales-alola", ("ice", "fairy"), 73, 67, 75, 81, 100, 109),
             "Abomasnow": SpeciesData("Abomasnow", "abomasnow", ("grass", "ice"), 90, 92, 75, 92, 85, 60),
         }
@@ -1377,7 +1382,7 @@ Ability: Illusion
                 },
             },
             "realistic_hyper_offense_team.txt": {
-                "archetype": "tailwind",
+                "archetype": "hyper_offense",
                 "member_roles": {
                     "Glimmora": {"special_sweeper", "hazard_setter"},
                     "Garchomp": {"physical_sweeper"},
@@ -1445,6 +1450,24 @@ Ability: Illusion
             with self.subTest(example=file_name):
                 analysis = analyze_team_text(load_example_team(file_name), metadata_provider=provider, regulation_id=None)
                 self.assertEqual(analysis.primary_team_style, expected_style)
+
+    def test_sample_teams_auto_upgrade_mega_stone_holders_to_mega_species(self) -> None:
+        provider = FakeMetadataProvider()
+        hyper_offense_analysis = analyze_team_text(
+            load_example_team("realistic_hyper_offense_team.txt"),
+            metadata_provider=provider,
+            regulation_id=None,
+        )
+        perish_analysis = analyze_team_text(
+            load_example_team("realistic_perish_trap_team.txt"),
+            metadata_provider=provider,
+            regulation_id=None,
+        )
+
+        self.assertIn("Mega Charizard Y", hyper_offense_analysis.member_roles)
+        self.assertNotIn("Charizard", hyper_offense_analysis.member_roles)
+        self.assertIn("Mega Gengar", perish_analysis.member_roles)
+        self.assertNotIn("Gengar", perish_analysis.member_roles)
 
     def test_incoherent_example_does_not_claim_perish_trap_without_trap(self) -> None:
         provider = FakeMetadataProvider()
@@ -1819,7 +1842,7 @@ Ability: Illusion
 
         perish_plan = perish_analysis.team_preview_plans[0]
         self.assertIn("Perish Trap", perish_plan["label"])
-        self.assertIn("Gengar", perish_plan["pick_four"])
+        self.assertIn("Mega Gengar", perish_plan["pick_four"])
         self.assertIn("Politoed", perish_plan["pick_four"])
         self.assertTrue(
             {"Sableye", "Sinistcha"} & set(perish_plan["pick_four"])

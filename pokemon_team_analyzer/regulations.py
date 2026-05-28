@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from dataclasses import dataclass
 import re
 from typing import Iterable
@@ -325,6 +326,7 @@ class RegulationEntry:
     eligible_species: tuple[str, ...]
     allowed_held_items: tuple[str, ...]
     allowed_mega_evolutions: tuple[str, ...]
+    duplicate_species_disallowed: bool
     duplicate_held_items_disallowed: bool
     teams: tuple[TournamentTeamEntry, ...] = ()
 
@@ -349,6 +351,7 @@ class RegulationEntry:
             "eligible_pokemon_count": len(self.eligible_species),
             "allowed_held_item_count": len(self.allowed_held_items),
             "allowed_mega_evolution_count": len(self.allowed_mega_evolutions),
+            "duplicate_species_disallowed": self.duplicate_species_disallowed,
             "duplicate_held_items_disallowed": self.duplicate_held_items_disallowed,
             "team_count": len(self.teams),
         }
@@ -382,12 +385,14 @@ _BUILTIN_REGULATIONS = (
         is_official_champions_regulation=True,
         notes=(
             "Current official Pokemon Champions regulation. Teams must use only the official M-A eligible Pokemon, "
-            "must use only allowed held items, and may not duplicate held items. Mega Evolution is allowed once per "
-            "battle for the listed Mega Evolutions when the matching Mega Stone is held."
+            "must use only allowed held items, may not duplicate Pokemon that share the same Pokedex number, and may "
+            "not duplicate held items. Mega Evolution is allowed once per battle for the listed Mega Evolutions when "
+            "the matching Mega Stone is held."
         ),
         eligible_species=ELIGIBLE_SPECIES,
         allowed_held_items=ALLOWED_HELD_ITEMS,
         allowed_mega_evolutions=ALLOWED_MEGA_EVOLUTIONS,
+        duplicate_species_disallowed=True,
         duplicate_held_items_disallowed=True,
     ),
 )
@@ -430,6 +435,33 @@ def resolve_regulation_species_name(
     return species_by_key.get(normalized_species)
 
 
+def resolve_regulation_pokemon_set(
+    pokemon_set: PokemonSet,
+    regulation_id: str = DEFAULT_REGULATION_ID,
+    normalize_species: bool = True,
+) -> PokemonSet:
+    if _canonical_mega_name(pokemon_set.species) is not None:
+        return pokemon_set
+
+    normalized_item = _normalized_item_name(pokemon_set.item)
+    if normalized_item in MEGA_STONE_TO_BASE_KEYS:
+        allowed_base_species = set(MEGA_STONE_TO_BASE_KEYS[normalized_item])
+        base_species_name = _base_species_from_mega_species(pokemon_set.species) or pokemon_set.species
+        normalized_base_species = _normalized_species_name(base_species_name)
+        if normalized_base_species in allowed_base_species:
+            expected_mega_name = OFFICIAL_MEGA_BY_KEY.get(MEGA_STONE_TO_MEGA_NAME[normalized_item])
+            if expected_mega_name is not None and pokemon_set.species != expected_mega_name:
+                return replace(pokemon_set, species=expected_mega_name)
+
+    if not normalize_species:
+        return pokemon_set
+
+    resolved_species_name = resolve_regulation_species_name(pokemon_set.species, regulation_id=regulation_id)
+    if resolved_species_name is None or resolved_species_name == pokemon_set.species:
+        return pokemon_set
+    return replace(pokemon_set, species=resolved_species_name)
+
+
 def resolve_builder_option_source_species_name(species_name: str) -> str:
     return _base_species_from_mega_species(species_name) or species_name
 
@@ -460,6 +492,16 @@ def regulation_catalog_as_dict(
     ]
 
 
+def _species_clause_display_name(species_name: str, regulation_id: str = DEFAULT_REGULATION_ID) -> str:
+    resolved_species = resolve_regulation_species_name(species_name, regulation_id=regulation_id) or species_name
+    base_species = _base_species_from_mega_species(resolved_species) or resolved_species
+    return re.sub(r"\s+\(.*\)$", "", base_species).strip()
+
+
+def _species_clause_key(species_name: str, regulation_id: str = DEFAULT_REGULATION_ID) -> str:
+    return _normalized_species_name(_species_clause_display_name(species_name, regulation_id=regulation_id))
+
+
 def validate_team_legality(
     team: Iterable[PokemonSet],
     regulation_id: str = DEFAULT_REGULATION_ID,
@@ -468,6 +510,7 @@ def validate_team_legality(
     team_sets = list(team)
     issues: list[TeamLegalityIssue] = []
     allowed_moves_cache: dict[str, frozenset[str]] = {}
+    seen_species_clause: dict[str, tuple[str, str]] = {}
     seen_items: dict[str, str] = {}
 
     if len(team_sets) != regulation.team_size:
@@ -596,6 +639,28 @@ def validate_team_legality(
                             value=move_name,
                         )
                     )
+
+        if regulation.duplicate_species_disallowed:
+            species_clause_display_name = _species_clause_display_name(pokemon_set.species, regulation_id=regulation_id)
+            species_clause_key = _species_clause_key(pokemon_set.species, regulation_id=regulation_id)
+            previous_member = seen_species_clause.get(species_clause_key)
+            if previous_member is not None:
+                previous_holder, previous_species_display_name = previous_member
+                issues.append(
+                    TeamLegalityIssue(
+                        code="duplicate_species",
+                        message=(
+                            f"{previous_holder} and {member_name} share the same Pokedex number "
+                            f"({previous_species_display_name}), but duplicate Pokemon are not allowed in "
+                            f"{regulation.display_name}."
+                        ),
+                        member_name=member_name,
+                        team_slot=index,
+                        value=species_clause_display_name,
+                    )
+                )
+            else:
+                seen_species_clause[species_clause_key] = (member_name, species_clause_display_name)
 
         if normalized_item and regulation.duplicate_held_items_disallowed:
             previous_holder = seen_items.get(normalized_item)

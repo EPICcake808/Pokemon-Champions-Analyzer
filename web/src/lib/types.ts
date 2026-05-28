@@ -43,6 +43,7 @@ export interface RegulationCatalogEntry {
   eligible_pokemon_count: number;
   allowed_held_item_count: number;
   allowed_mega_evolution_count: number;
+  duplicate_species_disallowed?: boolean;
   duplicate_held_items_disallowed: boolean;
   team_count: number;
   eligible_species?: string[];

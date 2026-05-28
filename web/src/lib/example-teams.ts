@@ -9,7 +9,7 @@ const FEATURED_EXAMPLES: ExampleTeam[] = [
     title: "Curated Sample",
     note: "Rain Tailwind shell with layered support turns and flexible speed control.",
     regulationId: DEFAULT_REGULATION_ID,
-    teamText: `Lucario-Mega @ Lucarionite
+        teamText: `Mega Lucario @ Lucarionite
 Ability: Adaptability
 Level: 50
 EVs: 32 HP / 32 Def / 2 Spe
@@ -49,7 +49,7 @@ Sassy Nature
 - Life Dew
 - Protect
 
-Basculegion (M) @ Choice Scarf
+Basculegion (Male) @ Choice Scarf
 Ability: Adaptability
 Level: 50
 EVs: 32 Atk / 2 Def / 32 Spe

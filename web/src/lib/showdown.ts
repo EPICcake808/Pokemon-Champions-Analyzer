@@ -2,7 +2,9 @@ import type { EffortValueStat, ParsedTeamMember } from "@/lib/types";
 
 const SPECIAL_SHOWDOWN_IDS: Record<string, string> = {
   "basculegion (m)": "basculegion",
-  "basculegion (f)": "basculegionf",
+  "basculegion (male)": "basculegion",
+  "basculegion (f)": "basculegion-f",
+  "basculegion (female)": "basculegion-f",
 };
 
 const SHOWDOWN_EV_ORDER: Array<{ stat: EffortValueStat; label: string }> = [
@@ -228,14 +230,26 @@ function toPokemonShowdownId(speciesName: string): string {
     return SPECIAL_SHOWDOWN_IDS[normalized];
   }
 
-  const megaMatch = normalized.match(/^mega\s+(.+?)(?:\s+([xy]))?$/);
-  if (megaMatch) {
-    const baseName = normalizeShowdownAssetId(megaMatch[1]);
-    const suffix = megaMatch[2] ?? "";
-    return `${baseName}mega${suffix}`;
+  const spacedMegaMatch = normalized.match(/^mega\s+(.+?)(?:\s+([xy]))?$/);
+  if (spacedMegaMatch) {
+    return formatMegaShowdownId(spacedMegaMatch[1], spacedMegaMatch[2]);
+  }
+
+  const dashedMegaMatch = normalized.match(/^(.+?)-mega(?:-([xy]))?$/);
+  if (dashedMegaMatch) {
+    return formatMegaShowdownId(dashedMegaMatch[1], dashedMegaMatch[2]);
   }
 
   return normalizeShowdownAssetId(normalized);
+}
+
+function formatMegaShowdownId(baseName: string, suffix: string | undefined) {
+  const normalizedBaseName = normalizeShowdownAssetId(baseName);
+  if (suffix) {
+    return `${normalizedBaseName}-mega${suffix.toLowerCase()}`;
+  }
+
+  return `${normalizedBaseName}-mega`;
 }
 
 function normalizeShowdownAssetId(value: string) {

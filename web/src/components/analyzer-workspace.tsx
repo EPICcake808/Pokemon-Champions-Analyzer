@@ -266,7 +266,7 @@ export function AnalyzerWorkspace({
 }: AnalyzerWorkspaceProps) {
   const router = useRouter();
   const [teamText, setTeamText] = useState(initialTeamText);
-  const [analysis, setAnalysis] = useState(initialAnalysis);
+  const [analysisState, setAnalysis] = useState(initialAnalysis);
   const [sessionUserOverride, setSessionUserOverride] = useState<AuthSessionUser | null | undefined>(undefined);
   const [savedTeamsOverride, setSavedTeamsOverride] = useState<SavedTeamRecord[] | undefined>(undefined);
   const [selectedSavedTeamId, setSelectedSavedTeamId] = useState("");
@@ -293,12 +293,13 @@ export function AnalyzerWorkspace({
 
   const sessionUser = sessionUserOverride !== undefined ? sessionUserOverride : initialSessionUser;
   const savedTeams = savedTeamsOverride !== undefined ? savedTeamsOverride : initialSavedTeams;
-  const parsedTeam = parseShowdownTeam(teamText);
+  const activeRegulation =
+    regulationOptions.find((regulation) => regulation.id === selectedRegulationId) ?? regulationOptions[0];
+  const parsedTeam = canonicalizeParsedTeamForRegulation(parseShowdownTeam(teamText), activeRegulation);
+  const analysis = canonicalizeAnalysisForRegulation(analysisState, activeRegulation);
   const builderMembers = normalizeBuilderMembers(parsedTeam);
   const selectedBuilderMember = builderMembers[selectedBuilderSlot] ?? builderMembers[0];
   const filledBuilderCount = builderMembers.filter((member) => member.species.trim()).length;
-  const activeRegulation =
-    regulationOptions.find((regulation) => regulation.id === selectedRegulationId) ?? regulationOptions[0];
   const rosterValidationMessage = buildRosterValidationMessage(filledBuilderCount);
   const dashboardBlockingMessage = rosterValidationMessage;
   const dashboardBlockingDetails = rosterValidationMessage
@@ -3076,6 +3077,248 @@ function buildRoster(parsedTeam: ParsedTeamMember[], analysis: PokemonTeamAnalys
     roles: analysis.member_roles[member.displayName] ?? [],
     speed: speedByName.get(member.displayName),
   }));
+}
+
+function canonicalizeAnalysisForRegulation(
+  analysis: PokemonTeamAnalysis,
+  regulation: RegulationCatalogEntry | undefined,
+) {
+  if (!regulation) {
+    return analysis;
+  }
+
+  const canonicalizeMemberName = (memberName: string) => canonicalizeAnalysisMemberName(memberName, regulation);
+  const memberRoles = Object.fromEntries(
+    Object.entries(analysis.member_roles).map(([memberName, roles]) => [canonicalizeMemberName(memberName), roles]),
+  );
+  const pokemonRoleBreakdown = Object.fromEntries(
+    Object.entries(analysis.pokemon_role_breakdown).map(([label, details]) => [
+      label,
+      details.members
+        ? {
+            ...details,
+            members: details.members.map(canonicalizeMemberName),
+          }
+        : details,
+    ]),
+  );
+  const benchmarkGroups = Object.fromEntries(
+    Object.entries(analysis.speed_profile.benchmarks.groups).map(([slug, group]) => [
+      slug,
+      {
+        ...group,
+        best_member: group.best_member ? canonicalizeMemberName(group.best_member) : null,
+        benchmarks: group.benchmarks.map((benchmark) => ({
+          ...benchmark,
+          hit_members: benchmark.hit_members.map(canonicalizeMemberName),
+          tie_members: benchmark.tie_members.map(canonicalizeMemberName),
+        })),
+      },
+    ]),
+  );
+  const speedDistribution = Object.fromEntries(
+    Object.entries(analysis.speed_profile.distribution).map(([tier, details]) => [
+      tier,
+      {
+        ...details,
+        members: details.members.map(canonicalizeMemberName),
+      },
+    ]),
+  );
+
+  return {
+    ...analysis,
+    speed_profile: {
+      ...analysis.speed_profile,
+      fastest: {
+        ...analysis.speed_profile.fastest,
+        pokemon: canonicalizeMemberName(analysis.speed_profile.fastest.pokemon),
+      },
+      slowest: {
+        ...analysis.speed_profile.slowest,
+        pokemon: canonicalizeMemberName(analysis.speed_profile.slowest.pokemon),
+      },
+      base_speed_extremes: {
+        fastest: {
+          ...analysis.speed_profile.base_speed_extremes.fastest,
+          pokemon: canonicalizeMemberName(analysis.speed_profile.base_speed_extremes.fastest.pokemon),
+        },
+        slowest: {
+          ...analysis.speed_profile.base_speed_extremes.slowest,
+          pokemon: canonicalizeMemberName(analysis.speed_profile.base_speed_extremes.slowest.pokemon),
+        },
+      },
+      distribution: speedDistribution,
+      benchmarks: {
+        ...analysis.speed_profile.benchmarks,
+        groups: benchmarkGroups,
+      },
+      members: analysis.speed_profile.members.map((member) => ({
+        ...member,
+        pokemon: canonicalizeMemberName(member.pokemon),
+      })),
+    },
+    member_roles: memberRoles,
+    pokemon_role_breakdown: pokemonRoleBreakdown,
+    team_preview: {
+      ...analysis.team_preview,
+      bring_plans: analysis.team_preview.bring_plans.map((plan) => ({
+        ...plan,
+        leads: plan.leads.map(canonicalizeMemberName),
+        back: plan.back.map(canonicalizeMemberName),
+        pick_four: plan.pick_four.map(canonicalizeMemberName),
+        member_reasons: Object.fromEntries(
+          Object.entries(plan.member_reasons).map(([memberName, reason]) => [canonicalizeMemberName(memberName), reason]),
+        ),
+      })),
+      watch_pokemon: analysis.team_preview.watch_pokemon.map(canonicalizeMemberName),
+    },
+  };
+}
+
+function canonicalizeAnalysisMemberName(memberName: string, regulation: RegulationCatalogEntry) {
+  const trimmedMemberName = memberName.trim();
+  if (!trimmedMemberName) {
+    return memberName;
+  }
+
+  return resolveRegulationSpeciesAlias(trimmedMemberName, regulation) ?? trimmedMemberName;
+}
+
+function canonicalizeParsedTeamForRegulation(
+  parsedTeam: ParsedTeamMember[],
+  regulation: RegulationCatalogEntry | undefined,
+) {
+  return parsedTeam.map((member) => canonicalizeParsedMemberForRegulation(member, regulation));
+}
+
+function canonicalizeParsedMemberForRegulation(
+  member: ParsedTeamMember,
+  regulation: RegulationCatalogEntry | undefined,
+): ParsedTeamMember {
+  const canonicalSpecies = resolveRegulationMemberSpecies(member, regulation);
+  if (!canonicalSpecies || canonicalSpecies === member.species.trim()) {
+    return member;
+  }
+
+  const usesSpeciesAsDisplayName = !member.displayName.trim() || member.displayName.trim() === member.species.trim();
+  return {
+    ...member,
+    species: canonicalSpecies,
+    displayName: usesSpeciesAsDisplayName ? canonicalSpecies : member.displayName,
+  };
+}
+
+function resolveRegulationMemberSpecies(
+  member: ParsedTeamMember,
+  regulation: RegulationCatalogEntry | undefined,
+) {
+  const species = member.species.trim();
+  if (!species || !regulation) {
+    return species;
+  }
+
+  const resolvedSpecies = resolveRegulationSpeciesAlias(species, regulation) ?? species;
+  return resolveMegaSpeciesFromItem(resolvedSpecies, member.item, regulation) ?? resolvedSpecies;
+}
+
+function resolveRegulationSpeciesAlias(
+  speciesName: string,
+  regulation: RegulationCatalogEntry,
+) {
+  const lookup = buildRegulationSpeciesLookup(regulation);
+  return lookup.get(normalizeAssetId(speciesName)) ?? null;
+}
+
+function buildRegulationSpeciesLookup(regulation: RegulationCatalogEntry) {
+  const lookup = new Map<string, string>();
+  const officialSpecies = [
+    ...(regulation.eligible_species ?? []),
+    ...(regulation.allowed_mega_evolutions ?? []),
+  ];
+
+  for (const officialName of officialSpecies) {
+    appendSpeciesAlias(lookup, officialName, officialName);
+
+    const megaMatch = officialName.match(/^Mega\s+(.+?)(?:\s+([XY]))?$/i);
+    if (megaMatch) {
+      const baseName = megaMatch[1].trim();
+      const suffix = megaMatch[2]?.toUpperCase();
+      appendSpeciesAlias(lookup, `${baseName}-Mega${suffix ? `-${suffix}` : ""}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName} Mega${suffix ? ` ${suffix}` : ""}`, officialName);
+      continue;
+    }
+
+    const genderMatch = officialName.match(/^(.*)\s+\((Male|Female)\)$/i);
+    if (genderMatch) {
+      const baseName = genderMatch[1].trim();
+      const shortGender = genderMatch[2].toLowerCase() === "male" ? "M" : "F";
+      appendSpeciesAlias(lookup, `${baseName} (${shortGender})`, officialName);
+      appendSpeciesAlias(lookup, `${baseName}-${shortGender.toLowerCase()}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName}-${genderMatch[2].toLowerCase()}`, officialName);
+      continue;
+    }
+
+    const regionalMatch = officialName.match(/^(.*)\s+\((Alolan|Galarian|Hisuian) Form\)$/i);
+    if (regionalMatch) {
+      const baseName = regionalMatch[1].trim();
+      const regionName = regionalMatch[2].toLowerCase();
+      const shortRegion =
+        regionName === "alolan" ? "alola" : regionName === "galarian" ? "galar" : "hisui";
+      appendSpeciesAlias(lookup, `${regionName} ${baseName}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName} ${regionName}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName}-${regionName}`, officialName);
+      appendSpeciesAlias(lookup, `${shortRegion} ${baseName}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName} ${shortRegion}`, officialName);
+      appendSpeciesAlias(lookup, `${baseName}-${shortRegion}`, officialName);
+    }
+  }
+
+  return lookup;
+}
+
+function appendSpeciesAlias(lookup: Map<string, string>, alias: string, officialName: string) {
+  const aliasKey = normalizeAssetId(alias);
+  if (!aliasKey || lookup.has(aliasKey)) {
+    return;
+  }
+
+  lookup.set(aliasKey, officialName);
+}
+
+function resolveMegaSpeciesFromItem(
+  speciesName: string,
+  itemName: string | null | undefined,
+  regulation: RegulationCatalogEntry,
+) {
+  const normalizedItem = normalizeAssetId(itemName ?? "");
+  if (!normalizedItem) {
+    return null;
+  }
+
+  const requiredItems = regulation.required_items_by_mega_species ?? {};
+  for (const [megaSpecies, requiredItem] of Object.entries(requiredItems)) {
+    if (normalizeAssetId(requiredItem) !== normalizedItem) {
+      continue;
+    }
+
+    const baseSpecies = megaBaseSpeciesName(megaSpecies);
+    if (!baseSpecies) {
+      continue;
+    }
+
+    const normalizedSpecies = normalizeAssetId(speciesName);
+    if (normalizedSpecies === normalizeAssetId(megaSpecies) || normalizedSpecies === normalizeAssetId(baseSpecies)) {
+      return megaSpecies;
+    }
+  }
+
+  return null;
+}
+
+function megaBaseSpeciesName(megaSpecies: string) {
+  const match = megaSpecies.trim().match(/^Mega\s+(.+?)(?:\s+[XY])?$/i);
+  return match ? match[1].trim() : null;
 }
 
 function normalizeBuilderMembers(parsedTeam: ParsedTeamMember[]) {

@@ -196,6 +196,135 @@ Ability: Mold Breaker
 - Thunder Wave
 """
 
+ILLEGAL_SPECIES_DUPLICATE_TEAM = """Incineroar @ Sitrus Berry
+Ability: Intimidate
+- Fake Out
+- Flare Blitz
+- Knock Off
+- Parting Shot
+
+Garchomp @ Focus Sash
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Swords Dance
+
+Garchomp @ Soft Sand
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Rock Slide
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Gengar @ Gengarite
+Ability: Cursed Body
+- Shadow Ball
+- Sludge Bomb
+- Protect
+- Icy Wind
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+"""
+
+ILLEGAL_FORM_SPECIES_DUPLICATE_TEAM = """Ninetales @ Charcoal
+Ability: Flash Fire
+- Heat Wave
+- Protect
+- Will-O-Wisp
+- Extrasensory
+
+Ninetales (Alolan Form) @ Light Ball
+Ability: Snow Warning
+- Blizzard
+- Protect
+- Aurora Veil
+- Freeze-Dry
+
+Garchomp @ Soft Sand
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Rock Slide
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Gengar @ Gengarite
+Ability: Cursed Body
+- Shadow Ball
+- Sludge Bomb
+- Protect
+- Icy Wind
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+"""
+
+ILLEGAL_MEGA_SPECIES_DUPLICATE_TEAM = """Charizard @ Charizardite Y
+Ability: Blaze
+- Heat Wave
+- Air Slash
+- Protect
+- Solar Beam
+
+Mega Charizard X @ Charizardite X
+Ability: Tough Claws
+- Heat Wave
+- Air Slash
+- Protect
+- Solar Beam
+
+Incineroar @ Sitrus Berry
+Ability: Intimidate
+- Fake Out
+- Flare Blitz
+- Parting Shot
+- Protect
+
+Garchomp @ Soft Sand
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Rock Slide
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+"""
+
 ILLEGAL_MOVE_TEAM = """Incineroar @ Sitrus Berry
 Ability: Intimidate
 - Fake Out
@@ -256,7 +385,9 @@ MOCK_ALLOWED_MOVES_BY_SPECIES = {
     "Incineroar": ("fake-out", "flare-blitz", "knock-off", "parting-shot"),
     "Kingambit": ("iron-head", "kowtow-cleave", "protect", "sucker-punch"),
     "Milotic": ("icy-wind", "protect", "recover", "scald"),
+    "Ninetales": ("extrasensory", "heat-wave", "protect", "will-o-wisp"),
     "Ninetales (Alolan Form)": ("aurora-veil", "blizzard", "freeze-dry", "protect"),
+    "Basculegion (Male)": ("aqua-jet", "last-respects", "protect", "psychic-fangs", "wave-crash"),
     "Politoed": ("icy-wind", "perish-song", "protect", "whirlpool"),
     "Primarina": ("calm-mind", "hyper-voice", "misty-terrain", "moonblast", "protect"),
     "Rhyperior": ("protect", "rock-slide", "stomping-tantrum", "swords-dance"),
@@ -271,6 +402,7 @@ MOCK_ALLOWED_MOVES_BY_SPECIES = {
     "Torterra": ("grassy-terrain", "protect", "stomping-tantrum", "wood-hammer"),
     "Tyranitar": ("knock-off", "protect", "rock-slide", "roar", "stealth-rock", "stone-edge"),
     "Venusaur": ("giga-drain", "growth", "protect", "sludge-bomb"),
+    "Whimsicott": ("encore", "moonblast", "protect", "tailwind"),
     "Zoroark (Hisuian Form)": ("bitter-malice", "hyper-voice", "protect", "shadow-ball"),
 }
 
@@ -285,6 +417,7 @@ class ChampionsMetadataProvider:
             "Corviknight": SpeciesData("Corviknight", "corviknight", ("flying", "steel"), 98, 87, 105, 53, 85, 67),
             "Garchomp": SpeciesData("Garchomp", "garchomp", ("dragon", "ground"), 108, 130, 95, 80, 85, 102),
             "Gengar": SpeciesData("Gengar", "gengar", ("ghost", "poison"), 60, 65, 60, 130, 75, 110),
+            "Mega Gengar": SpeciesData("Mega Gengar", "gengar-mega", ("ghost", "poison"), 60, 65, 80, 170, 95, 130),
             "Incineroar": SpeciesData("Incineroar", "incineroar", ("fire", "dark"), 95, 115, 90, 80, 90, 60),
             "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
             "Rotom (Wash Rotom)": SpeciesData(
@@ -674,6 +807,19 @@ Ability: Mold Breaker
         self.assertIn("duplicate_item", issue_codes)
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
+    def test_validate_team_legality_rejects_duplicate_species_clause(self, _mock_get_allowed_moves: object) -> None:
+        exact_duplicate_legality = validate_team_legality_text(ILLEGAL_SPECIES_DUPLICATE_TEAM)
+        form_duplicate_legality = validate_team_legality_text(ILLEGAL_FORM_SPECIES_DUPLICATE_TEAM)
+        mega_duplicate_legality = validate_team_legality_text(ILLEGAL_MEGA_SPECIES_DUPLICATE_TEAM)
+
+        self.assertFalse(exact_duplicate_legality.is_legal)
+        self.assertIn("duplicate_species", {issue.code for issue in exact_duplicate_legality.issues})
+        self.assertFalse(form_duplicate_legality.is_legal)
+        self.assertIn("duplicate_species", {issue.code for issue in form_duplicate_legality.issues})
+        self.assertFalse(mega_duplicate_legality.is_legal)
+        self.assertIn("duplicate_species", {issue.code for issue in mega_duplicate_legality.issues})
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_validate_team_legality_rejects_champions_illegal_move(self, _mock_get_allowed_moves: object) -> None:
         legality = validate_team_legality_text(ILLEGAL_MOVE_TEAM)
         issue_codes = {issue.code for issue in legality.issues}
@@ -694,6 +840,13 @@ Ability: Mold Breaker
             analyze_team_text(ILLEGAL_MOVE_TEAM, metadata_provider=ExplodingMetadataProvider())
 
         self.assertIn("illegal_move", {issue.code for issue in raised.exception.legality.issues})
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
+    def test_analysis_rejects_duplicate_species_before_metadata_lookup(self, _mock_get_allowed_moves: object) -> None:
+        with self.assertRaises(IllegalTeamError) as raised:
+            analyze_team_text(ILLEGAL_FORM_SPECIES_DUPLICATE_TEAM, metadata_provider=ExplodingMetadataProvider())
+
+        self.assertIn("duplicate_species", {issue.code for issue in raised.exception.legality.issues})
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_analysis_accepts_legal_m_a_team(self, _mock_get_allowed_moves: object) -> None:

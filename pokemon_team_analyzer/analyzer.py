@@ -23,7 +23,13 @@ from .models import (
     UTILITY_ROLE_ORDER,
     WIN_CONDITION_PACKAGE_ORDER,
 )
-from .regulations import DEFAULT_REGULATION_ID, IllegalTeamError, resolve_regulation_species_name, validate_team_legality
+from .regulations import (
+    DEFAULT_REGULATION_ID,
+    IllegalTeamError,
+    resolve_regulation_pokemon_set,
+    resolve_regulation_species_name,
+    validate_team_legality,
+)
 from .showdown import parse_showdown_team
 from .speed_benchmarks import SpeedBenchmarkGroup, RegulationSpeedBenchmarkCatalog, get_speed_benchmark_catalog
 
@@ -1476,7 +1482,13 @@ def _resolve_members(
     regulation_id: str | None = None,
 ) -> list[TeamMember]:
     members: list[TeamMember] = []
+    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
     for pokemon_set in team_sets:
+        pokemon_set = resolve_regulation_pokemon_set(
+            pokemon_set,
+            regulation_id=resolved_regulation_id,
+            normalize_species=regulation_id is not None,
+        )
         species_name = pokemon_set.species
         if regulation_id is not None:
             species_name = resolve_regulation_species_name(pokemon_set.species, regulation_id=regulation_id) or species_name
