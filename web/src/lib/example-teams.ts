@@ -142,7 +142,7 @@ Adamant Nature
     teamText: `Farigiraf @ Sitrus Berry
 Ability: Armor Tail
 Level: 50
-EVs: 252 HP / 116 Def / 140 SpA
+EVs: 32 HP / 15 Def / 19 SpA
 Modest Nature
 - Trick Room
 - Psychic
@@ -152,7 +152,7 @@ Modest Nature
 Torkoal @ Charcoal
 Ability: Drought
 Level: 50
-EVs: 252 HP / 252 SpA / 4 SpD
+EVs: 32 HP / 32 SpA / 2 SpD
 Quiet Nature
 - Eruption
 - Heat Wave
@@ -162,7 +162,7 @@ Quiet Nature
 Sinistcha @ Mental Herb
 Ability: Hospitality
 Level: 50
-EVs: 252 HP / 124 Def / 132 SpA
+EVs: 32 HP / 16 Def / 18 SpA
 Quiet Nature
 - Matcha Gotcha
 - Rage Powder
@@ -172,7 +172,7 @@ Quiet Nature
 Primarina @ Leftovers
 Ability: Liquid Voice
 Level: 50
-EVs: 252 HP / 196 SpA / 60 Spe
+EVs: 32 HP / 26 SpA / 8 Spe
 Modest Nature
 - Hyper Voice
 - Moonblast
@@ -182,7 +182,7 @@ Modest Nature
 Kingambit @ Black Glasses
 Ability: Defiant
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 SpD
 Adamant Nature
 - Kowtow Cleave
 - Protect
@@ -192,7 +192,7 @@ Adamant Nature
 Arcanine-Hisui @ White Herb
 Ability: Intimidate
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 SpD
 Adamant Nature
 - Rock Slide
 - Flare Blitz
@@ -207,7 +207,7 @@ Adamant Nature
     teamText: `Gengar @ Gengarite
 Ability: Cursed Body
 Level: 50
-EVs: 28 HP / 252 SpA / 228 Spe
+EVs: 4 HP / 32 SpA / 30 Spe
 Timid Nature
 - Perish Song
 - Protect
@@ -217,7 +217,7 @@ Timid Nature
 Politoed @ Mystic Water
 Ability: Drizzle
 Level: 50
-EVs: 252 HP / 116 Def / 140 SpD
+EVs: 32 HP / 15 Def / 19 SpD
 Calm Nature
 - Perish Song
 - Protect
@@ -227,7 +227,7 @@ Calm Nature
 Sableye @ Focus Sash
 Ability: Prankster
 Level: 50
-EVs: 252 HP / 4 Def / 252 SpD
+EVs: 32 HP / 2 Def / 32 SpD
 Careful Nature
 - Mean Look
 - Quash
@@ -237,7 +237,7 @@ Careful Nature
 Sinistcha @ Sitrus Berry
 Ability: Hospitality
 Level: 50
-EVs: 252 HP / 92 Def / 164 SpA
+EVs: 32 HP / 12 Def / 22 SpA
 Quiet Nature
 - Matcha Gotcha
 - Rage Powder
@@ -247,7 +247,7 @@ Quiet Nature
 Primarina @ Leftovers
 Ability: Liquid Voice
 Level: 50
-EVs: 252 HP / 196 SpA / 60 Spe
+EVs: 32 HP / 26 SpA / 8 Spe
 Modest Nature
 - Hyper Voice
 - Moonblast
@@ -257,7 +257,7 @@ Modest Nature
 Kingambit @ Black Glasses
 Ability: Defiant
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 SpD
 Adamant Nature
 - Kowtow Cleave
 - Protect

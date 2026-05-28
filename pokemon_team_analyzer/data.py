@@ -13,6 +13,7 @@ import certifi
 
 from .cache_paths import resolve_cache_path
 from .models import MoveData, MoveStatChange, SpeciesData
+from .version import USER_AGENT
 
 
 API_BASE = "https://pokeapi.co/api/v2"
@@ -161,7 +162,7 @@ class CachedPokeApiClient:
             url,
             headers={
                 "Accept": "application/json",
-                "User-Agent": "pokemon-team-analyzer/0.1.0",
+                "User-Agent": USER_AGENT,
             },
         )
         try:

@@ -829,7 +829,7 @@ export function AnalyzerWorkspace({
       note: `${details.weak_members} weak / ${details.resistant_members} resist / ${details.immune_members} immune`,
     };
   });
-  const matchupRows = scoreRows(analysis.matchup_profile.scores);
+  const matchupRows = scoreRows(analysis.matchup_profile.scores, analysis.matchup_profile.details);
   const modeRows = scoreRows(analysis.meta_mode_profile.scores);
   const packageModeRows = scoreRows(analysis.team_package_profile.modes.scores).slice(0, 4);
   const winConditionRows = scoreRows(analysis.team_package_profile.win_conditions.scores)
@@ -2149,7 +2149,7 @@ function SummaryList({ heading, values, fallback }: { heading: string; values: s
   );
 }
 
-function CompactScoreList({ heading, rows }: { heading: string; rows: Array<{ label: string; value: number }> }) {
+function CompactScoreList({ heading, rows }: { heading: string; rows: Array<{ label: string; value: number; note?: string }> }) {
   return (
     <div>
       <p className="[font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.28em] text-white/34">
@@ -2160,7 +2160,10 @@ function CompactScoreList({ heading, rows }: { heading: string; rows: Array<{ la
           const valueText = row.value > 0 ? `+${row.value.toFixed(2)}` : row.value.toFixed(2);
           return (
             <div key={row.label} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 border-t border-[var(--line)] pt-2.5">
-              <span className="text-sm leading-6 text-white/72">{formatLabel(row.label)}</span>
+              <div>
+                <span className="text-sm leading-6 text-white/72">{formatLabel(row.label)}</span>
+                {row.note ? <p className="mt-1 text-xs leading-5 text-white/42">{row.note}</p> : null}
+              </div>
               <span className={`font-mono text-xs ${row.value >= 0 ? "text-[var(--positive)]" : "text-[var(--negative)]"}`}>
                 {valueText}
               </span>
@@ -2506,6 +2509,15 @@ function MetaImpactBoard({ rows }: { rows: MetaMatchupRowData[] }) {
                 </span>
               </div>
               <p className="mt-2 text-sm leading-6 text-white/54">{row.source}</p>
+              {row.context_reasons.length ? (
+                <div className="mt-3 space-y-1.5 text-sm leading-6 text-white/54">
+                  {row.context_reasons.slice(0, 2).map((reason) => (
+                    <p key={`${row.slug}-${reason}`}>
+                      <span className="text-white/34">Why:</span> {reason}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
               <div className="mt-3 grid gap-2 text-sm leading-6 text-white/62">
                 <p>
                   <span className="text-white/38">Modes:</span> {row.modes.join(" / ")}
@@ -2526,6 +2538,7 @@ function MetaImpactBoard({ rows }: { rows: MetaMatchupRowData[] }) {
                 )}
               </div>
               <div className="mt-2 flex items-center justify-between gap-4 font-mono text-[0.68rem] text-white/42">
+                <span>context {row.contextual_score.toFixed(2)}</span>
                 <span>matchup {row.matchup_score.toFixed(2)}</span>
                 <span>popular {row.popularity_score.toFixed(1)}%</span>
                 <span>results {row.result_score.toFixed(1)}%</span>
@@ -2583,7 +2596,7 @@ function DivergingBars({
   negativeColor,
 }: {
   heading: string;
-  rows: Array<{ label: string; value: number }>;
+  rows: Array<{ label: string; value: number; note?: string }>;
   positiveColor: string;
   negativeColor: string;
 }) {
@@ -2604,6 +2617,7 @@ function DivergingBars({
                 <span>{formatLabel(row.label)}</span>
                 <span className="font-mono text-xs text-white/45">{row.value.toFixed(2)}</span>
               </div>
+              {row.note ? <p className="text-xs leading-5 text-white/42">{row.note}</p> : null}
               <div className="relative h-px bg-[var(--line)]">
                 <div className="absolute inset-y-[-6px] left-1/2 w-px bg-white/20" />
                 {positive ? (
@@ -3102,9 +3116,16 @@ function rankedBreakdownRows(values: Record<string, { count: number; moves?: str
     .slice(0, limit);
 }
 
-function scoreRows(values: Record<string, number>) {
+function scoreRows(
+  values: Record<string, number>,
+  details?: Record<string, { reasons?: string[] }>,
+) {
   return Object.entries(values)
-    .map(([label, value]) => ({ label, value }))
+    .map(([label, value]) => ({
+      label,
+      value,
+      note: details?.[label]?.reasons?.[0],
+    }))
     .sort((left, right) => right.value - left.value);
 }
 

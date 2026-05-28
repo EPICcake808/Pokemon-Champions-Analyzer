@@ -272,6 +272,7 @@ class TeamAnalysis:
     team_win_condition_labels: list[str]
     team_win_condition_scores: dict[str, float]
     matchup_scores: dict[str, float]
+    matchup_details: dict[str, dict[str, object]]
     favorable_matchups: list[str]
     unfavorable_matchups: list[str]
     team_mode_scores: dict[str, float]
@@ -414,6 +415,7 @@ class TeamAnalysis:
             },
             "matchup_profile": {
                 "scores": self.matchup_scores,
+                "details": self.matchup_details,
                 "favorable": self.favorable_matchups,
                 "unfavorable": self.unfavorable_matchups,
             },

@@ -1,7 +1,7 @@
 Tyranitar @ Hard Stone
 Ability: Sand Stream
 Level: 50
-EVs: 252 HP / 76 Atk / 180 SpD
+EVs: 32 HP / 10 Atk / 24 SpD
 Careful Nature
 - Knock Off
 - Rock Slide
@@ -11,17 +11,17 @@ Careful Nature
 Hippowdon @ Leftovers
 Ability: Sand Stream
 Level: 50
-EVs: 252 HP / 252 Def / 4 SpD
+EVs: 32 HP / 32 Def / 2 SpD
 Impish Nature
-- Sandstorm
-- Stomping Tantrum
 - Yawn
+- Stomping Tantrum
 - Protect
+- Sandstorm
 
 Farigiraf @ Mental Herb
 Ability: Armor Tail
 Level: 50
-EVs: 252 HP / 116 Def / 140 SpA
+EVs: 32 HP / 15 Def / 19 SpA
 Modest Nature
 - Trick Room
 - Psychic
@@ -31,7 +31,7 @@ Modest Nature
 Sinistcha @ Sitrus Berry
 Ability: Hospitality
 Level: 50
-EVs: 252 HP / 124 Def / 132 SpA
+EVs: 32 HP / 16 Def / 18 SpA
 Quiet Nature
 - Matcha Gotcha
 - Rage Powder
@@ -41,7 +41,7 @@ Quiet Nature
 Rhyperior @ White Herb
 Ability: Solid Rock
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 SpD
 Brave Nature
 - Rock Slide
 - Stomping Tantrum
@@ -51,7 +51,7 @@ Brave Nature
 Garchomp @ Soft Sand
 Ability: Rough Skin
 Level: 50
-EVs: 156 HP / 252 Atk / 100 Spe
+EVs: 20 HP / 32 Atk / 14 Spe
 Adamant Nature
 - Dragon Claw
 - Rock Slide

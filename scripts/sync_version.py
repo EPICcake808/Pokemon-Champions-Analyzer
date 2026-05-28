@@ -1,0 +1,107 @@
+from __future__ import annotations
+
+import argparse
+import json
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent.parent
+VERSION_FILE = ROOT / "pokemon_team_analyzer" / "version.py"
+
+
+def read_version() -> str:
+    match = re.search(r'__version__\s*=\s*"([^"]+)"', VERSION_FILE.read_text())
+    if not match:
+        raise RuntimeError(f"Could not read __version__ from {VERSION_FILE}")
+    return match.group(1)
+
+
+def replace_once(path: Path, pattern: str, replacement: str) -> bool:
+    original = path.read_text()
+    updated, count = re.subn(pattern, replacement, original, count=1, flags=re.MULTILINE)
+    if count != 1:
+        raise RuntimeError(f"Expected one match for {path} using pattern {pattern!r}, found {count}")
+    if updated != original:
+        path.write_text(updated)
+        return True
+    return False
+
+
+def sync_package_json(version: str) -> bool:
+    path = ROOT / "web" / "package.json"
+    payload = json.loads(path.read_text())
+    if payload.get("version") == version:
+        return False
+    payload["version"] = version
+    path.write_text(json.dumps(payload, indent=2) + "\n")
+    return True
+
+
+def sync_package_lock(version: str) -> bool:
+    path = ROOT / "web" / "package-lock.json"
+    payload = json.loads(path.read_text())
+    changed = False
+    if payload.get("version") != version:
+        payload["version"] = version
+        changed = True
+    root_package = payload.get("packages", {}).get("", {})
+    if root_package.get("version") != version:
+        root_package["version"] = version
+        payload.setdefault("packages", {})[""] = root_package
+        changed = True
+    if changed:
+        path.write_text(json.dumps(payload, indent=2) + "\n")
+    return changed
+
+
+def sync_all(version: str) -> list[str]:
+    changed: list[str] = []
+    if replace_once(
+        ROOT / "uv.lock",
+        r'(name = "pokemon-team-analyzer"\nversion = ")([^"]+)(")',
+        rf'\g<1>{version}\3',
+    ):
+        changed.append("uv.lock")
+    if replace_once(
+        ROOT / "pokemon_team_analyzer.egg-info" / "PKG-INFO",
+        r'^(Version: )(.+)$',
+        rf'\g<1>{version}',
+    ):
+        changed.append("pokemon_team_analyzer.egg-info/PKG-INFO")
+    if sync_package_json(version):
+        changed.append("web/package.json")
+    if sync_package_lock(version):
+        changed.append("web/package-lock.json")
+    return changed
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Sync package metadata from pokemon_team_analyzer/version.py")
+    parser.add_argument("--check", action="store_true", help="Fail if any synced file is out of date")
+    args = parser.parse_args()
+
+    version = read_version()
+    changed = sync_all(version)
+
+    if args.check and changed:
+        print("Out-of-sync version metadata:")
+        for path in changed:
+            print(f"- {path}")
+        return 1
+
+    if args.check:
+        print(f"All synced version metadata already matches {version}.")
+        return 0
+
+    if changed:
+        print(f"Synced version metadata to {version}:")
+        for path in changed:
+            print(f"- {path}")
+    else:
+        print(f"Version metadata already matches {version}.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

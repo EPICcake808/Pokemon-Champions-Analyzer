@@ -14,6 +14,7 @@ from .regulations import (
 	validate_team_legality_text,
 )
 from .showdown import PokemonSet, parse_showdown_team
+from .version import __version__
 
 __all__ = [
 	"DEFAULT_REGULATION_ID",
@@ -32,4 +33,5 @@ __all__ = [
 	"regulation_catalog_as_dict",
 	"validate_team_legality",
 	"validate_team_legality_text",
+	"__version__",
 ]

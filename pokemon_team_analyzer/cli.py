@@ -205,6 +205,7 @@ def render_text_report(analysis: dict[str, object]) -> str:
         matchup_profile.get("favorable", []),
         matchup_profile.get("unfavorable", []),
         matchup_profile.get("scores", {}),
+        matchup_profile.get("details", {}),
     ) if matchup_profile else []
     meta_mode_lines = summarize_meta_mode_profile(
         meta_mode_profile.get("team_labels", []),

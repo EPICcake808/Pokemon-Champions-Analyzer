@@ -158,7 +158,7 @@ class CachedPokeApiClient:
             url,
             headers={
                 "Accept": "application/json",
-                "User-Agent": "pokemon-team-analyzer/0.1.0",
+                "User-Agent": "pokemon-team-analyzer/0.2.0",
             },
         )
         try:

@@ -1,6 +1,9 @@
 import type { EffortValueStat, ParsedTeamMember } from "@/lib/types";
 
 const SPECIAL_SHOWDOWN_IDS: Record<string, string> = {
+  "arcanine-hisui": "arcanine-hisui",
+  "arcanine (hisuian form)": "arcanine-hisui",
+  "hisuian arcanine": "arcanine-hisui",
   "basculegion (m)": "basculegion",
   "basculegion (male)": "basculegion",
   "basculegion (f)": "basculegion-f",

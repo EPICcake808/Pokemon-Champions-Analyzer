@@ -11,11 +11,12 @@ from .service import (
     build_builder_species_options_payload,
     build_regulation_catalog_payload,
 )
+from .version import __version__
 
 
 app = FastAPI(
     title="Pokemon Champions Analyzer API",
-    version="0.1.0",
+    version=__version__,
 )
 
 

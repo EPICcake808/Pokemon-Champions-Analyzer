@@ -245,9 +245,18 @@ export interface MetaTournamentRow {
   result_score: number;
   meta_weight: number;
   meta_share: number;
+  contextual_score: number;
+  context_reasons: string[];
   matchup_score: number;
   impact_score: number;
   standing: string;
+}
+
+export interface MatchupDetail {
+  base_score: number;
+  contextual_adjustment: number;
+  score: number;
+  reasons: string[];
 }
 
 export interface MetaAnalysis {
@@ -316,6 +325,7 @@ export interface PokemonTeamAnalysis {
     favorable: string[];
     unfavorable: string[];
     scores: Record<string, number>;
+    details: Record<string, MatchupDetail>;
   };
   meta_mode_profile: {
     favorable: string[];

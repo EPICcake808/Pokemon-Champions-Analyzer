@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pokemon-team-analyzer"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Analyze Pokemon Showdown teams and export fixed-length feature vectors."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,6 +15,9 @@ pokemon-team-analyzer = "pokemon_team_analyzer.cli:main"
 
 [tool.setuptools.packages.find]
 include = ["pokemon_team_analyzer*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "pokemon_team_analyzer.version.__version__" }
 
 [tool.vercel]
 entrypoint = "pokemon_team_analyzer.api:app"

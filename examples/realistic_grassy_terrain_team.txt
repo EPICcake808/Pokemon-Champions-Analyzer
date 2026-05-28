@@ -1,7 +1,7 @@
 Hydrapple @ Leftovers
 Ability: Regenerator
 Level: 50
-EVs: 252 HP / 124 Def / 132 SpA
+EVs: 32 HP / 16 Def / 18 SpA
 Modest Nature
 - Grassy Terrain
 - Giga Drain
@@ -11,7 +11,7 @@ Modest Nature
 Venusaur @ Focus Sash
 Ability: Overgrow
 Level: 50
-EVs: 4 HP / 252 SpA / 252 Spe
+EVs: 2 HP / 32 SpA / 32 Spe
 Timid Nature
 - Giga Drain
 - Sludge Bomb
@@ -21,37 +21,37 @@ Timid Nature
 Torterra @ White Herb
 Ability: Overgrow
 Level: 50
-EVs: 252 HP / 252 Atk / 4 SpD
+EVs: 32 HP / 32 Atk / 2 SpD
 Adamant Nature
-- Grassy Terrain
 - Wood Hammer
 - Stomping Tantrum
 - Protect
+- Swords Dance
 
 Roserade @ Mental Herb
 Ability: Natural Cure
 Level: 50
-EVs: 4 HP / 252 SpA / 252 Spe
+EVs: 2 HP / 32 SpA / 32 Spe
 Timid Nature
-- Grassy Terrain
+- Sleep Powder
 - Giga Drain
 - Sludge Bomb
-- Sleep Powder
+- Protect
 
-Corviknight @ Sharp Beak
-Ability: Pressure
+Whimsicott @ Fairy Feather
+Ability: Prankster
 Level: 50
-EVs: 252 HP / 156 Def / 100 SpD
-Impish Nature
-- Body Press
-- U-turn
-- Roost
+EVs: 10 HP / 24 SpA / 32 Spe
+Timid Nature
+- Tailwind
+- Encore
+- Moonblast
 - Protect
 
 Sinistcha @ Sitrus Berry
 Ability: Hospitality
 Level: 50
-EVs: 252 HP / 124 Def / 132 SpA
+EVs: 32 HP / 16 Def / 18 SpA
 Quiet Nature
 - Matcha Gotcha
 - Rage Powder

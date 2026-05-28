@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import dataclass
 from itertools import combinations
 from statistics import median, pstdev
 from typing import Iterable, cast
@@ -429,6 +430,74 @@ M_A_TRICK_ROOM_PRESSURE_TYPES = {
     "dark": 0.7,
     "water": 0.7,
 }
+SLEEP_INDUCING_MOVES = {
+    "dark-void",
+    "grasswhistle",
+    "hypnosis",
+    "lovely-kiss",
+    "sing",
+    "sleep-powder",
+    "spore",
+    "yawn",
+}
+FIRE_PRESSURE_SPECIES = {"charizard", "charizard-mega-y", "incineroar", "torkoal", "volcarona"}
+RAIN_PRESSURE_SPECIES = {"archaludon", "basculegion", "pelipper", "politoed"}
+ROOM_SETTER_SPECIES = {"farigiraf", "hatterene", "indeedee-f", "porygon2"}
+HAZARD_PRESSURE_SPECIES = {"glimmora"}
+SCREENS_PRESSURE_SPECIES = {"grimmsnarl", "sableye"}
+SLEEP_PRESSURE_SPECIES = {"amoonguss", "roserade", "venusaur", "vivillon"}
+BULKY_GRASS_PRESSURE_SPECIES = {"abomasnow", "hydrapple", "venusaur", "venusaur-mega"}
+ILLUSION_SPECIES = {"zoroark", "zoroark-hisui"}
+
+
+@dataclass(frozen=True)
+class ContextualMatchupProfile:
+    species_tokens: set[str]
+    move_counts: Counter[str]
+    attack_type_counts: Counter[str]
+    ability_counts: Counter[str]
+    team_mode_packages: tuple[str, ...]
+    team_win_condition_labels: tuple[str, ...]
+    fast_members: int
+    slow_members: int
+    bulky_members: int
+    frail_members: int
+    strong_attackers: int
+    weather_setters: int
+    terrain_setters: int
+    redirection: int
+    screens: int
+    protective_turns: int
+    recovery_loop: int
+    hazard_control: int
+    priority_attacks: int
+    sleep_pressure: int
+    setup_pressure: float
+    immediate_pressure: float
+    water_resistance: int
+    fire_resistance: int
+    electric_resistance: int
+    fire_exposure: float
+    water_exposure: float
+    rock_exposure: float
+    ground_exposure: float
+    flying_exposure: float
+    poison_exposure: float
+    grass_bias: float
+    fighting_bias: float
+    psychic_bias: float
+    weather_punish_rain: float
+    weather_punish_sun: float
+    weather_punish_sand: float
+    weather_punish_snow: float
+    tailwind_counter_tools: float
+    trick_room_counter_tools: float
+    screen_counter_tools: float
+    setup_counter_tools: float
+    progress_pressure: float
+    disruption_pressure: float
+    mindgame_pressure: float
+    coverage_gaps: tuple[str, ...]
 
 
 def analyze_team_text(
@@ -610,7 +679,18 @@ def analyze_team(
         utility_role_counts,
         team_archetype_scores,
     )
-    matchup_scores, favorable_matchups, unfavorable_matchups = infer_matchup_profile(
+    contextual_matchup_profile = _build_contextual_matchup_profile(
+        members,
+        pokemon_role_counts,
+        utility_role_counts,
+        team_mode_packages,
+        team_win_condition_labels,
+        offensive_coverage,
+        defensive_profile,
+        top_defensive_weaknesses,
+        coverage_gaps,
+    )
+    matchup_scores, matchup_details, favorable_matchups, unfavorable_matchups = infer_matchup_profile(
         members,
         classified_members,
         pokemon_role_counts,
@@ -619,6 +699,7 @@ def analyze_team(
         defensive_profile,
         top_defensive_weaknesses,
         team_archetype_scores,
+        contextual_matchup_profile,
     )
     team_mode_scores, team_mode_labels, mode_matchup_scores, favorable_modes, unfavorable_modes = infer_meta_mode_profile(
         members,
@@ -638,6 +719,7 @@ def analyze_team(
         matchup_scores,
         favorable_modes,
         unfavorable_modes,
+        contextual_matchup_profile,
         regulation_id=regulation_id,
     )
     team_difficulty_label, team_difficulty_score, team_difficulty_factors = infer_team_difficulty(
@@ -771,6 +853,7 @@ def analyze_team(
         team_win_condition_labels=team_win_condition_labels,
         team_win_condition_scores=team_win_condition_scores,
         matchup_scores=matchup_scores,
+        matchup_details=matchup_details,
         favorable_matchups=favorable_matchups,
         unfavorable_matchups=unfavorable_matchups,
         team_mode_scores=team_mode_scores,
@@ -2447,7 +2530,8 @@ def infer_matchup_profile(
     defensive_profile: dict[str, dict[str, float | int]],
     top_defensive_weaknesses: list[str],
     team_archetype_scores: dict[str, float],
-) -> tuple[dict[str, float], list[str], list[str]]:
+    contextual_matchup_profile: ContextualMatchupProfile,
+) -> tuple[dict[str, float], dict[str, dict[str, object]], list[str], list[str]]:
     move_counts = Counter()
     ability_counts = Counter()
     item_counts = Counter()
@@ -2656,11 +2740,29 @@ def infer_matchup_profile(
         ),
     }
 
-    average_score = sum(raw_scores.values()) / len(raw_scores)
+    contextual_adjustments: dict[str, float] = {}
+    matchup_detail_map: dict[str, dict[str, object]] = {}
+    adjusted_raw_scores: dict[str, float] = {}
+    for archetype in BROAD_TEAM_ARCHETYPE_ORDER:
+        contextual_adjustment, contextual_reasons = _score_broad_contextual_matchup(
+            archetype,
+            contextual_matchup_profile,
+        )
+        contextual_adjustments[archetype] = contextual_adjustment
+        adjusted_raw_scores[archetype] = raw_scores[archetype] + contextual_adjustment
+        matchup_detail_map[archetype] = {
+            "base_score": round(raw_scores[archetype], 2),
+            "contextual_adjustment": contextual_adjustment,
+            "reasons": contextual_reasons,
+        }
+
+    average_score = sum(adjusted_raw_scores.values()) / len(adjusted_raw_scores)
     matchup_scores = {
-        archetype: round(raw_scores[archetype] - average_score, 2)
+        archetype: round(adjusted_raw_scores[archetype] - average_score, 2)
         for archetype in BROAD_TEAM_ARCHETYPE_ORDER
     }
+    for archetype in BROAD_TEAM_ARCHETYPE_ORDER:
+        matchup_detail_map[archetype]["score"] = matchup_scores[archetype]
     favorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]), reverse=True)
     unfavorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]))
     favorable_matchups = [archetype for archetype, score in favorable_ranked if score > 0][:2]
@@ -2671,7 +2773,7 @@ def infer_matchup_profile(
     if not unfavorable_matchups:
         unfavorable_matchups = [unfavorable_ranked[0][0]]
 
-    return matchup_scores, favorable_matchups, unfavorable_matchups
+    return matchup_scores, matchup_detail_map, favorable_matchups, unfavorable_matchups
 
 
 def infer_meta_mode_profile(
@@ -2905,6 +3007,400 @@ def infer_meta_mode_profile(
     return team_mode_scores, team_mode_labels, mode_matchup_scores, favorable_modes, unfavorable_modes
 
 
+def _build_contextual_matchup_profile(
+    members: list[TeamMember],
+    pokemon_role_counts: dict[str, int],
+    utility_role_counts: dict[str, int],
+    team_mode_packages: list[str],
+    team_win_condition_labels: list[str],
+    offensive_coverage: dict[str, int],
+    defensive_profile: dict[str, dict[str, float | int]],
+    top_defensive_weaknesses: list[str],
+    coverage_gaps: list[str],
+) -> ContextualMatchupProfile:
+    move_counts: Counter[str] = Counter()
+    attack_type_counts: Counter[str] = Counter()
+    ability_counts: Counter[str] = Counter()
+    species_tokens: set[str] = set()
+    fast_members = 0
+    slow_members = 0
+    bulky_members = 0
+    frail_members = 0
+    strong_attackers = 0
+    priority_attacks = 0
+    sleep_pressure = 0
+
+    for member in members:
+        species_tokens.update(_species_tokens_for_member(member))
+        ability_name = _normalized_ability_name(member.pokemon_set.ability)
+        if ability_name:
+            ability_counts[ability_name] += 1
+
+        stats = _normalized_member_stats(member)
+        bulk_total = stats["hp"] + stats["defense"] + stats["special_defense"]
+        offense_total = max(stats["attack"], stats["special_attack"])
+        speed_total = stats["speed"]
+
+        if speed_total >= 145:
+            fast_members += 1
+        if speed_total <= 95:
+            slow_members += 1
+        if bulk_total >= 340:
+            bulky_members += 1
+        if bulk_total <= 290:
+            frail_members += 1
+        if offense_total >= 155:
+            strong_attackers += 1
+
+        for move in member.move_data:
+            move_counts[move.api_name] += 1
+            if move.damage_class != "status":
+                attack_type_counts[move.type_name] += 1
+                if move.priority > 0:
+                    priority_attacks += 1
+            if move.api_name in SLEEP_INDUCING_MOVES:
+                sleep_pressure += 1
+
+    total_damaging_lines = sum(attack_type_counts.values()) or 1
+    weather_setters = pokemon_role_counts["weather_setter"] + utility_role_counts["weather"]
+    terrain_setters = pokemon_role_counts["terrain_setter"] + utility_role_counts["terrain"]
+    redirection = pokemon_role_counts["redirector"]
+    screens = pokemon_role_counts["screen_setter"] + utility_role_counts["screen"]
+    protective_turns = utility_role_counts["protection"]
+    recovery_loop = utility_role_counts["recovery"] + utility_role_counts["healing_support"]
+    hazard_control = pokemon_role_counts["hazard_control"]
+    setup_pressure = round(
+        1.0 * pokemon_role_counts["setup_sweeper"]
+        + 0.5 * utility_role_counts["stat_boost"]
+        + 0.35 * redirection
+        + 0.25 * screens,
+        2,
+    )
+    immediate_pressure = round(
+        float(strong_attackers)
+        + 0.6 * pokemon_role_counts["cleaner"]
+        + 0.3 * priority_attacks,
+        2,
+    )
+
+    def _resistance_count(type_name: str) -> int:
+        return int(defensive_profile[type_name]["resistant_members"]) + int(defensive_profile[type_name]["immune_members"])
+
+    water_resistance = _resistance_count("water")
+    fire_resistance = _resistance_count("fire")
+    electric_resistance = _resistance_count("electric")
+    fire_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"fire": 1.0}),
+        2,
+    )
+    water_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"water": 1.0}),
+        2,
+    )
+    rock_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"rock": 1.0}),
+        2,
+    )
+    ground_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"ground": 1.0}),
+        2,
+    )
+    flying_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"flying": 1.0}),
+        2,
+    )
+    poison_exposure = round(
+        _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"poison": 1.0}),
+        2,
+    )
+
+    grass_bias = round(attack_type_counts["grass"] / total_damaging_lines, 3)
+    fighting_bias = round(attack_type_counts["fighting"] / total_damaging_lines, 3)
+    psychic_bias = round(attack_type_counts["psychic"] / total_damaging_lines, 3)
+    weather_punish_rain = round(
+        float(offensive_coverage["grass"] + offensive_coverage["electric"])
+        + 0.6 * weather_setters
+        + 0.35 * water_resistance,
+        2,
+    )
+    weather_punish_sun = round(
+        float(offensive_coverage["water"] + offensive_coverage["ground"] + offensive_coverage["rock"])
+        + 0.6 * weather_setters
+        + 0.3 * fire_resistance,
+        2,
+    )
+    weather_punish_sand = round(
+        float(
+            offensive_coverage["water"]
+            + offensive_coverage["grass"]
+            + offensive_coverage["fighting"]
+            + offensive_coverage["ground"]
+        )
+        + 0.2 * bulky_members,
+        2,
+    )
+    weather_punish_snow = round(
+        float(offensive_coverage["fire"] + offensive_coverage["rock"] + offensive_coverage["steel"])
+        + 0.2 * bulky_members,
+        2,
+    )
+    tailwind_counter_tools = round(
+        0.9 * move_counts["encore"]
+        + 0.8 * move_counts["fake-out"]
+        + 0.8 * move_counts["wide-guard"]
+        + 0.7 * priority_attacks
+        + 0.5 * pokemon_role_counts["speed_control"]
+        + 0.35 * redirection
+        + 0.25 * protective_turns,
+        2,
+    )
+    trick_room_counter_tools = round(
+        1.1 * move_counts["taunt"]
+        + 1.0 * move_counts["encore"]
+        + 1.25 * move_counts["imprison"]
+        + 0.9 * move_counts["trick-room"]
+        + 0.75 * move_counts["fake-out"]
+        + 0.65 * move_counts["wide-guard"]
+        + 0.45 * utility_role_counts["anti_setup"]
+        + 0.35 * sleep_pressure,
+        2,
+    )
+    screen_counter_tools = round(
+        0.9 * utility_role_counts["item_control"]
+        + 0.8 * setup_pressure
+        + 0.6 * utility_role_counts["anti_setup"]
+        + 0.45 * strong_attackers,
+        2,
+    )
+    setup_counter_tools = round(
+        1.0 * move_counts["taunt"]
+        + 0.9 * move_counts["encore"]
+        + 0.8 * utility_role_counts["anti_setup"]
+        + 0.5 * utility_role_counts["disruption"]
+        + 0.35 * priority_attacks
+        + 0.35 * sleep_pressure,
+        2,
+    )
+    progress_pressure = round(
+        float(
+            utility_role_counts["item_control"]
+            + utility_role_counts["trapping"]
+            + utility_role_counts["phazing"]
+        )
+        + 0.6 * utility_role_counts["disruption"],
+        2,
+    )
+    disruption_pressure = round(
+        float(utility_role_counts["disruption"] + utility_role_counts["anti_setup"])
+        + 0.7 * move_counts["encore"]
+        + 0.8 * move_counts["taunt"],
+        2,
+    )
+    mindgame_pressure = round(
+        0.55 * ability_counts["illusion"]
+        + 0.12 * int("dual_mode" in team_mode_packages)
+        + 0.08
+        * int(
+            any(
+                mode_name in {"tailroom", "rain_tailroom", "sun_tailroom"}
+                for mode_name in team_mode_packages
+            )
+        )
+        + 0.05 * utility_role_counts["pivoting"],
+        2,
+    )
+
+    return ContextualMatchupProfile(
+        species_tokens=species_tokens,
+        move_counts=move_counts,
+        attack_type_counts=attack_type_counts,
+        ability_counts=ability_counts,
+        team_mode_packages=tuple(team_mode_packages),
+        team_win_condition_labels=tuple(team_win_condition_labels),
+        fast_members=fast_members,
+        slow_members=slow_members,
+        bulky_members=bulky_members,
+        frail_members=frail_members,
+        strong_attackers=strong_attackers,
+        weather_setters=weather_setters,
+        terrain_setters=terrain_setters,
+        redirection=redirection,
+        screens=screens,
+        protective_turns=protective_turns,
+        recovery_loop=recovery_loop,
+        hazard_control=hazard_control,
+        priority_attacks=priority_attacks,
+        sleep_pressure=sleep_pressure,
+        setup_pressure=setup_pressure,
+        immediate_pressure=immediate_pressure,
+        water_resistance=water_resistance,
+        fire_resistance=fire_resistance,
+        electric_resistance=electric_resistance,
+        fire_exposure=fire_exposure,
+        water_exposure=water_exposure,
+        rock_exposure=rock_exposure,
+        ground_exposure=ground_exposure,
+        flying_exposure=flying_exposure,
+        poison_exposure=poison_exposure,
+        grass_bias=grass_bias,
+        fighting_bias=fighting_bias,
+        psychic_bias=psychic_bias,
+        weather_punish_rain=weather_punish_rain,
+        weather_punish_sun=weather_punish_sun,
+        weather_punish_sand=weather_punish_sand,
+        weather_punish_snow=weather_punish_snow,
+        tailwind_counter_tools=tailwind_counter_tools,
+        trick_room_counter_tools=trick_room_counter_tools,
+        screen_counter_tools=screen_counter_tools,
+        setup_counter_tools=setup_counter_tools,
+        progress_pressure=progress_pressure,
+        disruption_pressure=disruption_pressure,
+        mindgame_pressure=mindgame_pressure,
+        coverage_gaps=tuple(coverage_gaps),
+    )
+
+
+def _push_context_reason(reasons: list[tuple[float, str]], impact: float, text: str) -> None:
+    if abs(impact) < 0.05:
+        return
+    reasons.append((impact, text))
+
+
+def _finalize_context_reasons(reasons: list[tuple[float, str]], limit: int = 3) -> list[str]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for _, text in sorted(reasons, key=lambda item: (abs(item[0]), item[1]), reverse=True):
+        if text in seen:
+            continue
+        seen.add(text)
+        ordered.append(text)
+        if len(ordered) >= limit:
+            break
+    return ordered
+
+
+def _score_broad_contextual_matchup(
+    archetype: str,
+    contextual_matchup_profile: ContextualMatchupProfile,
+) -> tuple[float, list[str]]:
+    score = 0.0
+    reasons: list[tuple[float, str]] = []
+
+    if archetype == "hyper_offense":
+        tailwind_help = 0.09 * min(contextual_matchup_profile.tailwind_counter_tools, 3.0)
+        score += tailwind_help
+        _push_context_reason(reasons, tailwind_help, "Encore, Protect, and speed-control tools give it real ways to blunt fast offense.")
+
+        bulk_help = 0.05 * min(contextual_matchup_profile.bulky_members, 4)
+        score += bulk_help
+        _push_context_reason(reasons, bulk_help, "The roster has enough raw bulk to survive the first fast tempo cycle.")
+
+        setup_help = 0.03 * min(contextual_matchup_profile.setup_pressure, 3.0)
+        score += setup_help
+        _push_context_reason(reasons, setup_help, "Its setup pressure means one protected turn can flip the damage race.")
+
+        if contextual_matchup_profile.weather_setters >= 3 and len(contextual_matchup_profile.team_mode_packages) >= 3:
+            score -= 0.08
+            _push_context_reason(reasons, -0.08, "Heavy weather and mode overlap can still make the opening anti-offense plan less coherent in practice.")
+
+        if (
+            contextual_matchup_profile.fast_members < 2
+            and contextual_matchup_profile.move_counts["trick-room"] == 0
+            and contextual_matchup_profile.move_counts["encore"] == 0
+            and contextual_matchup_profile.move_counts["fake-out"] == 0
+        ):
+            score -= 0.18
+            _push_context_reason(reasons, -0.18, "Low natural speed leaves little margin if the first fast turn cycle goes cleanly for the opponent.")
+
+        fire_penalty = -0.08 * max(0.0, contextual_matchup_profile.fire_exposure)
+        score += fire_penalty
+        _push_context_reason(reasons, fire_penalty, "Repeated fire pressure is still hard for this roster to absorb cleanly.")
+
+        flying_penalty = -0.08 * max(0.0, contextual_matchup_profile.flying_exposure)
+        score += flying_penalty
+        _push_context_reason(reasons, flying_penalty, "Fast flying pressure can force awkward trades into the back line.")
+
+    elif archetype == "bulky_offense":
+        immediate_help = 0.05 * min(contextual_matchup_profile.immediate_pressure, 4.0)
+        score += immediate_help
+        _push_context_reason(reasons, immediate_help, "The team still presents immediate enough damage to pressure bulky attackers before they snowball.")
+
+        sustain_help = 0.05 * min(contextual_matchup_profile.recovery_loop, 3)
+        score += sustain_help
+        _push_context_reason(reasons, sustain_help, "Recovery and healing support help it survive the first trade cycle against bulky offense.")
+
+        counter_help = 0.05 * min(contextual_matchup_profile.setup_counter_tools, 2.5)
+        score += counter_help
+        _push_context_reason(reasons, counter_help, "Encore and anti-setup tools make opposing setup windows less free.")
+
+        if contextual_matchup_profile.progress_pressure < 1.5:
+            score -= 0.1
+            _push_context_reason(reasons, -0.1, "It can struggle to force progress if bulky offense stabilizes the board early.")
+
+    elif archetype == "balance":
+        stabilize_help = 0.04 * min(contextual_matchup_profile.recovery_loop + contextual_matchup_profile.redirection, 4)
+        score += stabilize_help
+        _push_context_reason(reasons, stabilize_help, "Redirection and healing give it real midgame reset options against balance shells.")
+
+        setup_help = 0.04 * min(contextual_matchup_profile.setup_pressure, 3.0)
+        score += setup_help
+        _push_context_reason(reasons, setup_help, "A credible setup plan helps it punish passive balance turns.")
+
+        if contextual_matchup_profile.progress_pressure < 1.5 and contextual_matchup_profile.immediate_pressure < 3.0:
+            score -= 0.14
+            _push_context_reason(reasons, -0.14, "If it does not claim momentum early, patient balance teams can drag the game into slower trades.")
+
+    elif archetype == "semi_stall":
+        break_help = 0.06 * min(contextual_matchup_profile.setup_pressure + contextual_matchup_profile.progress_pressure, 4.0)
+        score += break_help
+        _push_context_reason(reasons, break_help, "Setup pressure and progress tools stop semi-stall shells from sitting comfortably forever.")
+
+        disrupt_help = 0.04 * min(contextual_matchup_profile.disruption_pressure, 3.0)
+        score += disrupt_help
+        _push_context_reason(reasons, disrupt_help, "Disruption tools help it deny recovery loops and overly passive turns.")
+
+        if contextual_matchup_profile.setup_pressure < 1.5 and contextual_matchup_profile.progress_pressure < 1.5:
+            score -= 0.18
+            _push_context_reason(reasons, -0.18, "Without real progress pressure, semi-stall can outlast it through repeated positioning turns.")
+
+    elif archetype == "stall":
+        break_help = 0.08 * min(contextual_matchup_profile.setup_pressure + contextual_matchup_profile.progress_pressure, 4.0)
+        score += break_help
+        _push_context_reason(reasons, break_help, "Its best stall matchups come from having a real setup or progress plan instead of only chip damage.")
+
+        mindgame_help = 0.06 * min(contextual_matchup_profile.mindgame_pressure, 2.0)
+        score += mindgame_help
+        _push_context_reason(reasons, mindgame_help, "Mindgame pressure matters more against slower shells that give free scouting turns.")
+
+        if contextual_matchup_profile.recovery_loop == 0 and contextual_matchup_profile.progress_pressure < 2.0:
+            score -= 0.14
+            _push_context_reason(reasons, -0.14, "If it cannot snowball quickly, long games against full stall can still become awkward.")
+
+    elif archetype == "trick_room":
+        contest_help = 0.09 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
+        score += contest_help
+        _push_context_reason(reasons, contest_help, "Encore, reverse Room lines, and other anti-room tools give it real setup contesting play.")
+
+        slow_help = 0.04 * min(contextual_matchup_profile.slow_members + contextual_matchup_profile.bulky_members, 5)
+        score += slow_help
+        _push_context_reason(reasons, slow_help, "Enough bulky or slower members still function if Trick Room goes up.")
+
+        if (
+            contextual_matchup_profile.fast_members >= 3
+            and contextual_matchup_profile.move_counts["trick-room"] == 0
+            and contextual_matchup_profile.move_counts["encore"] == 0
+            and contextual_matchup_profile.move_counts["taunt"] == 0
+        ):
+            score -= 0.18
+            _push_context_reason(reasons, -0.18, "A very speed-heavy structure with no direct Room contest usually folds once Trick Room sticks.")
+
+        fire_penalty = -0.05 * max(0.0, contextual_matchup_profile.fire_exposure)
+        score += fire_penalty
+        _push_context_reason(reasons, fire_penalty, "Common Room fire attackers can still punish awkward defensive overlaps.")
+
+    return round(score, 2), _finalize_context_reasons(reasons)
+
+
 def infer_meta_analysis(
     team_mode_scores: dict[str, float],
     team_mode_labels: list[str],
@@ -2912,6 +3408,7 @@ def infer_meta_analysis(
     broad_matchup_scores: dict[str, float],
     favorable_modes: list[str],
     unfavorable_modes: list[str],
+    contextual_matchup_profile: ContextualMatchupProfile,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> dict[str, object]:
     total_mode_weight = sum(TOURNAMENT_MODE_SNAPSHOTS[mode]["tournament_weight"] for mode in MODE_LABEL_ORDER)
@@ -2958,6 +3455,7 @@ def infer_meta_analysis(
     tournament_rows = _build_tournament_meta_rows(
         mode_matchup_scores,
         broad_matchup_scores,
+        contextual_matchup_profile,
         regulation_id=regulation_id,
     )
     high_presence_team_modes = [
@@ -3074,7 +3572,7 @@ def infer_meta_analysis(
 
     notes = [
         (
-            f"Weighted against current Regulation M-A tournament-result teams, this team grades as "
+            f"Weighted against current Regulation M-A tournament-result teams, using mode, broad-style, and shell-context signals, this team grades as "
             f"{meta_label.replace('_', ' ')} at {overall_score}, with {positive_weight_share}% of the tracked board "
             f"scoring favorable and {negative_weight_share}% scoring pressured."
         )
@@ -3172,6 +3670,7 @@ def infer_meta_analysis(
 def _build_tournament_meta_rows(
     mode_matchup_scores: dict[str, float],
     broad_matchup_scores: dict[str, float],
+    contextual_matchup_profile: ContextualMatchupProfile,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> list[dict[str, object]]:
     eligible_snapshots = [
@@ -3186,7 +3685,8 @@ def _build_tournament_meta_rows(
         meta_weight = _tournament_snapshot_weight(snapshot)
         mode_score = _tournament_snapshot_mode_score(snapshot, mode_matchup_scores)
         broad_score = _tournament_snapshot_broad_score(snapshot, broad_matchup_scores)
-        matchup_score = round(0.72 * mode_score + 0.28 * broad_score, 2)
+        contextual_score, context_reasons = _score_tournament_snapshot_contextual_matchup(snapshot, contextual_matchup_profile)
+        matchup_score = round(0.34 * mode_score + 0.1 * broad_score + 0.56 * contextual_score, 2)
         rows.append(
             {
                 "slug": snapshot["slug"],
@@ -3203,6 +3703,8 @@ def _build_tournament_meta_rows(
                 "result_score": round(100 * cast(float, snapshot["result_weight"]), 1),
                 "meta_weight": round(meta_weight, 4),
                 "meta_share": round(100 * meta_weight / total_weight, 1),
+                "contextual_score": contextual_score,
+                "context_reasons": context_reasons,
                 "matchup_score": matchup_score,
                 "impact_score": round(meta_weight * matchup_score, 2),
                 "standing": _classify_meta_matchup_standing(matchup_score),
@@ -3213,6 +3715,309 @@ def _build_tournament_meta_rows(
         rows,
         key=lambda row: (-cast(float, row["meta_share"]), -abs(cast(float, row["impact_score"])), cast(str, row["label"])),
     )
+
+
+def _score_tournament_snapshot_contextual_matchup(
+    snapshot: dict[str, object],
+    contextual_matchup_profile: ContextualMatchupProfile,
+) -> tuple[float, list[str]]:
+    modes = set(cast(tuple[str, ...], snapshot["modes"]))
+    key_tokens = set(cast(tuple[str, ...], snapshot["key_pokemon"]))
+    key_cores = cast(tuple[str, ...], snapshot["key_cores"])
+    broad_mix = cast(dict[str, float], snapshot["broad_mix"])
+    label_text = cast(str, snapshot["label"]).lower()
+    core_text = " ".join(core.lower() for core in key_cores)
+    score = 0.0
+    reasons: list[tuple[float, str]] = []
+
+    shared_modes = modes & set(contextual_matchup_profile.team_mode_packages)
+    if shared_modes:
+        shared_mode_bonus = 0.04 * len(shared_modes)
+        score += shared_mode_bonus
+        _push_context_reason(
+            reasons,
+            shared_mode_bonus,
+            f"The roster already plays into {', '.join(_render_mode_label(mode_name) for mode_name in sorted(shared_modes))} patterns, so the pacing is familiar.",
+        )
+
+    if any(_team_preview_is_tailwind_mode(mode_name) for mode_name in modes):
+        tailwind_counter_bonus = 0.08 * min(contextual_matchup_profile.tailwind_counter_tools, 3.0)
+        score += tailwind_counter_bonus
+        _push_context_reason(reasons, tailwind_counter_bonus, "Encore, Fake Out, and speed-control tools give it real play into Tailwind tempo.")
+
+        protect_bonus = 0.02 * min(contextual_matchup_profile.protective_turns, 4)
+        score += protect_bonus
+        _push_context_reason(reasons, protect_bonus, "Multiple Protect turns help it waste opposing Tailwind cycles.")
+        if broad_mix.get("hyper_offense", 0.0) >= 0.4:
+            immediate_pressure_bonus = 0.02 * min(contextual_matchup_profile.immediate_pressure, 3.0)
+            score += immediate_pressure_bonus
+            _push_context_reason(reasons, immediate_pressure_bonus, "It can push enough immediate damage to punish fragile fast leads.")
+        if (
+            contextual_matchup_profile.frail_members >= 3
+            and contextual_matchup_profile.protective_turns < 3
+            and contextual_matchup_profile.redirection == 0
+        ):
+            score -= 0.18
+            _push_context_reason(reasons, -0.18, "Too many frail members with limited shielding makes the opening damage race shaky.")
+        if (
+            contextual_matchup_profile.slow_members >= 3
+            and contextual_matchup_profile.move_counts["trick-room"] == 0
+            and contextual_matchup_profile.move_counts["encore"] == 0
+        ):
+            score -= 0.12
+            _push_context_reason(reasons, -0.12, "The team can get pinned if Tailwind shells force it to play from behind on speed.")
+        if (
+            broad_mix.get("hyper_offense", 0.0) >= 0.45
+            and contextual_matchup_profile.fast_members < 3
+            and contextual_matchup_profile.priority_attacks == 0
+            and contextual_matchup_profile.move_counts["fake-out"] == 0
+        ):
+            score -= 0.32
+            _push_context_reason(reasons, -0.32, "Very fast hyper-offense shells are dangerous when the roster lacks natural speed, priority, and Fake Out.")
+
+    if any(_team_preview_is_trick_room_mode(mode_name) for mode_name in modes):
+        trick_room_counter_bonus = 0.13 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
+        score += trick_room_counter_bonus
+        _push_context_reason(reasons, trick_room_counter_bonus, "Encore, Taunt, or reverse Room lines give it real Trick Room counterplay.")
+
+        recovery_bonus = 0.04 * min(contextual_matchup_profile.recovery_loop, 3)
+        score += recovery_bonus
+        _push_context_reason(reasons, recovery_bonus, "Healing support keeps it from auto-losing long Room cycles.")
+        if (
+            contextual_matchup_profile.fast_members >= 3
+            and contextual_matchup_profile.move_counts["trick-room"] == 0
+            and contextual_matchup_profile.move_counts["taunt"] == 0
+            and contextual_matchup_profile.move_counts["encore"] == 0
+        ):
+            score -= 0.2
+            _push_context_reason(reasons, -0.2, "A speed-heavy shell with no direct Trick Room contest is fragile once Room sticks.")
+        if contextual_matchup_profile.slow_members >= 2:
+            score += 0.08
+            _push_context_reason(reasons, 0.08, "It still has enough slower pieces to function under opposing Trick Room.")
+
+    if "rain" in modes:
+        rain_punish_bonus = 0.08 * min(contextual_matchup_profile.weather_punish_rain, 3.5)
+        score += rain_punish_bonus
+        _push_context_reason(reasons, rain_punish_bonus, "Grass and Electric pressure give it real leverage into rain payoffs.")
+
+        water_resist_bonus = 0.03 * min(contextual_matchup_profile.water_resistance, 3)
+        score += water_resist_bonus
+        _push_context_reason(reasons, water_resist_bonus, "The roster has enough water resistances to avoid drowning in rain chip races.")
+    if "sun" in modes:
+        sun_punish_bonus = 0.04 * min(contextual_matchup_profile.weather_punish_sun, 3.5)
+        score += sun_punish_bonus
+        _push_context_reason(reasons, sun_punish_bonus, "Rock, Ground, and Water coverage keeps sun from getting fully free turns.")
+
+        fire_penalty = -0.24 * max(0.0, contextual_matchup_profile.fire_exposure)
+        score += fire_penalty
+        _push_context_reason(reasons, fire_penalty, "Its defensive shell still takes real strain from concentrated fire pressure.")
+
+        flying_penalty = -0.1 * max(0.0, contextual_matchup_profile.flying_exposure)
+        score += flying_penalty
+        _push_context_reason(reasons, flying_penalty, "Flying coverage from sun shells creates awkward endgames for this build.")
+
+        grass_penalty = -0.16 * contextual_matchup_profile.grass_bias
+        score += grass_penalty
+        _push_context_reason(reasons, grass_penalty, "A grass-heavy attack profile is naturally less comfortable into opposing sun.")
+    if "sand" in modes:
+        sand_bonus = 0.06 * min(contextual_matchup_profile.weather_punish_sand, 3.5)
+        score += sand_bonus
+        _push_context_reason(reasons, sand_bonus, "Water, Grass, and Fighting lines give it counterpressure into sand cores.")
+
+        ground_penalty = -0.08 * max(0.0, contextual_matchup_profile.ground_exposure)
+        score += ground_penalty
+        _push_context_reason(reasons, ground_penalty, "Repeated Ground pressure still taxes the roster's positioning.")
+    if "snow" in modes:
+        snow_bonus = 0.05 * min(contextual_matchup_profile.weather_punish_snow, 3.0)
+        score += snow_bonus
+        _push_context_reason(reasons, snow_bonus, "Fire, Rock, and Steel coverage gives it useful counterplay into snow boards.")
+
+        rock_penalty = -0.06 * max(0.0, contextual_matchup_profile.rock_exposure)
+        score += rock_penalty
+        _push_context_reason(reasons, rock_penalty, "Rock weakness still makes snow chip turns harder to navigate.")
+
+    if any("screen" in core.lower() for core in key_cores) or "screens" in label_text:
+        screens_bonus = 0.12 * min(contextual_matchup_profile.screen_counter_tools, 2.5)
+        score += screens_bonus
+        _push_context_reason(reasons, screens_bonus, "Its item control and anti-setup tools stop screens from becoming a free snowball.")
+    if "shell smash" in core_text:
+        shell_smash_bonus = 0.11 * min(contextual_matchup_profile.setup_counter_tools, 2.5)
+        score += shell_smash_bonus
+        _push_context_reason(reasons, shell_smash_bonus, "Encore and anti-setup tools keep Shell Smash lines more honest.")
+
+    if broad_mix.get("hyper_offense", 0.0) >= 0.45:
+        ho_pressure_bonus = 0.04 * min(contextual_matchup_profile.immediate_pressure, 4.0)
+        score += ho_pressure_bonus
+        _push_context_reason(reasons, ho_pressure_bonus, "Its own immediate pressure helps it trade back into hyper-offense shells.")
+        if (
+            "setup_sweep" in contextual_matchup_profile.team_win_condition_labels
+            and contextual_matchup_profile.redirection + contextual_matchup_profile.screens > 0
+        ):
+            score += 0.06
+            _push_context_reason(reasons, 0.06, "Redirection or screens let its own setup plan punish reckless offensive lines.")
+    if broad_mix.get("balance", 0.0) + broad_mix.get("semi_stall", 0.0) >= 0.55:
+        balance_break_bonus = 0.04 * min(contextual_matchup_profile.setup_pressure, 3.0)
+        score += balance_break_bonus
+        _push_context_reason(reasons, balance_break_bonus, "Setup pressure stops slower boards from sitting in neutral forever.")
+        if "perish_trap" in contextual_matchup_profile.team_win_condition_labels:
+            score += 0.06
+            _push_context_reason(reasons, 0.06, "Perish Trap-style endgames punish slower, positioning-heavy boards especially well.")
+
+    if any(token in key_tokens for token in FIRE_PRESSURE_SPECIES):
+        fire_answer_lines = (
+            contextual_matchup_profile.attack_type_counts["ground"]
+            + contextual_matchup_profile.attack_type_counts["rock"]
+            + contextual_matchup_profile.attack_type_counts["water"]
+        )
+        fire_answer_bonus = 0.02 * min(fire_answer_lines, 4)
+        score += fire_answer_bonus
+        _push_context_reason(reasons, fire_answer_bonus, "The roster has at least some direct lines into common fire attackers.")
+        if fire_answer_lines == 0:
+            score -= 0.14
+            _push_context_reason(reasons, -0.14, "It lacks direct offensive punishment for the board's main fire threats.")
+        fire_shell_penalty = -0.14 * max(0.0, contextual_matchup_profile.fire_exposure)
+        score += fire_shell_penalty
+        _push_context_reason(reasons, fire_shell_penalty, "Its defensive overlaps still make sustained fire pressure uncomfortable.")
+        if any(token in key_tokens for token in {"charizard", "charizard-mega-y"}):
+            charizard_penalty = -0.12 * max(0.0, contextual_matchup_profile.flying_exposure)
+            score += charizard_penalty
+            _push_context_reason(reasons, charizard_penalty, "Charizard-style flying pressure pushes especially hard on the current defensive shell.")
+        if contextual_matchup_profile.grass_bias >= 0.35:
+            score -= 0.14
+            _push_context_reason(reasons, -0.14, "Leaning this hard into Grass attacks makes repeated fire pivots much scarier.")
+    if any(token in key_tokens for token in RAIN_PRESSURE_SPECIES):
+        rain_answer_lines = (
+            contextual_matchup_profile.attack_type_counts["grass"]
+            + contextual_matchup_profile.attack_type_counts["electric"]
+        )
+        rain_answer_bonus = 0.03 * min(rain_answer_lines, 4)
+        score += rain_answer_bonus
+        _push_context_reason(reasons, rain_answer_bonus, "Grass and Electric hits give it clean punish lines into rain enablers.")
+    if "archaludon" in key_tokens:
+        coverage_into_archaludon = (
+            contextual_matchup_profile.attack_type_counts["ground"]
+            + contextual_matchup_profile.attack_type_counts["fighting"]
+        )
+        archaludon_bonus = 0.04 * min(coverage_into_archaludon, 3)
+        score += archaludon_bonus
+        _push_context_reason(reasons, archaludon_bonus, "Ground and Fighting pressure keeps Archaludon from feeling invulnerable.")
+        if coverage_into_archaludon == 0:
+            score -= 0.16
+            _push_context_reason(reasons, -0.16, "Without Ground or Fighting pressure, Archaludon can anchor long sequences too safely.")
+    if any(token in key_tokens for token in ROOM_SETTER_SPECIES):
+        room_setter_bonus = 0.05 * min(contextual_matchup_profile.trick_room_counter_tools, 3)
+        score += room_setter_bonus
+        _push_context_reason(reasons, room_setter_bonus, "The roster has real lines to contest dedicated Trick Room setters.")
+    if any(token in key_tokens for token in HAZARD_PRESSURE_SPECIES):
+        hazard_answer_bonus = 0.04 * min(
+            contextual_matchup_profile.attack_type_counts["ground"]
+            + contextual_matchup_profile.attack_type_counts["steel"],
+            2,
+        )
+        score += hazard_answer_bonus
+        _push_context_reason(reasons, hazard_answer_bonus, "Ground and Steel coverage helps it pressure common hazard pieces.")
+        if contextual_matchup_profile.hazard_control == 0:
+            score -= 0.28
+            _push_context_reason(reasons, -0.28, "With no hazard control, repeated chip from Glimmora-style boards adds up quickly.")
+        poison_penalty = -0.12 * max(0.0, contextual_matchup_profile.poison_exposure)
+        score += poison_penalty
+        _push_context_reason(reasons, poison_penalty, "Poison exposure makes hazard-heavy boards noticeably harder to pivot around.")
+        if broad_mix.get("hyper_offense", 0.0) >= 0.45 and contextual_matchup_profile.protective_turns < 5:
+            score -= 0.12
+            _push_context_reason(reasons, -0.12, "Hazard hyper-offense gets more dangerous when the roster cannot buy enough Protect turns.")
+        if any(token in key_tokens for token in FIRE_PRESSURE_SPECIES):
+            score -= 0.24
+            _push_context_reason(reasons, -0.24, "Hazards layered with fire pressure create especially punishing chip races for this shell.")
+    if any(token in key_tokens for token in SCREENS_PRESSURE_SPECIES):
+        screen_species_bonus = 0.05 * min(contextual_matchup_profile.screen_counter_tools, 2.0)
+        score += screen_species_bonus
+        _push_context_reason(reasons, screen_species_bonus, "The build has enough screen-breaking tools to avoid getting buried under reflected bulk.")
+    if any(token in key_tokens for token in SLEEP_PRESSURE_SPECIES):
+        sleep_protect_bonus = 0.03 * min(contextual_matchup_profile.protective_turns, 4)
+        score += sleep_protect_bonus
+        _push_context_reason(reasons, sleep_protect_bonus, "Protect lets it stall sleep turns and scout powder lines more safely.")
+        if contextual_matchup_profile.terrain_setters > 0:
+            score += 0.06
+            _push_context_reason(reasons, 0.06, "Its own terrain control helps blunt sleep-based openings.")
+        if (
+            contextual_matchup_profile.sleep_pressure == 0
+            and contextual_matchup_profile.protective_turns < 3
+            and contextual_matchup_profile.fast_members < 2
+        ):
+            score -= 0.12
+            _push_context_reason(reasons, -0.12, "Low speed and limited Protect usage make sleep pressure harder to absorb.")
+    if any(token in key_tokens for token in BULKY_GRASS_PRESSURE_SPECIES):
+        anti_grass_lines = (
+            contextual_matchup_profile.attack_type_counts["fire"]
+            + contextual_matchup_profile.attack_type_counts["flying"]
+            + contextual_matchup_profile.attack_type_counts["ice"]
+            + contextual_matchup_profile.attack_type_counts["psychic"]
+        )
+        anti_grass_bonus = 0.03 * min(anti_grass_lines, 4)
+        score += anti_grass_bonus
+        _push_context_reason(reasons, anti_grass_bonus, "It carries enough anti-Grass coverage to keep bulky grasses from stonewalling the game.")
+        if contextual_matchup_profile.grass_bias >= 0.35 and anti_grass_lines == 0:
+            score -= 0.18
+            _push_context_reason(reasons, -0.18, "Grass-on-Grass trades are rough when the build lacks real anti-Grass punishment.")
+    if "kingambit" in key_tokens:
+        kingambit_bonus = 0.02 * min(
+            contextual_matchup_profile.attack_type_counts["fighting"]
+            + contextual_matchup_profile.attack_type_counts["ground"],
+            4,
+        )
+        score += kingambit_bonus
+        _push_context_reason(reasons, kingambit_bonus, "Ground and Fighting hits keep Kingambit endgames more manageable.")
+    if any(token in key_tokens for token in ILLUSION_SPECIES):
+        illusion_penalty = -0.07 * max(0, 3 - contextual_matchup_profile.protective_turns)
+        score += illusion_penalty
+        _push_context_reason(reasons, illusion_penalty, "Limited Protect usage makes Zoroark-style illusion scouting more punishing.")
+
+        illusion_bonus = 0.05 * contextual_matchup_profile.mindgame_pressure
+        score += illusion_bonus
+        _push_context_reason(reasons, illusion_bonus, "Its own layered modes and scouting tools reduce how badly illusion mindgames can snowball.")
+
+    if "grassy_terrain" in contextual_matchup_profile.team_mode_packages and "sun" in modes and contextual_matchup_profile.fire_exposure > 0:
+        score -= 0.12
+        _push_context_reason(reasons, -0.12, "A Grassy shell into sun still amplifies the existing fire-pressure issue.")
+    if "grassy_terrain" in contextual_matchup_profile.team_mode_packages and "rain" in modes:
+        score += 0.08
+        _push_context_reason(reasons, 0.08, "Grassy Terrain naturally gives it a better footing into rain sequences.")
+    if (
+        "misty_terrain" in contextual_matchup_profile.team_mode_packages
+        and any(token in key_tokens for token in SLEEP_PRESSURE_SPECIES)
+    ):
+        score += 0.08
+        _push_context_reason(reasons, 0.08, "Misty Terrain is a real asset into sleep-oriented boards.")
+    if (
+        "psyspam" in contextual_matchup_profile.team_win_condition_labels
+        and any(token in key_tokens for token in {"archaludon", "incineroar", "kingambit", "scizor", "scizor-mega"})
+    ):
+        score -= 0.08
+        _push_context_reason(reasons, -0.08, "Dark and Steel anchors make pure Psyspam-style progress less reliable here.")
+
+    if (
+        any(type_name in {"fire", "flying", "steel"} for type_name in contextual_matchup_profile.coverage_gaps)
+        and (
+            any(_team_preview_is_tailwind_mode(mode_name) for mode_name in modes)
+            or "sun" in modes
+        )
+    ):
+        score -= 0.16
+        _push_context_reason(reasons, -0.16, "Current coverage gaps line up badly into the fast fire-flying tempo shells on this board.")
+    if (
+        "poison" in contextual_matchup_profile.coverage_gaps
+        and any(token in key_tokens for token in HAZARD_PRESSURE_SPECIES)
+    ):
+        score -= 0.08
+        _push_context_reason(reasons, -0.08, "A poison coverage gap shows up more when the opposing shell leans on hazard setters.")
+
+    if broad_mix.get("hyper_offense", 0.0) >= 0.4 or any(_team_preview_is_tailwind_mode(mode_name) for mode_name in modes):
+        mindgame_bonus = 0.04 * contextual_matchup_profile.mindgame_pressure
+        score += mindgame_bonus
+        _push_context_reason(reasons, mindgame_bonus, "Flexible mode presentation helps it avoid becoming fully predictable in preview.")
+
+    bounded_score = max(-1.5, min(1.5, round(score, 2)))
+    return bounded_score, _finalize_context_reasons(reasons)
 
 
 COMMON_META_POKEMON_CONTEXT: dict[str, dict[str, str]] = {
@@ -3278,14 +4083,14 @@ def _build_common_meta_pokemon(
         if _is_meta_board_snapshot(snapshot)
     ]
     total_weight = sum(_tournament_snapshot_weight(snapshot) for snapshot in eligible_snapshots) or 1.0
-    species_weights: Counter[str] = Counter()
+    species_weights: dict[str, float] = {}
     species_featured_teams: dict[str, list[tuple[float, str]]] = {}
 
     for snapshot in eligible_snapshots:
         meta_weight = _tournament_snapshot_weight(snapshot)
         snapshot_label = cast(str, snapshot["label"])
         for species_token in cast(tuple[str, ...], snapshot["key_pokemon"]):
-            species_weights[species_token] += meta_weight
+            species_weights[species_token] = species_weights.get(species_token, 0.0) + meta_weight
             species_featured_teams.setdefault(species_token, []).append((meta_weight, snapshot_label))
 
     common_pokemon: list[dict[str, object]] = []
@@ -5435,6 +6240,7 @@ def summarize_matchup_profile(
     favorable_matchups: list[str],
     unfavorable_matchups: list[str],
     matchup_scores: dict[str, float],
+    matchup_details: dict[str, dict[str, object]],
 ) -> list[str]:
     lines = [
         "  Favorable into: " + ", ".join(archetype.replace("_", " ").title() for archetype in favorable_matchups),
@@ -5442,6 +6248,12 @@ def summarize_matchup_profile(
     ]
     for archetype in BROAD_TEAM_ARCHETYPE_ORDER:
         lines.append(f"  Vs {archetype.replace('_', ' ').title()}: {matchup_scores[archetype]}")
+        details = matchup_details.get(archetype, {})
+        contextual_adjustment = details.get("contextual_adjustment")
+        if isinstance(contextual_adjustment, (int, float)) and abs(float(contextual_adjustment)) >= 0.05:
+            lines.append(f"    Context swing: {float(contextual_adjustment):+.2f}")
+        for reason in cast(list[str], details.get("reasons", []))[:2]:
+            lines.append(f"    Why: {reason}")
     return lines
 
 
@@ -5481,12 +6293,16 @@ def summarize_meta_analysis(meta_analysis: dict[str, object]) -> list[str]:
         lines.append(
             f"  {entry['label']}: meta {entry['meta_share']}%, matchup {entry['matchup_score']}, popular {entry['popularity_score']}%, results {entry['result_score']}%"
         )
+        if "contextual_score" in entry:
+            lines.append(f"    Context score: {cast(float, entry['contextual_score']):+.2f}")
         cores = cast(list[str], entry.get("key_cores", []))
         if cores:
             lines.append(f"    Cores: {_render_series(cores[:2])}")
         key_pokemon = cast(list[str], entry.get("key_pokemon", []))
         if key_pokemon:
             lines.append(f"    Pokemon: {_render_series(key_pokemon)}")
+        for reason in cast(list[str], entry.get("context_reasons", []))[:2]:
+            lines.append(f"    Why: {reason}")
     return lines
 
 

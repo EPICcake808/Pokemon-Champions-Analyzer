@@ -15,7 +15,7 @@ from .service import (
 
 app = FastAPI(
     title="Pokemon Champions Analyzer API",
-    version="0.1.0",
+    version="0.2.0",
 )
 
 

@@ -580,6 +580,7 @@ class FakeMetadataProvider:
             "Gengar": SpeciesData("Gengar", "gengar", ("ghost", "poison"), 60, 65, 60, 130, 75, 110),
             "Mega Gengar": SpeciesData("Mega Gengar", "gengar-mega", ("ghost", "poison"), 60, 65, 80, 170, 95, 130),
             "Gengar-Mega": SpeciesData("Gengar-Mega", "gengar-mega", ("ghost", "poison"), 60, 65, 80, 170, 95, 130),
+            "Incineroar": SpeciesData("Incineroar", "incineroar", ("fire", "dark"), 95, 115, 90, 80, 90, 60),
             "Politoed": SpeciesData("Politoed", "politoed", ("water",), 90, 75, 75, 90, 100, 70),
             "Hydrapple": SpeciesData("Hydrapple", "hydrapple", ("grass", "dragon"), 106, 80, 110, 120, 80, 44),
             "Venusaur": SpeciesData("Venusaur", "venusaur", ("grass", "poison"), 80, 82, 83, 100, 100, 80),
@@ -1131,7 +1132,7 @@ class AnalyzerTests(unittest.TestCase):
         self.assertEqual(len(team), 6)
         self.assertEqual(team[0].species, "Farigiraf")
         self.assertEqual(team[0].level, 50)
-        self.assertEqual(team[0].evs, {"HP": 252, "Def": 116, "SpA": 140})
+        self.assertEqual(team[0].evs, {"HP": 32, "Def": 15, "SpA": 19})
         self.assertEqual(team[-1].species, "Arcanine-Hisui")
         self.assertEqual(team[-1].item, "White Herb")
         self.assertEqual(team[-1].nature, "Adamant")
@@ -1824,6 +1825,8 @@ Ability: Illusion
                 "result_score",
                 "meta_weight",
                 "meta_share",
+                "contextual_score",
+                "context_reasons",
                 "matchup_score",
                 "impact_score",
                 "standing",
@@ -1831,6 +1834,12 @@ Ability: Illusion
         )
         self.assertTrue(top_tournament_row["key_cores"])
         self.assertTrue(top_tournament_row["key_pokemon"])
+        self.assertTrue(top_tournament_row["context_reasons"])
+
+        matchup_details = analysis.to_dict()["matchup_profile"]["details"]
+        self.assertIn("trick_room", matchup_details)
+        self.assertIsInstance(matchup_details["trick_room"]["contextual_adjustment"], float)
+        self.assertTrue(matchup_details["trick_room"]["reasons"])
 
         top_common_pokemon = analysis.meta_analysis["common_pokemon"][0]
         self.assertEqual(
@@ -1878,6 +1887,37 @@ Ability: Illusion
 
         payload = analysis.to_dict()["meta_analysis"]
         self.assertEqual(payload, analysis.meta_analysis)
+
+    def test_contextual_meta_analysis_respects_grassy_shell_pressure_points(self) -> None:
+        analysis = analyze_team_text(
+            load_example_team("realistic_grassy_terrain_team.txt"),
+            metadata_provider=FakeMetadataProvider(),
+            regulation_id=None,
+        )
+
+        tournament_rows = {
+            row["label"]: row
+            for row in analysis.meta_analysis["tournament_rows"]
+        }
+
+        self.assertGreater(
+            tournament_rows["Rain Archaludon"]["matchup_score"],
+            tournament_rows["Venusaur Charizard Sun"]["matchup_score"],
+        )
+        self.assertGreater(
+            tournament_rows["Rain Archaludon"]["matchup_score"],
+            tournament_rows["Whimsicott Glimmora"]["matchup_score"],
+        )
+        self.assertLess(tournament_rows["Venusaur Charizard Sun"]["matchup_score"], 0.15)
+        self.assertLess(tournament_rows["Whimsicott Glimmora"]["matchup_score"], 0.15)
+        self.assertTrue(tournament_rows["Venusaur Charizard Sun"]["context_reasons"])
+        self.assertTrue(tournament_rows["Whimsicott Glimmora"]["context_reasons"])
+        self.assertTrue(
+            any(
+                label in {"Venusaur Charizard Sun", "Whimsicott Glimmora", "Mega Venusaur Kommo-o"}
+                for label in analysis.meta_analysis["pressured_targets"]
+            )
+        )
 
     def test_team_preview_prefers_real_trick_room_and_specialized_win_condition_cores(self) -> None:
         provider = FakeMetadataProvider()
