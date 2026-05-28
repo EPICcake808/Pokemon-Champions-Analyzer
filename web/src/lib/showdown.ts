@@ -5,6 +5,11 @@ const SPECIAL_SHOWDOWN_IDS: Record<string, string> = {
   "basculegion (male)": "basculegion",
   "basculegion (f)": "basculegion-f",
   "basculegion (female)": "basculegion-f",
+  "eternal flower floette": "floette-eternal",
+  "floette-eternal": "floette-eternal",
+  "floette (eternal flower)": "floette-eternal",
+  "mega eternal flower floette": "floette-mega",
+  "mega floette": "floette-mega",
 };
 
 const SHOWDOWN_EV_ORDER: Array<{ stat: EffortValueStat; label: string }> = [

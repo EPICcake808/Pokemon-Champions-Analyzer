@@ -1790,6 +1790,7 @@ Ability: Illusion
         self.assertTrue(analysis.meta_analysis["pressured_targets"])
         self.assertTrue(analysis.meta_analysis["weighted_matchups"])
         self.assertTrue(analysis.meta_analysis["tournament_rows"])
+        self.assertTrue(analysis.meta_analysis["common_pokemon"])
         self.assertTrue(analysis.meta_analysis["notes"])
         self.assertGreater(analysis.meta_analysis["positive_weight_share"], 0)
         self.assertIn("Farigiraf Torkoal Room", analysis.meta_analysis["strongest_targets"])
@@ -1830,6 +1831,24 @@ Ability: Illusion
         )
         self.assertTrue(top_tournament_row["key_cores"])
         self.assertTrue(top_tournament_row["key_pokemon"])
+
+        top_common_pokemon = analysis.meta_analysis["common_pokemon"][0]
+        self.assertEqual(
+            set(top_common_pokemon),
+            {"species", "meta_share", "why_used", "what_it_does", "featured_teams"},
+        )
+        self.assertTrue(top_common_pokemon["featured_teams"])
+
+        common_meta_species = [entry["species"] for entry in analysis.meta_analysis["common_pokemon"]]
+        self.assertIn("Sinistcha", common_meta_species)
+        self.assertIn("Whimsicott", common_meta_species)
+
+        sinistcha_entry = next(
+            entry for entry in analysis.meta_analysis["common_pokemon"] if entry["species"] == "Sinistcha"
+        )
+        self.assertGreater(sinistcha_entry["meta_share"], 50)
+        self.assertIn("healing", sinistcha_entry["why_used"].lower())
+        self.assertIn("rage powder", sinistcha_entry["what_it_does"].lower())
 
         tournament_labels = {row["label"] for row in analysis.meta_analysis["tournament_rows"]}
         self.assertEqual(len(analysis.meta_analysis["tournament_rows"]), 8)

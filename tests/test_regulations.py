@@ -8,6 +8,7 @@ from contextlib import redirect_stdout
 from unittest.mock import patch
 
 from pokemon_team_analyzer.analyzer import analyze_team_text
+from pokemon_team_analyzer.champions_m_a_moves import get_allowed_moves_for_species
 from pokemon_team_analyzer.cli import main as cli_main
 from pokemon_team_analyzer.data import pokemon_name_candidates
 from pokemon_team_analyzer.models import MoveData, MoveStatChange, SpeciesData
@@ -375,6 +376,7 @@ MOCK_ALLOWED_MOVES_BY_SPECIES = {
     "Arcanine (Hisuian Form)": ("extreme-speed", "flare-blitz", "protect", "rock-slide"),
     "Charizard": ("air-slash", "heat-wave", "protect", "solar-beam"),
     "Corviknight": ("body-press", "protect", "roost", "tailwind", "u-turn"),
+    "Eternal Flower Floette": ("light-of-ruin", "moonblast", "protect"),
     "Farigiraf": ("dazzling-gleam", "helping-hand", "protect", "psychic", "trick-room"),
     "Florges": ("helping-hand", "misty-terrain", "moonblast", "protect"),
     "Garchomp": ("dragon-claw", "earthquake", "protect", "rock-slide", "stomping-tantrum", "swords-dance"),
@@ -712,6 +714,7 @@ class RegulationTests(unittest.TestCase):
         self.assertEqual(pokemon_name_candidates("Meowstic (Female)")[0], "meowstic-female")
         self.assertEqual(pokemon_name_candidates("Maushold")[0], "maushold-family-of-four")
         self.assertEqual(pokemon_name_candidates("Palafin")[0], "palafin-zero")
+        self.assertEqual(pokemon_name_candidates("Eternal Flower Floette")[0], "floette-eternal")
         self.assertEqual(
             pokemon_name_candidates("Tauros (Paldean Form (Combat Breed))")[0],
             "tauros-paldea-combat-breed",
@@ -722,6 +725,47 @@ class RegulationTests(unittest.TestCase):
         self.assertEqual(resolve_regulation_species_name("Alolan Raichu"), "Raichu (Alolan Form)")
         self.assertEqual(resolve_regulation_species_name("Galarian Slowbro"), "Slowbro (Galarian Form)")
         self.assertEqual(resolve_regulation_species_name("Paldean Tauros Aqua"), "Tauros (Paldean Form (Aqua Breed))")
+        self.assertEqual(resolve_regulation_species_name("Floette"), "Eternal Flower Floette")
+        self.assertEqual(resolve_regulation_species_name("Floette-Eternal"), "Eternal Flower Floette")
+        self.assertEqual(resolve_regulation_species_name("Mega Floette"), "Mega Eternal Flower Floette")
+
+    def test_eternal_flower_floette_keeps_its_champions_move_pool(self) -> None:
+        self.assertIn("light-of-ruin", get_allowed_moves_for_species("Eternal Flower Floette"))
+
+    @patch("pokemon_team_analyzer.cli.CachedPokeApiClient")
+    def test_cli_builder_species_canonicalizes_floette_to_eternal_flower_form(
+        self,
+        mock_provider_factory: object,
+    ) -> None:
+        mock_provider = mock_provider_factory.return_value
+        mock_provider.get_species.return_value = SpeciesData(
+            "Eternal Flower Floette",
+            "floette-eternal",
+            ("fairy",),
+            74,
+            65,
+            67,
+            125,
+            128,
+            92,
+        )
+        mock_provider.get_species_abilities.return_value = ("flower-veil", "symbiosis")
+        stdout = StringIO()
+
+        with patch(
+            "pokemon_team_analyzer.cli.get_allowed_moves_for_species",
+            side_effect=fake_get_allowed_moves_for_species,
+        ):
+            with redirect_stdout(stdout):
+                exit_code = cli_main(["--builder-species-json", "Floette", "--regulation", DEFAULT_REGULATION_ID])
+
+        payload = json.loads(stdout.getvalue())
+
+        self.assertEqual(exit_code, 0)
+        self.assertEqual(payload["species"], "Eternal Flower Floette")
+        self.assertIn("light-of-ruin", payload["moves"])
+        self.assertEqual(payload["base_stats"]["special_attack"], 125)
+        mock_provider.get_species.assert_called_once_with("Eternal Flower Floette")
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_analysis_canonicalizes_common_regional_aliases_before_metadata_lookup(self, _mock_get_allowed_moves: object) -> None:

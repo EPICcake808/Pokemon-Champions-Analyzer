@@ -2985,6 +2985,7 @@ def infer_meta_analysis(
         1,
     )
     meta_label = _label_team_meta_standing(overall_score)
+    common_pokemon = _build_common_meta_pokemon(regulation_id)
 
     strongest_targets = [
         cast(str, row["label"])
@@ -3163,6 +3164,7 @@ def infer_meta_analysis(
         "pressured_targets": pressured_targets,
         "tournament_rows": tournament_rows,
         "weighted_matchups": top_weighted_entries,
+        "common_pokemon": common_pokemon,
         "notes": notes,
     }
 
@@ -3211,6 +3213,126 @@ def _build_tournament_meta_rows(
         rows,
         key=lambda row: (-cast(float, row["meta_share"]), -abs(cast(float, row["impact_score"])), cast(str, row["label"])),
     )
+
+
+COMMON_META_POKEMON_CONTEXT: dict[str, dict[str, str]] = {
+    "sinistcha": {
+        "why_used": "It compresses redirection, healing, and slower-mode insurance into one slot, so balance, room, and hybrid shells can stay consistent without losing support density.",
+        "what_it_does": "It keeps partners healthy with Hospitality or healing support, redirects key turns with Rage Powder, and still threatens real board progress with Matcha Gotcha or Trick Room positioning.",
+    },
+    "incineroar": {
+        "why_used": "It remains one of the safest glue pieces because Intimidate and positioning utility patch physical pressure without forcing teams to give up tempo.",
+        "what_it_does": "It slows openings with Fake Out and pivot pressure, softens setup attempts, and buys cleaner entry turns for the field's main sweepers and weather payoffs.",
+    },
+    "whimsicott": {
+        "why_used": "Prankster speed control and disruption are still premium, so fast offenses keep reaching for it when they want immediate tempo without spending their mega slot on support.",
+        "what_it_does": "It gets Tailwind online quickly, threatens Encore-style disruption, and creates fast openings for attackers like Garchomp, Mega Charizard Y, and Kingambit.",
+    },
+    "garchomp": {
+        "why_used": "It fits into several current shells because it threatens offense immediately while still scaling well with Tailwind, sun, or bulky positioning support.",
+        "what_it_does": "It applies broad physical pressure with strong Ground coverage and spread damage, forcing awkward switches and punishing teams that fall behind on speed control.",
+    },
+    "basculegion": {
+        "why_used": "Rain and fast-offense shells keep it around because it converts speed control into immediate KOs better than most physical cleaners in the format.",
+        "what_it_does": "It acts as the rain-enabled cleaner that cashes in on chipped boards and forces endgames once Pelipper, Tailwind, or support positioning has opened the field.",
+    },
+    "torkoal": {
+        "why_used": "Sun and Trick Room teams still lean on it because one clean positioning turn can translate directly into overwhelming damage output.",
+        "what_it_does": "It sets sun, threatens huge spread Fire damage, and gives slower control teams a direct punish once Trick Room or redirection support sticks.",
+    },
+    "charizard-mega-y": {
+        "why_used": "Sun structures still lean on it because it gives them a self-contained weather engine and one of the format's best special nukes in a single slot.",
+        "what_it_does": "It turns the board hostile immediately with harsh sunlight and high-output Fire pressure, especially once Tailwind or support positioning has already stabilized the turn order.",
+    },
+    "archaludon": {
+        "why_used": "Rain and screens variants keep returning to it because it is both hard to remove and devastating once supported properly.",
+        "what_it_does": "It functions as the bulky special payoff that converts rain, screens, or healing turns into snowball pressure and awkward trades for the opponent.",
+    },
+    "pelipper": {
+        "why_used": "It is still the cleanest rain enabler for the format's Archaludon and Basculegion shells, so teams keep starting from it when they want consistent weather offense.",
+        "what_it_does": "It sets rain, supports fast modes with Tailwind in relevant builds, and makes the backline start threatening boosted damage immediately.",
+    },
+    "kingambit": {
+        "why_used": "Balance and offense teams both value it because it keeps priority endgames honest and punishes passive or overly defensive lines.",
+        "what_it_does": "It acts as a cleaner and trade punisher, usually closing games with strong Dark or Steel pressure and priority once its partners have chipped the field.",
+    },
+    "aerodactyl": {
+        "why_used": "Fast offense still likes it because it gives reliable speed control and immediate utility without demanding much support around it.",
+        "what_it_does": "It threatens Tailwind leads, fast chip, and disruptive positioning turns that let stronger backline attackers start the game ahead on tempo.",
+    },
+    "glimmora": {
+        "why_used": "Hazard-centric offenses use it because it pressures positioning from turn one while still fitting aggressive Tailwind shells.",
+        "what_it_does": "It chips the opposing side, punishes contact and bad switching, and helps faster partners convert early momentum into lasting board damage.",
+    },
+}
+
+MAX_COMMON_META_POKEMON = 10
+
+
+def _build_common_meta_pokemon(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> list[dict[str, object]]:
+    eligible_snapshots = [
+        snapshot
+        for snapshot in get_tournament_team_snapshots(regulation_id)
+        if _is_meta_board_snapshot(snapshot)
+    ]
+    total_weight = sum(_tournament_snapshot_weight(snapshot) for snapshot in eligible_snapshots) or 1.0
+    species_weights: Counter[str] = Counter()
+    species_featured_teams: dict[str, list[tuple[float, str]]] = {}
+
+    for snapshot in eligible_snapshots:
+        meta_weight = _tournament_snapshot_weight(snapshot)
+        snapshot_label = cast(str, snapshot["label"])
+        for species_token in cast(tuple[str, ...], snapshot["key_pokemon"]):
+            species_weights[species_token] += meta_weight
+            species_featured_teams.setdefault(species_token, []).append((meta_weight, snapshot_label))
+
+    common_pokemon: list[dict[str, object]] = []
+    ranked_species = sorted(
+        species_weights.items(),
+        key=lambda item: (-item[1], _render_species_token(item[0])),
+    )[:MAX_COMMON_META_POKEMON]
+
+    for species_token, weighted_presence in ranked_species:
+        species_name = _render_species_token(species_token)
+        context = COMMON_META_POKEMON_CONTEXT.get(species_token)
+        featured_teams: list[str] = []
+        seen_featured_teams: set[str] = set()
+        for _, team_label in sorted(
+            species_featured_teams.get(species_token, []),
+            key=lambda item: (-item[0], item[1]),
+        ):
+            if team_label in seen_featured_teams:
+                continue
+            featured_teams.append(team_label)
+            seen_featured_teams.add(team_label)
+            if len(featured_teams) >= 3:
+                break
+
+        if context is None:
+            featured_shell_text = _render_series(featured_teams[:2]) if featured_teams else "the current board"
+            why_used = (
+                f"{species_name} keeps showing up because it fits naturally into high-performing shells like {featured_shell_text} without asking the rest of the team to contort around it."
+            )
+            what_it_does = (
+                "It usually compresses either flexible support or immediate damage so those shells do not have to give up tempo to cover the matchup spread."
+            )
+        else:
+            why_used = context["why_used"]
+            what_it_does = context["what_it_does"]
+
+        common_pokemon.append(
+            {
+                "species": species_name,
+                "meta_share": round(100 * weighted_presence / total_weight, 1),
+                "why_used": why_used,
+                "what_it_does": what_it_does,
+                "featured_teams": featured_teams,
+            }
+        )
+
+    return common_pokemon
 
 
 def _tournament_snapshot_weight(snapshot: dict[str, object]) -> float:

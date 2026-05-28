@@ -121,6 +121,7 @@ type RosterEntry = ParsedTeamMember & {
 
 type TeamPreviewPlanCardData = PokemonTeamAnalysis["team_preview"]["bring_plans"][number];
 type MetaMatchupRowData = PokemonTeamAnalysis["meta_analysis"]["tournament_rows"][number];
+type MetaCommonPokemonRowData = NonNullable<PokemonTeamAnalysis["meta_analysis"]["common_pokemon"]>[number];
 
 const MEMBER_STAT_ORDER: Array<{ key: keyof MemberStatBlock; label: string }> = [
   { key: "hp", label: "HP" },
@@ -1492,6 +1493,7 @@ export function AnalyzerWorkspace({
               heading="Meta notes"
               values={analysis.meta_analysis.notes.length ? analysis.meta_analysis.notes : ["No extra meta notes were generated."]}
             />
+            <MetaCommonPokemonBoard rows={analysis.meta_analysis.common_pokemon ?? []} />
           </div>
 
           <div className="space-y-6">
@@ -2280,6 +2282,43 @@ function PlainList({ heading, values }: { heading: string; values: string[] }) {
           <div key={value} className="border-t border-[var(--line)] pt-2.5 text-sm leading-6 text-white/68">
             {value}
           </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MetaCommonPokemonBoard({ rows }: { rows: MetaCommonPokemonRowData[] }) {
+  if (!rows.length) {
+    return null;
+  }
+
+  return (
+    <div>
+      <p className="[font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.28em] text-white/34">
+        Most common meta Pokemon
+      </p>
+      <div className="mt-3 grid gap-4 xl:grid-cols-2">
+        {rows.map((row) => (
+          <article key={row.species} className="border border-[var(--line)] bg-black/30 px-4 py-4">
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-sm leading-6 text-white/82">{row.species}</p>
+              <span className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--accent)]">
+                {row.meta_share.toFixed(1)}% board share
+              </span>
+            </div>
+            <p className="mt-3 text-sm leading-6 text-white/60">
+              <span className="text-white/38">Why it is used:</span> {row.why_used}
+            </p>
+            <p className="mt-3 text-sm leading-6 text-white/60">
+              <span className="text-white/38">What it does:</span> {row.what_it_does}
+            </p>
+            {row.featured_teams.length ? (
+              <p className="mt-3 border-t border-[var(--line)] pt-3 text-sm leading-6 text-white/52">
+                <span className="text-white/34">Common shells:</span> {row.featured_teams.join(" / ")}
+              </p>
+            ) : null}
+          </article>
         ))}
       </div>
     </div>

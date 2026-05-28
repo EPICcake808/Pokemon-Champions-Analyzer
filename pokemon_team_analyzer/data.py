@@ -25,6 +25,7 @@ SPECIES_ALIAS_OVERRIDES = {
     "basculegion-female": "basculegion-female",
     "basculegion-male": "basculegion-male",
     "decidueye-hisuian-form": "decidueye-hisui",
+    "eternal-flower-floette": "floette-eternal",
     "farfetchd": "farfetchd",
     "goodra-hisuian-form": "goodra-hisui",
     "gourgeist-jumbo-variety": "gourgeist-super",
@@ -37,6 +38,7 @@ SPECIES_ALIAS_OVERRIDES = {
     "maushold": "maushold-family-of-four",
     "meowstic-female": "meowstic-female",
     "meowstic-male": "meowstic-male",
+    "mega-eternal-flower-floette": "floette-mega",
     "mimikyu": "mimikyu-disguised",
     "morpeko": "morpeko-full-belly",
         "palafin": "palafin-zero",
@@ -165,6 +167,8 @@ class CachedPokeApiClient:
         try:
             with urlopen(request, timeout=self.timeout_seconds, context=self._ssl_context) as response:
                 return json.load(response)
+        except HTTPError:
+            raise
         except URLError as error:
             raise ConnectionError(f"Failed to fetch '{url}': {error}") from error
 

@@ -22,9 +22,18 @@ export const DEFAULT_REGULATION_ID = "champions_regulation_m_a";
 const REPO_ROOT = resolveRepositoryRoot();
 const PYTHON_EXECUTABLE = resolvePythonExecutable();
 const ANALYZER_API_BASE_URL = process.env.POKEMON_ANALYZER_API_BASE_URL?.trim() || null;
+const FORCE_REMOTE_ANALYZER_API = process.env.POKEMON_ANALYZER_FORCE_REMOTE_API?.trim() === "1";
+
+function shouldUseRemoteAnalyzerApi() {
+  if (!ANALYZER_API_BASE_URL) {
+    return false;
+  }
+
+  return process.env.NODE_ENV === "production" || FORCE_REMOTE_ANALYZER_API;
+}
 
 function buildAnalyzerApiUrl(pathname: string, searchParams?: Record<string, string | boolean | undefined>) {
-  if (!ANALYZER_API_BASE_URL) {
+  if (!shouldUseRemoteAnalyzerApi()) {
     return null;
   }
 
@@ -111,7 +120,7 @@ export async function runPokemonAnalyzer(
     };
   }
 
-  if (ANALYZER_API_BASE_URL) {
+  if (shouldUseRemoteAnalyzerApi()) {
     try {
       const { payload, response } = await fetchAnalyzerApi<AnalyzeRoutePayload>("/api/analyze", {
         method: "POST",
@@ -168,7 +177,7 @@ export async function runPokemonAnalyzer(
 }
 
 export async function getRegulationCatalog(): Promise<RegulationCatalogPayload> {
-  if (ANALYZER_API_BASE_URL) {
+  if (shouldUseRemoteAnalyzerApi()) {
     const { payload, response } = await fetchAnalyzerApi<RegulationCatalogPayload>("/api/catalog", undefined, {
       includeRules: true,
     });
@@ -204,7 +213,7 @@ export async function getBuilderSpeciesOptions(
   speciesName: string,
   regulationId = DEFAULT_REGULATION_ID,
 ): Promise<BuilderSpeciesOptions> {
-  if (ANALYZER_API_BASE_URL) {
+  if (shouldUseRemoteAnalyzerApi()) {
     const { payload, response } = await fetchAnalyzerApi<BuilderSpeciesOptions & { detail?: string }>(
       "/api/builder-species",
       undefined,
@@ -232,7 +241,7 @@ export async function getBuilderSpeciesOptions(
 }
 
 export async function getBuilderMoveDetails(moveName: string): Promise<BuilderMoveDetails> {
-  if (ANALYZER_API_BASE_URL) {
+  if (shouldUseRemoteAnalyzerApi()) {
     const { payload, response } = await fetchAnalyzerApi<BuilderMoveDetails & { detail?: string }>(
       "/api/builder-move",
       undefined,

@@ -261,6 +261,13 @@ export interface MetaAnalysis {
   pressured_targets: string[];
   weighted_matchups: MetaModeMatchupRow[];
   tournament_rows: MetaTournamentRow[];
+  common_pokemon?: Array<{
+    species: string;
+    meta_share: number;
+    why_used: string;
+    what_it_does: string;
+    featured_teams: string[];
+  }>;
   notes: string[];
 }
 

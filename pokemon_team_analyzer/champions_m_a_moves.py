@@ -20,6 +20,7 @@ POKEDEX_BASE_URL = "https://www.serebii.net/pokedex-champions"
 USER_AGENT = "Mozilla/5.0"
 
 SPECIES_SLUG_OVERRIDES = {
+    "eternalflowerfloette": "floette",
     "kommoo": "kommo-o",
     "mrrime": "mr.rime",
     "watchog": "watchog",
@@ -221,7 +222,7 @@ def _moves_for_species_from_tables(
         moves.update(tables.get("Standard Moves - Dusk Form", {}).get("moves", ()))
     elif species_name.startswith("Tauros (Paldean Form"):
         moves.update(tables.get("Paldean Form Standard Moves", {}).get("moves", ()))
-    elif species_name == "Floette":
+    elif species_name in {"Floette", "Eternal Flower Floette"}:
         moves.update(tables.get("Standard Moves - Eternal Floette", {}).get("moves", ()))
     else:
         moves.update(tables.get("Standard Moves", {}).get("moves", ()))

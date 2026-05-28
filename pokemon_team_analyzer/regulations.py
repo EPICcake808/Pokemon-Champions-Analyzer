@@ -29,6 +29,12 @@ SHOWDOWN_SPECIES_ALIASES = {
     "basculegion-m": "basculegion (male)",
     "basculegion-male": "basculegion (male)",
     "decidueye-hisui": "decidueye (hisuian form)",
+    "eternal flower floette": "eternal flower floette",
+    "eternal-flower-floette": "eternal flower floette",
+    "floette": "eternal flower floette",
+    "floette (eternal flower)": "eternal flower floette",
+    "floette-eternal": "eternal flower floette",
+    "floette-eternal-flower": "eternal flower floette",
     "goodra-hisui": "goodra (hisuian form)",
     "gourgeist": "gourgeist (medium variety)",
     "gourgeist-average": "gourgeist (medium variety)",
@@ -43,6 +49,12 @@ SHOWDOWN_SPECIES_ALIASES = {
     "maushold-family-of-four": "maushold",
     "meowstic-f": "meowstic (female)",
     "meowstic-m": "meowstic (male)",
+    "mega eternal flower floette": "mega eternal flower floette",
+    "mega floette": "mega eternal flower floette",
+    "mega floette (eternal flower)": "mega eternal flower floette",
+    "mega-eternal-flower-floette": "mega eternal flower floette",
+    "mega-floette": "mega eternal flower floette",
+    "mega-floette-eternal": "mega eternal flower floette",
     "morpeko-hangry": "morpeko",
     "ninetales-alola": "ninetales (alolan form)",
     "palafin-hero": "palafin",
@@ -133,7 +145,7 @@ MEGA_STONE_TO_MEGA_NAME = {
     "emboarite": "mega emboar",
     "excadrite": "mega excadrill",
     "feraligite": "mega feraligatr",
-    "floettite": "mega floette",
+    "floettite": "mega eternal flower floette",
     "froslassite": "mega froslass",
     "galladite": "mega gallade",
     "garchompite": "mega garchomp",
@@ -424,6 +436,9 @@ def resolve_regulation_species_name(
             for mega_species_name in regulation.allowed_mega_evolutions
         }
         resolved_mega_species = mega_species_by_key.get(canonical_mega_name)
+        if resolved_mega_species is None:
+            normalized_mega_name = _normalized_species_name(species_name)
+            resolved_mega_species = mega_species_by_key.get(normalized_mega_name)
         if resolved_mega_species is not None:
             return resolved_mega_species
 
