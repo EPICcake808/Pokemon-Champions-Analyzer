@@ -5,6 +5,10 @@
     {
       "path": "/api/meta-snapshot/refresh",
       "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/meta-snapshot/deep-refresh",
+      "schedule": "30 12 * * *"
     }
   ]
 }

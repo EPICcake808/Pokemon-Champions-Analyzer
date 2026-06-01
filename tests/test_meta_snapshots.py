@@ -6,7 +6,12 @@ import unittest
 from unittest.mock import patch
 
 from pokemon_team_analyzer.champions_m_a_tournament_meta import TOURNAMENT_TEAM_SNAPSHOTS
-from pokemon_team_analyzer.meta_snapshots import clear_runtime_meta_snapshot_cache, get_tournament_team_snapshots
+from pokemon_team_analyzer.meta_snapshots import (
+    BUILT_IN_META_SNAPSHOT_SOURCE_LABEL,
+    build_built_in_meta_snapshot_feed,
+    clear_runtime_meta_snapshot_cache,
+    get_tournament_team_snapshots,
+)
 from pokemon_team_analyzer.regulations import DEFAULT_REGULATION_ID
 
 
@@ -84,6 +89,20 @@ class RuntimeMetaSnapshotTests(unittest.TestCase):
                 snapshots = get_tournament_team_snapshots(DEFAULT_REGULATION_ID)
 
         self.assertEqual(snapshots, TOURNAMENT_TEAM_SNAPSHOTS)
+
+    def test_built_in_meta_snapshot_feed_uses_current_curated_board(self) -> None:
+        payload = build_built_in_meta_snapshot_feed()
+
+        self.assertEqual(payload["version"], 1)
+        self.assertIn("generatedAt", payload)
+        regulations = payload["regulations"]
+        self.assertEqual(len(regulations), 1)
+
+        document = regulations[0]
+        self.assertEqual(document["regulationId"], DEFAULT_REGULATION_ID)
+        self.assertEqual(document["sourceLabel"], BUILT_IN_META_SNAPSHOT_SOURCE_LABEL)
+        self.assertEqual(document["tournamentTeamSnapshots"][0]["slug"], TOURNAMENT_TEAM_SNAPSHOTS[0]["slug"])
+        self.assertIsInstance(document["tournamentTeamSnapshots"][0]["modes"], list)
 
 
 if __name__ == "__main__":

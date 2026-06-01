@@ -6,6 +6,22 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-06-01
+
+### Added
+
+- A dedicated hosted `GET /api/meta-snapshot/deep-refresh` route plus a second Vercel cron so deep export and article discovery now runs automatically without blocking the normal daily refresh.
+- Article-roster extractors for supported guide and gallery pages, plus source-level and page-level discovery diagnostics that are written into the published snapshot notes.
+
+### Changed
+
+- Split automatic meta publishing into two stages: the default hosted refresh keeps the smaller, reliable source set, while the separate deep-refresh job starts from the current published board and runs the heavier discovery sources on its own schedule.
+- Updated the root and web READMEs so the deployment, cron, deep-discovery, and release documentation matches the shipped automatic meta-refresh pipeline.
+
+### Fixed
+
+- Fixed the hosted meta refresh regression where deep discovery on the request-path refresh could push the Vercel function over its runtime budget.
+
 ## [0.2.0] - 2026-05-28
 
 ### Added

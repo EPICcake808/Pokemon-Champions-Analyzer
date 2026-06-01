@@ -48,7 +48,8 @@ npm run build
 - The current UI defaults to `champions_regulation_m_a`, but the request payload already accepts arbitrary regulation ids for future Champions sets.
 - Available regulations are loaded from the analyzer API, so the frontend regulation selector follows the backend catalog instead of hardcoding the format list.
 - For Vercel, deploy this `web/` folder as a Next.js project and set `POKEMON_ANALYZER_API_BASE_URL` to the companion analyzer API project URL.
-- If you want the hosted site to publish a runtime meta board, set `DATABASE_URL`, `META_SNAPSHOT_SOURCE_URL`, and `CRON_SECRET`, then point the analyzer API's `POKEMON_ANALYZER_META_SNAPSHOT_URL` at `https://your-frontend-domain/api/meta-snapshot`.
+- If you want the hosted site to publish a runtime meta board, set `DATABASE_URL` and `CRON_SECRET`, then point the analyzer API's `POKEMON_ANALYZER_META_SNAPSHOT_URL` at `https://your-frontend-domain/api/meta-snapshot`. If `POKEMON_ANALYZER_API_BASE_URL` is already set, the refresh routes will default to `https://your-analyzer-api/api/meta-snapshot-source`. Only set `META_SNAPSHOT_SOURCE_URL` when you want to override that with a separate external curated feed.
+- The hosted automatic path does not require `POKEMON_ANALYZER_ENABLE_DEEP_DISCOVERY`. The dedicated deep-refresh route enables deep discovery automatically. Only set that env var when you want to force deep discovery on the standard refresh route or during manual/local runs.
 - Leave `Include files outside the root directory in the Build Step` disabled for the frontend Vercel project.
 
 ### Automated Meta Board Refresh
@@ -56,11 +57,12 @@ npm run build
 The frontend now includes two server routes for the hosted meta board:
 
 - `GET /api/meta-snapshot` returns the latest published snapshot for a regulation.
-- `GET /api/meta-snapshot/refresh` refreshes the stored snapshot from `META_SNAPSHOT_SOURCE_URL` and is intended to be called by Vercel Cron.
+- `GET /api/meta-snapshot/refresh` runs the hosted-safe base refresh from `META_SNAPSHOT_SOURCE_URL` when it is set, otherwise it falls back to `${POKEMON_ANALYZER_API_BASE_URL}/api/meta-snapshot-source`, and is intended to be called by Vercel Cron.
+- `GET /api/meta-snapshot/deep-refresh` starts from the published board and runs the heavier export/article discovery pass on its own schedule.
 
-The included `web/vercel.json` schedules the refresh route once per day. The refresh route is secret-protected and checks `META_SNAPSHOT_REFRESH_SECRET` first, then falls back to `CRON_SECRET`.
+The included `web/vercel.json` schedules both refresh routes automatically. The refresh routes are secret-protected and check `META_SNAPSHOT_REFRESH_SECRET` first, then fall back to `CRON_SECRET`.
 
-The refresh layer expects a curated JSON feed. It does not try to scrape social or tournament sources directly, because that would lower the evidence bar and be much harder to keep reliable.
+The hosted automation is intentionally split in two. The standard refresh route keeps the smaller, reliable live-source set so the published board stays healthy on Vercel's request-path runtime budget. The dedicated deep-refresh route then handles the heavier Pokepaste/export sources and supported article-roster extraction automatically. The default feed source is still the analyzer API's built-in `/api/meta-snapshot-source` endpoint, which keeps the hosted board aligned with the current Python analyzer board without requiring a separate mirrored JSON file.
 
 ## Docker
 

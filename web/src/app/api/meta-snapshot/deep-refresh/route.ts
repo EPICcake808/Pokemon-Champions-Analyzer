@@ -4,7 +4,9 @@ import { isDatabaseConfigured } from "@/db";
 import { enrichMetaSnapshotDocumentsWithLiveSignals } from "@/lib/live-meta-ingestion";
 import {
   fetchMetaSnapshotSource,
+  getPublishedMetaSnapshot,
   isMetaSnapshotRefreshAuthorized,
+  type PublishedMetaSnapshotDocument,
   upsertPublishedMetaSnapshot,
 } from "@/lib/meta-snapshots";
 
@@ -25,11 +27,38 @@ function resolveMetaSnapshotSourceUrl() {
   return `${analyzerApiBaseUrl.replace(/\/+$/, "")}/api/meta-snapshot-source`;
 }
 
-async function refreshMetaSnapshots(request: Request) {
+function toPublishedSnapshotDocument(
+  snapshot: Awaited<ReturnType<typeof getPublishedMetaSnapshot>>,
+): PublishedMetaSnapshotDocument | null {
+  if (!snapshot) {
+    return null;
+  }
+
+  return {
+    regulationId: snapshot.regulationId,
+    updatedAt: snapshot.updatedAt,
+    sourceLabel: snapshot.sourceLabel,
+    notes: snapshot.notes,
+    commonMetaPokemon: snapshot.commonMetaPokemon,
+    tournamentTeamSnapshots: snapshot.tournamentTeamSnapshots,
+  };
+}
+
+async function loadDeepRefreshBaseDocuments(sourceUrl: string) {
+  const sourceDocuments = await fetchMetaSnapshotSource(sourceUrl);
+  return Promise.all(
+    sourceDocuments.map(async (sourceDocument) => {
+      const publishedSnapshot = await getPublishedMetaSnapshot(sourceDocument.regulationId);
+      return toPublishedSnapshotDocument(publishedSnapshot) ?? sourceDocument;
+    }),
+  );
+}
+
+async function refreshDeepMetaSnapshots(request: Request) {
   if (!isMetaSnapshotRefreshAuthorized(request)) {
     return NextResponse.json(
       {
-        message: "The meta snapshot refresh request is not authorized.",
+        message: "The deep meta snapshot refresh request is not authorized.",
       },
       { status: 401 },
     );
@@ -55,8 +84,12 @@ async function refreshMetaSnapshots(request: Request) {
   }
 
   try {
-    const baseDocuments = await fetchMetaSnapshotSource(sourceUrl);
-    const documents = await enrichMetaSnapshotDocumentsWithLiveSignals(baseDocuments);
+    const baseDocuments = await loadDeepRefreshBaseDocuments(sourceUrl);
+    const documents = await enrichMetaSnapshotDocumentsWithLiveSignals(baseDocuments, {
+      deepDiscoveryEnabled: true,
+      sourceMode: "deep-only",
+      runtimeBudgetMs: 45_000,
+    });
     const refreshedSnapshots = [];
 
     for (const document of documents) {
@@ -74,11 +107,12 @@ async function refreshMetaSnapshots(request: Request) {
     return NextResponse.json({
       refreshed: refreshedSnapshots,
       count: refreshedSnapshots.length,
+      deepDiscovery: true,
     });
   } catch (error) {
     return NextResponse.json(
       {
-        message: error instanceof Error ? error.message : "The meta snapshot refresh failed.",
+        message: error instanceof Error ? error.message : "The deep meta snapshot refresh failed.",
       },
       { status: 502 },
     );
@@ -86,9 +120,9 @@ async function refreshMetaSnapshots(request: Request) {
 }
 
 export async function GET(request: Request) {
-  return refreshMetaSnapshots(request);
+  return refreshDeepMetaSnapshots(request);
 }
 
 export async function POST(request: Request) {
-  return refreshMetaSnapshots(request);
+  return refreshDeepMetaSnapshots(request);
 }

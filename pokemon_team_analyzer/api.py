@@ -4,6 +4,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from .meta_snapshots import build_built_in_meta_snapshot_feed
 from .regulations import DEFAULT_REGULATION_ID
 from .service import (
     build_analysis_route_payload,
@@ -43,6 +44,11 @@ def get_catalog(
         include_team_text=include_team_text,
         include_rules=include_rules,
     )
+
+
+@app.get("/api/meta-snapshot-source")
+def get_meta_snapshot_source() -> dict[str, object]:
+    return build_built_in_meta_snapshot_feed()
 
 
 @app.post("/api/analyze")

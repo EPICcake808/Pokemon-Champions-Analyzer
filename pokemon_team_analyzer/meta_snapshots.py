@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from datetime import UTC, datetime
 from typing import Any, cast
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
@@ -13,9 +14,64 @@ from .regulations import DEFAULT_REGULATION_ID
 
 _SNAPSHOT_CACHE: dict[str, dict[str, object]] = {}
 
+BUILT_IN_META_SNAPSHOT_SOURCE_LABEL = "Pokemon Champions Analyzer built-in Regulation M-A meta board"
+BUILT_IN_META_SNAPSHOT_NOTES = (
+    "Generated directly from the analyzer API's built-in Champions Regulation M-A tournament team snapshots.",
+    "Use this endpoint as the frontend refresh source when you want the hosted meta board to republish from the analyzer's current curated board automatically.",
+)
+
 
 def clear_runtime_meta_snapshot_cache() -> None:
     _SNAPSHOT_CACHE.clear()
+
+
+def _isoformat_utc(moment: datetime | None = None) -> str:
+    resolved_moment = (moment or datetime.now(UTC)).astimezone(UTC)
+    return resolved_moment.isoformat().replace("+00:00", "Z")
+
+
+def _serialize_snapshot_value(value: Any) -> Any:
+    if isinstance(value, tuple):
+        return [_serialize_snapshot_value(item) for item in value]
+    if isinstance(value, list):
+        return [_serialize_snapshot_value(item) for item in value]
+    if isinstance(value, dict):
+        return {str(key): _serialize_snapshot_value(item) for key, item in value.items()}
+    return value
+
+
+def build_built_in_meta_snapshot_document(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+    *,
+    updated_at: datetime | None = None,
+) -> dict[str, object]:
+    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
+    timestamp = _isoformat_utc(updated_at)
+    return {
+        "regulationId": resolved_regulation_id,
+        "updatedAt": timestamp,
+        "sourceLabel": BUILT_IN_META_SNAPSHOT_SOURCE_LABEL,
+        "notes": list(BUILT_IN_META_SNAPSHOT_NOTES),
+        "tournamentTeamSnapshots": _serialize_snapshot_value(BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS),
+    }
+
+
+def build_built_in_meta_snapshot_feed(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+    *,
+    generated_at: datetime | None = None,
+) -> dict[str, object]:
+    timestamp = generated_at or datetime.now(UTC)
+    return {
+        "version": 1,
+        "generatedAt": _isoformat_utc(timestamp),
+        "regulations": [
+            build_built_in_meta_snapshot_document(
+                regulation_id,
+                updated_at=timestamp,
+            )
+        ],
+    }
 
 
 def _runtime_meta_snapshot_ttl_seconds() -> float:
