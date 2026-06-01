@@ -6,6 +6,7 @@ import {
   buildAutomatedMetaSnapshotDocuments,
 } from "@/lib/live-meta-ingestion";
 import {
+  fetchMetaSnapshotSource,
   getPublishedMetaSnapshot,
   isMetaSnapshotRefreshAuthorized,
   type PublishedMetaSnapshotDocument,
@@ -32,6 +33,24 @@ function toPublishedSnapshotDocument(
   };
 }
 
+async function getSeedDocuments() {
+  const sourceUrl = process.env.META_SNAPSHOT_SOURCE_URL?.trim();
+  if (sourceUrl) {
+    try {
+      const sourceDocuments = await fetchMetaSnapshotSource(sourceUrl);
+      const regulationDocument = sourceDocuments.find((document) => document.regulationId === "champions_regulation_m_a");
+      if (regulationDocument) {
+        return [regulationDocument];
+      }
+    } catch {
+      // Fall through to the currently published board if the source feed is temporarily unavailable.
+    }
+  }
+
+  const publishedSnapshot = await getPublishedMetaSnapshot("champions_regulation_m_a");
+  return publishedSnapshot ? [toPublishedSnapshotDocument(publishedSnapshot)!] : [];
+}
+
 async function refreshMetaSnapshots(request: Request) {
   if (!isMetaSnapshotRefreshAuthorized(request)) {
     return NextResponse.json(
@@ -52,10 +71,10 @@ async function refreshMetaSnapshots(request: Request) {
   }
 
   try {
-    const publishedSnapshot = await getPublishedMetaSnapshot("champions_regulation_m_a");
+    const seedDocuments = await getSeedDocuments();
     const documents = await buildAutomatedMetaSnapshotDocuments({
       sourceMode: "default",
-      seedDocuments: publishedSnapshot ? [toPublishedSnapshotDocument(publishedSnapshot)!] : [],
+      seedDocuments,
     });
     const refreshedSnapshots = [];
 

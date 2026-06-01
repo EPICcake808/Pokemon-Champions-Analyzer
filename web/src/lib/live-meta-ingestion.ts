@@ -138,20 +138,51 @@ const RESULT_SIGNAL_TERMS = [
   "winner",
   "won",
   "champion",
+  "championship",
   "top cut",
   "top 8",
   "top 16",
+  "top 32",
   "finalist",
+  "runner up",
+  "semifinal",
+  "quarterfinal",
+  "results",
+  "standings",
+  "team report",
+  "tournament report",
+  "regional",
+  "nationals",
+  "international",
+  "qualifier",
+  "invitational",
   "deep run",
-  "rank one",
-  "rank 1",
-  "metagame",
-  "meta",
   "tournament",
-  "analysis",
-  "guide",
-  "recap",
-  "report",
+];
+const GUIDE_PUBLISHER_TERMS = [
+  "gamesradar",
+  "keengamer",
+  "phrasemaker",
+  "thegamer",
+  "ign",
+  "operation sports",
+  "pocket tactics",
+  "nintendo everything",
+];
+const GUIDE_NOISE_TERMS = [
+  " guide ",
+  " how to ",
+  " starter team",
+  " starter teams",
+  " all starter teams",
+  " all pokemon list",
+  " pokemon list",
+  " replica team",
+  " replica teams",
+  " all codes",
+  " recruit first",
+  " victory points",
+  " leaked ",
 ];
 
 const GENERIC_SEARCH_TERMS = new Set([
@@ -185,162 +216,61 @@ const DEEP_DISCOVERY_TERMS = [
 
 const ARTICLE_ROSTER_MIN_SPECIES_COUNT = 5;
 const MAX_AUTOMATED_SNAPSHOTS = 12;
+const MIN_AUTOMATED_SNAPSHOTS_FOR_REBUILD = 3;
 export const AUTOMATED_META_SOURCE_LABEL = "Pokemon Champions Analyzer automated live-source Regulation M-A meta board";
 export const AUTOMATED_META_SOURCE_URL = "live-ingestion://automated-meta-snapshot";
 
 const DEFAULT_LIVE_SOURCES: LiveSourceDefinition[] = [
   {
-    id: "google-news-regulation",
-    label: "Google News: Regulation M-A",
+    id: "google-news-first-tournament",
+    label: "Google News: Pokemon Champions first tournament",
     kind: "rss",
-    url: "https://news.google.com/rss/search?q=Pokemon+Champions+Regulation+M-A",
+    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22first+tournament%22",
     weight: 1,
     maxItems: 12,
   },
   {
-    id: "google-news-meta",
-    label: "Google News: Pokemon Champions meta",
+    id: "google-news-most-used",
+    label: "Google News: Pokemon Champions most used",
     kind: "rss",
-    url: "https://news.google.com/rss/search?q=Pokemon+Champions+meta",
-    weight: 0.95,
+    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22most+used%22",
+    weight: 0.98,
     maxItems: 12,
   },
   {
-    id: "google-news-tournaments",
-    label: "Google News: Pokemon Champions tournaments",
+    id: "google-news-tournament-results",
+    label: "Google News: Pokemon Champions tournament results",
     kind: "rss",
-    url: "https://news.google.com/rss/search?q=Pokemon+Champions+tournament",
-    weight: 0.95,
+    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22tournament+results%22",
+    weight: 0.96,
     maxItems: 12,
-  },
-  {
-    id: "youtube-regulation",
-    label: "YouTube search: Regulation M-A",
-    kind: "youtube-search",
-    url: "https://www.youtube.com/results?search_query=Pokemon+Champions+Regulation+M-A",
-    weight: 0.85,
-    maxItems: 10,
-  },
-  {
-    id: "youtube-meta",
-    label: "YouTube search: Pokemon Champions meta",
-    kind: "youtube-search",
-    url: "https://www.youtube.com/results?search_query=Pokemon+Champions+meta",
-    weight: 0.82,
-    maxItems: 10,
-  },
-  {
-    id: "reddit-meta",
-    label: "old Reddit search: Pokemon Champions meta",
-    kind: "reddit-search",
-    url: "https://old.reddit.com/search/?q=Pokemon+Champions+meta&sort=new&type=link",
-    weight: 0.78,
-    maxItems: 10,
-  },
-  {
-    id: "reddit-tournaments",
-    label: "old Reddit search: Pokemon Champions tournaments",
-    kind: "reddit-search",
-    url: "https://old.reddit.com/search/?q=Pokemon+Champions+tournament&sort=new&type=link",
-    weight: 0.78,
-    maxItems: 10,
-  },
-  {
-    id: "reddit-pokepast",
-    label: "old Reddit search: Pokepaste Pokemon Champions",
-    kind: "reddit-search",
-    url: "https://old.reddit.com/search/?q=pokepast+%22Pokemon+Champions%22&sort=new&type=link",
-    weight: 0.84,
-    maxItems: 10,
-    requiresDeepDiscovery: true,
-  },
-  {
-    id: "reddit-showdown-export",
-    label: "old Reddit search: Pokemon Champions Ability exports",
-    kind: "reddit-search",
-    url: "https://old.reddit.com/search/?q=%22Pokemon+Champions%22+%22Ability%3A%22&sort=new&type=link",
-    weight: 0.8,
-    maxItems: 10,
-    requiresDeepDiscovery: true,
-  },
-  {
-    id: "google-news-pokepast",
-    label: "Google News: Pokepaste Pokemon Champions",
-    kind: "rss",
-    url: "https://news.google.com/rss/search?q=pokepast+%22Pokemon+Champions%22",
-    weight: 0.8,
-    maxItems: 12,
-    requiresDeepDiscovery: true,
-  },
-  {
-    id: "google-news-rental-codes",
-    label: "Google News: Pokemon Champions rental codes",
-    kind: "rss",
-    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22rental+code%22",
-    weight: 0.8,
-    maxItems: 12,
-    requiresDeepDiscovery: true,
-  },
-  {
-    id: "google-news-best-teams",
-    label: "Google News: Pokemon Champions best teams",
-    kind: "rss",
-    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22best+team%22",
-    weight: 0.78,
-    maxItems: 12,
-    requiresDeepDiscovery: true,
   },
   {
     id: "google-news-team-reports",
     label: "Google News: Pokemon Champions team reports",
     kind: "rss",
     url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22team+report%22",
-    weight: 0.79,
+    weight: 0.94,
     maxItems: 12,
     requiresDeepDiscovery: true,
   },
   {
-    id: "youtube-rental-codes",
-    label: "YouTube search: Pokemon Champions rental codes",
-    kind: "youtube-search",
-    url: "https://www.youtube.com/results?search_query=Pokemon+Champions+rental+code",
-    weight: 0.76,
-    maxItems: 10,
+    id: "google-news-tournament-reports",
+    label: "Google News: Pokemon Champions tournament reports",
+    kind: "rss",
+    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22tournament+report%22",
+    weight: 0.94,
+    maxItems: 12,
     requiresDeepDiscovery: true,
   },
   {
-    id: "youtube-best-teams",
-    label: "YouTube search: Pokemon Champions best teams",
-    kind: "youtube-search",
-    url: "https://www.youtube.com/results?search_query=Pokemon+Champions+best+team",
-    weight: 0.75,
-    maxItems: 10,
+    id: "google-news-most-used-tournament",
+    label: "Google News: Pokemon Champions most used tournament",
+    kind: "rss",
+    url: "https://news.google.com/rss/search?q=%22Pokemon+Champions%22+%22most-used%22+%22tournament%22",
+    weight: 0.92,
+    maxItems: 12,
     requiresDeepDiscovery: true,
-  },
-  {
-    id: "youtube-team-reports",
-    label: "YouTube search: Pokemon Champions team reports",
-    kind: "youtube-search",
-    url: "https://www.youtube.com/results?search_query=Pokemon+Champions+team+report",
-    weight: 0.74,
-    maxItems: 10,
-    requiresDeepDiscovery: true,
-  },
-  {
-    id: "serebii-champions",
-    label: "Serebii Pokemon Champions page",
-    kind: "html-page",
-    url: "https://www.serebii.net/pokemonchampions/",
-    weight: 0.6,
-    maxItems: 1,
-  },
-  {
-    id: "pokemon-home-regulation",
-    label: "Pokemon HOME Regulation Set M-A page",
-    kind: "html-page",
-    url: "https://news.pokemon-home.com/en/page/751.html",
-    weight: 0.5,
-    maxItems: 1,
   },
 ];
 
@@ -370,6 +300,34 @@ function normalizeSearchText(value: string) {
     .replace(/[^a-z0-9+ ]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function hasChampionsContext(text: string) {
+  const normalizedText = normalizeSearchText(text);
+  return normalizedText.includes("pokemon champions") || normalizedText.includes("regulation m a");
+}
+
+function hasTournamentResultSignal(text: string) {
+  const normalizedText = normalizeSearchText(text);
+  return hasChampionsContext(normalizedText)
+    && RESULT_SIGNAL_TERMS.some((term) => normalizedText.includes(term));
+}
+
+function isGuidePublisher(item: LiveEvidenceItem) {
+  const publisherText = normalizeSearchText(`${item.publisher} ${hostnameForUrl(item.url)}`);
+  return GUIDE_PUBLISHER_TERMS.some((term) => publisherText.includes(term));
+}
+
+function hasGuideNoise(text: string) {
+  const paddedText = ` ${normalizeSearchText(text)} `;
+  return GUIDE_NOISE_TERMS.some((term) => paddedText.includes(term));
+}
+
+function isTournamentEvidenceItem(item: LiveEvidenceItem) {
+  const text = buildEvidenceText(item);
+  return hasTournamentResultSignal(text)
+    && !isGuidePublisher(item)
+    && !hasGuideNoise(`${item.title} ${item.snippet}`);
 }
 
 function decodeJsonEscapes(value: string) {
@@ -536,8 +494,8 @@ async function fetchRegulationSpeciesPhraseIndex(regulationId: string) {
 
 function inferRosterSectionSignal(text: string) {
   const normalizedText = normalizeSearchText(text);
-  return DEEP_DISCOVERY_TERMS.some((term) => normalizedText.includes(term))
-    || RESULT_SIGNAL_TERMS.some((term) => normalizedText.includes(term));
+  return hasTournamentResultSignal(normalizedText)
+    && DEEP_DISCOVERY_TERMS.some((term) => normalizedText.includes(term));
 }
 
 function inferModesFromText(text: string) {
@@ -610,13 +568,13 @@ function inferBroadMixFromModes(modes: string[]): Record<string, number> {
 }
 
 function strongestResultBoost(sourceText: string) {
-  if (sourceText.includes("winner") || sourceText.includes("champion") || sourceText.includes("won")) {
+  if (sourceText.includes("winner") || sourceText.includes("champion") || sourceText.includes("championship") || sourceText.includes("won")) {
     return 0.25;
   }
-  if (sourceText.includes("top 8") || sourceText.includes("top cut") || sourceText.includes("finalist")) {
+  if (sourceText.includes("top 8") || sourceText.includes("top 16") || sourceText.includes("top 32") || sourceText.includes("top cut") || sourceText.includes("finalist") || sourceText.includes("runner up")) {
     return 0.18;
   }
-  if (sourceText.includes("rank one") || sourceText.includes("rank 1")) {
+  if (sourceText.includes("regional") || sourceText.includes("nationals") || sourceText.includes("international") || sourceText.includes("qualifier") || sourceText.includes("invitational")) {
     return 0.14;
   }
   return 0.08;
@@ -883,6 +841,14 @@ function recencyWeight(publishedAt: string | null) {
 
 function scoreEvidenceItem(item: LiveEvidenceItem, descriptor: SnapshotDescriptor) {
   const text = buildEvidenceText(item);
+  if (!isTournamentEvidenceItem(item)) {
+    return {
+      visibility: 0,
+      result: 0,
+      matched: false,
+    };
+  }
+
   let visibilityScore = 0;
   let resultScore = 0;
   let pokemonMatches = 0;
@@ -911,7 +877,7 @@ function scoreEvidenceItem(item: LiveEvidenceItem, descriptor: SnapshotDescripto
     visibilityScore += 2.2;
   }
 
-  const hasResultSignal = RESULT_SIGNAL_TERMS.some((term) => text.includes(term));
+  const hasResultSignal = hasTournamentResultSignal(text);
   if (hasResultSignal && (strongMatches > 0 || pokemonMatches >= 2)) {
     resultScore += 1.4 + visibilityScore * 0.32;
   }
@@ -1271,19 +1237,16 @@ function normalizeBroadMix(teamArchetypeScores: Record<string, number>, teamArch
 
 function deriveResultLabel(item: LiveEvidenceItem) {
   const text = buildEvidenceText(item);
-  if (text.includes("winner") || text.includes("champion") || text.includes("won")) {
-    return "live winner signal";
+  if (text.includes("winner") || text.includes("champion") || text.includes("championship") || text.includes("won")) {
+    return "live tournament winner";
   }
-  if (text.includes("top 8") || text.includes("top cut") || text.includes("finalist")) {
-    return "live top-cut export";
+  if (text.includes("top 8") || text.includes("top 16") || text.includes("top 32") || text.includes("top cut") || text.includes("finalist") || text.includes("runner up")) {
+    return "live top-cut finish";
   }
-  if (text.includes("rank one") || text.includes("rank 1")) {
-    return "live high-ladder export";
+  if (text.includes("team report") || text.includes("tournament report") || text.includes("results") || text.includes("standings")) {
+    return "live tournament report";
   }
-  if (text.includes("guide") || text.includes("featured") || text.includes("replica")) {
-    return "live featured export";
-  }
-  return "live export discovery";
+  return "live tournament result";
 }
 
 function extractExportLinks(body: string) {
@@ -1378,12 +1341,11 @@ function isLikelyDeepDiscoveryTarget(item: LiveEvidenceItem) {
     return true;
   }
 
-  const text = buildEvidenceText(item);
-  const hasChampionsContext = text.includes("pokemon champions") || text.includes("regulation m a");
-  if (!hasChampionsContext) {
+  if (!isTournamentEvidenceItem(item)) {
     return false;
   }
 
+  const text = buildEvidenceText(item);
   return DEEP_DISCOVERY_TERMS.some((term) => text.includes(term));
 }
 
@@ -1502,13 +1464,7 @@ function buildDiscoveredSnapshot(
   const broadMix = normalizeBroadMix(discoveredTeam.analysis.team_archetype_scores, discoveredTeam.analysis.team_archetype);
   const baseSignal = buildSignalStrength(discoveredTeam.sourceItem);
   const resultText = buildEvidenceText(discoveredTeam.sourceItem);
-  const resultBoost = resultText.includes("winner") || resultText.includes("champion")
-    ? 0.25
-    : resultText.includes("top 8") || resultText.includes("top cut") || resultText.includes("finalist")
-      ? 0.18
-      : resultText.includes("rank one") || resultText.includes("rank 1")
-        ? 0.14
-        : 0.08;
+  const resultBoost = strongestResultBoost(resultText);
 
   return {
     slug: `live-${slugify(label)}`,
@@ -1689,7 +1645,7 @@ async function collectLiveEvidenceItems(options?: { sourceMode?: LiveEvidenceSou
       return true;
     }
     if (sourceMode === "deep-only") {
-      return source.requiresDeepDiscovery;
+      return true;
     }
     return !source.requiresDeepDiscovery;
   });
@@ -1729,7 +1685,8 @@ async function collectLiveEvidenceItems(options?: { sourceMode?: LiveEvidenceSou
     });
   }
 
-  const dedupedItems = [...new Map(items.map((item) => [`${normalizeSearchText(item.title)}|${item.publisher}`, item])).values()];
+  const dedupedItems = [...new Map(items.map((item) => [`${normalizeSearchText(item.title)}|${item.publisher}`, item])).values()]
+    .filter((item) => isTournamentEvidenceItem(item));
   return {
     items: dedupedItems,
     succeededSources,
@@ -1917,15 +1874,21 @@ export async function buildAutomatedMetaSnapshotDocuments(options?: AutomatedMet
     })),
   ];
   const automatedSnapshots = aggregateAutomatedSnapshotCandidates(automatedCandidates);
+  const hasInsufficientAutomatedCoverage = automatedSnapshots.length > 0
+    && automatedSnapshots.length < MIN_AUTOMATED_SNAPSHOTS_FOR_REBUILD;
 
-  if (!automatedSnapshots.length) {
+  if (!automatedSnapshots.length || hasInsufficientAutomatedCoverage) {
     if (options?.seedDocuments?.length) {
+      const fallbackNote = !automatedSnapshots.length
+        ? "No tournament-result snapshot rebuild was strong enough, so the published board was re-ranked from the existing board using the narrower result-and-popularity evidence set."
+        : `Only ${automatedSnapshots.length} tournament-result snapshots were discovered, so the published board was re-ranked from the existing board instead of collapsing to a thin rebuild.`;
       return Promise.all(options.seedDocuments.map(async (document) =>
         enrichMetaSnapshotDocument(
           {
             ...document,
             sourceLabel: AUTOMATED_META_SOURCE_LABEL,
             commonMetaPokemon: [],
+            notes: appendNotes(document.notes, [fallbackNote]),
           },
           [...liveEvidence.items, ...discoveryResult.rosterEvidenceItems],
           liveEvidence.succeededSources,
@@ -1935,6 +1898,10 @@ export async function buildAutomatedMetaSnapshotDocuments(options?: AutomatedMet
           discoveryResult.diagnostics,
         ),
       ));
+    }
+
+    if (hasInsufficientAutomatedCoverage) {
+      throw new Error(`Only ${automatedSnapshots.length} tournament-result snapshots were discovered, which is below the minimum rebuild threshold of ${MIN_AUTOMATED_SNAPSHOTS_FOR_REBUILD}.`);
     }
 
     throw new Error("No automated meta snapshots could be generated from the current live sources.");
