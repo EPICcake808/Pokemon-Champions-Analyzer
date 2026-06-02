@@ -2,6 +2,8 @@
 
 This app is the Next.js frontend for the repository's existing Python analyzer. It renders the Champions Regulation M-A analysis output as a dark dashboard with sprite previews, custom speed graphics, matchup bars, and curated legal example teams.
 
+As of `0.2.2`, the hosted navbar also includes in-app documentation links for a Changelog popup and a complete-beginner Play Guide popup.
+
 The app does not reimplement team analysis in TypeScript. `src/lib/python-analyzer.ts` talks to the analyzer over HTTP when `POKEMON_ANALYZER_API_BASE_URL` is configured, and only falls back to the local Python CLI for local development.
 
 ## Requirements
@@ -47,6 +49,7 @@ npm run build
 - Featured examples are bundled inside `web/examples/`, so the frontend can deploy as a standalone Next.js project.
 - The current UI defaults to `champions_regulation_m_a`, but the request payload already accepts arbitrary regulation ids for future Champions sets.
 - Available regulations are loaded from the analyzer API, so the frontend regulation selector follows the backend catalog instead of hardcoding the format list.
+- The top navbar now exposes a Changelog modal and a Play Guide modal so hosted users can read release notes and a literal beginner VGC walkthrough without leaving the page.
 - For Vercel, deploy this `web/` folder as a Next.js project and set `POKEMON_ANALYZER_API_BASE_URL` to the companion analyzer API project URL.
 - If you want the hosted site to publish a runtime meta board, set `DATABASE_URL` and `CRON_SECRET`, then point the analyzer API's `POKEMON_ANALYZER_META_SNAPSHOT_URL` at `https://your-frontend-domain/api/meta-snapshot`. If `POKEMON_ANALYZER_API_BASE_URL` is already set, the refresh routes will default to `https://your-analyzer-api/api/meta-snapshot-source`. Only set `META_SNAPSHOT_SOURCE_URL` when you want to override that with a separate external curated feed.
 - The hosted automatic path does not require `POKEMON_ANALYZER_ENABLE_DEEP_DISCOVERY`. The dedicated deep-refresh route enables deep discovery automatically. Only set that env var when you want to force deep discovery on the standard refresh route or during manual/local runs.

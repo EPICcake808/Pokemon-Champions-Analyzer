@@ -6,6 +6,14 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-06-01
+
+### Added
+
+- A top-navbar Changelog popup in the hosted web app.
+- A top-navbar Play Guide popup in the hosted web app with a complete-beginner explanation of what VGC is, what happens before turn one, what you choose each turn, and how doubles battles are won.
+- Bundled frontend fallback document content so the web app can still render the changelog and beginner guide modal content when the root changelog file is not available at runtime.
+
 ## [0.2.1] - 2026-06-01
 
 ### Added

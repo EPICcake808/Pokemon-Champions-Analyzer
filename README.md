@@ -6,11 +6,18 @@ It is scoped to Pokemon Champions and ships with an official, data-first regulat
 
 ## Release Status
 
-- Current release: `0.2.1`
+- Current release: `0.2.2`
 - Release history now lives in [`CHANGELOG.md`](CHANGELOG.md)
 - `0.1.0` established the split Vercel deployment shape for the Python API and the Next.js frontend.
 - `0.2.0` added account support, reweighted matchup scoring, deeper context-based matchup scoring with reason output, hosted meta snapshot refreshes for teams and common meta Pokemon, legality and sprite fixes, and repaired team previews.
 - `0.2.1` makes the hosted meta pipeline fully automatic by splitting it into a base daily refresh and a separate automatic deep-discovery refresh with export/article ingestion diagnostics.
+- `0.2.2` adds in-app documentation to the hosted frontend with a navbar changelog popup and a complete-beginner VGC play guide popup.
+
+### 0.2.2 Highlights
+
+- Added a live-site Changelog button in the top navbar so users can open the current release notes without leaving the analyzer.
+- Added a live-site Play Guide button in the top navbar that opens a complete-beginner walkthrough of how a VGC match actually works.
+- Bundled the beginner guide and changelog fallback content into the frontend so the docs modal still renders cleanly even if the root changelog file is unavailable at runtime.
 
 ### 0.2.1 Highlights
 
@@ -105,6 +112,8 @@ npm run build
 If you need to launch the web app from a different working directory or runtime wrapper, set `POKEMON_ANALYZER_REPO_ROOT` to the repository root and optionally set `POKEMON_ANALYZER_PYTHON` if `python3` is not the right executable name for the local CLI fallback.
 
 The current web surface is regulation-aware, loads the available regulation catalog from the analyzer API, defaults to `champions_regulation_m_a`, preloads curated legal sample teams, and renders the same speed benchmarks, matchup layers, weighted meta analysis, preview rationale, utility breakdowns, archetype labels, difficulty notes, and per-member benchmark tags already emitted by the Python analyzer.
+
+The hosted frontend now also exposes two in-app help surfaces in the top navbar: a Changelog modal for release notes and a Play Guide modal for complete beginners who need a literal walkthrough of team preview, bringing four Pokemon, selecting moves, switching, Protect, and Terastallization.
 
 ### Vercel Deployment
 

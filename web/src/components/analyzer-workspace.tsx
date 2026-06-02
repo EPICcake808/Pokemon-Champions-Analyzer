@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signIn, signOut } from "next-auth/react";
 import {
   FormEvent,
+  type ReactNode,
   useEffect,
   useState,
 } from "react";
@@ -104,6 +105,19 @@ type AnalyzerWorkspaceProps = {
   initialSavedTeams: SavedTeamRecord[];
   regulationOptions: RegulationCatalogEntry[];
   authCapabilities: AuthCapabilitySummary;
+  changelogContent: string;
+  playGuideContent: string;
+};
+
+type SiteDocumentId = "changelog" | "play-guide";
+
+type SiteDocument = {
+  id: SiteDocumentId;
+  label: string;
+  eyebrow: string;
+  title: string;
+  description: string;
+  content: string;
 };
 
 type BattleStatKey = Exclude<keyof MemberStatBlock, "hp">;
@@ -264,6 +278,8 @@ export function AnalyzerWorkspace({
   initialSavedTeams,
   regulationOptions,
   authCapabilities,
+  changelogContent,
+  playGuideContent,
 }: AnalyzerWorkspaceProps) {
   const router = useRouter();
   const [teamText, setTeamText] = useState(initialTeamText);
@@ -291,6 +307,7 @@ export function AnalyzerWorkspace({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(initialAnalysisError ?? null);
   const [legalityIssues, setLegalityIssues] = useState<string[]>([]);
+  const [activeSiteDocumentId, setActiveSiteDocumentId] = useState<SiteDocumentId | null>(null);
 
   const sessionUser = sessionUserOverride !== undefined ? sessionUserOverride : initialSessionUser;
   const savedTeams = savedTeamsOverride !== undefined ? savedTeamsOverride : initialSavedTeams;
@@ -350,6 +367,49 @@ export function AnalyzerWorkspace({
     activeRegulation,
     activeBuilderSpeciesOptions?.required_item ?? null,
   );
+  const siteDocuments: SiteDocument[] = [
+    {
+      id: "play-guide",
+      label: "Play Guide",
+      eyebrow: "Complete beginner guide",
+      title: "How a VGC match actually works",
+      description: "A literal beginner walkthrough of what happens before a match, what you click each turn, and how you win a doubles game.",
+      content: playGuideContent,
+    },
+    {
+      id: "changelog",
+      label: "Changelog",
+      eyebrow: "Release history",
+      title: "What changed in the analyzer",
+      description: "Recent releases across the analyzer, API, and live web experience.",
+      content: changelogContent,
+    },
+  ];
+  const activeSiteDocument = activeSiteDocumentId
+    ? siteDocuments.find((document) => document.id === activeSiteDocumentId) ?? null
+    : null;
+
+  useEffect(() => {
+    if (!activeSiteDocumentId) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActiveSiteDocumentId(null);
+      }
+    }
+
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeSiteDocumentId]);
 
   async function runAnalysis(nextTeamText: string, regulationId = selectedRegulationId) {
     if (!nextTeamText.trim()) {
@@ -860,7 +920,17 @@ export function AnalyzerWorkspace({
 
   return (
     <div className="min-h-screen text-[var(--fg)]">
-      <SiteHeader regulationLabel={activeRegulation.display_name} />
+      <SiteHeader
+        regulationLabel={activeRegulation.display_name}
+        documentLinks={siteDocuments.map(({ id, label }) => ({ id, label }))}
+        onOpenDocument={setActiveSiteDocumentId}
+      />
+      <SiteDocumentDialog
+        activeDocument={activeSiteDocument}
+        documents={siteDocuments}
+        onClose={() => setActiveSiteDocumentId(null)}
+        onOpenDocument={setActiveSiteDocumentId}
+      />
 
       <main className="mx-auto w-full max-w-[1680px] px-5 pb-16 pt-6 sm:px-8 lg:px-10 lg:pt-8">
         <section className="pb-8 lg:pb-10">
@@ -1654,7 +1724,243 @@ function DashboardErrorState({
   );
 }
 
-function SiteHeader({ regulationLabel }: { regulationLabel: string }) {
+function renderInlineDocumentText(text: string): ReactNode {
+  return text
+    .split(/(`[^`]+`)/g)
+    .filter(Boolean)
+    .map((fragment, index) =>
+      fragment.startsWith("`") && fragment.endsWith("`") ? (
+        <code
+          key={`${fragment}-${index}`}
+          className="rounded bg-white/8 px-1.5 py-0.5 text-[0.92em] text-white/86"
+        >
+          {fragment.slice(1, -1)}
+        </code>
+      ) : (
+        <span key={`${fragment}-${index}`}>{fragment}</span>
+      ),
+    );
+}
+
+type SiteDocumentBlock =
+  | { type: "heading1"; text: string }
+  | { type: "heading2"; text: string }
+  | { type: "heading3"; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[] };
+
+function parseSiteDocument(content: string) {
+  const blocks: SiteDocumentBlock[] = [];
+  const paragraphLines: string[] = [];
+  const listItems: string[] = [];
+
+  function flushParagraph() {
+    if (!paragraphLines.length) {
+      return;
+    }
+
+    blocks.push({ type: "paragraph", text: paragraphLines.join(" ") });
+    paragraphLines.length = 0;
+  }
+
+  function flushList() {
+    if (!listItems.length) {
+      return;
+    }
+
+    blocks.push({ type: "list", items: [...listItems] });
+    listItems.length = 0;
+  }
+
+  for (const rawLine of content.split(/\r?\n/)) {
+    const trimmedLine = rawLine.trim();
+
+    if (!trimmedLine) {
+      flushParagraph();
+      flushList();
+      continue;
+    }
+
+    if (trimmedLine.startsWith("### ")) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading3", text: trimmedLine.slice(4) });
+      continue;
+    }
+
+    if (trimmedLine.startsWith("## ")) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading2", text: trimmedLine.slice(3) });
+      continue;
+    }
+
+    if (trimmedLine.startsWith("# ")) {
+      flushParagraph();
+      flushList();
+      blocks.push({ type: "heading1", text: trimmedLine.slice(2) });
+      continue;
+    }
+
+    if (trimmedLine.startsWith("- ")) {
+      flushParagraph();
+      listItems.push(trimmedLine.slice(2));
+      continue;
+    }
+
+    flushList();
+    paragraphLines.push(trimmedLine);
+  }
+
+  flushParagraph();
+  flushList();
+
+  return blocks;
+}
+
+function SiteDocumentBody({ content }: { content: string }) {
+  const blocks = parseSiteDocument(content);
+
+  return (
+    <div className="space-y-5 text-[0.97rem] leading-7 text-[var(--fg-muted)]">
+      {blocks.map((block, index) => {
+        if (block.type === "heading1") {
+          return (
+            <h2
+              key={`${block.type}-${index}`}
+              className="[font-family:var(--font-title)] text-[2rem] font-semibold uppercase tracking-[0.08em] text-white sm:text-[2.4rem]"
+            >
+              {block.text}
+            </h2>
+          );
+        }
+
+        if (block.type === "heading2") {
+          return (
+            <h3
+              key={`${block.type}-${index}`}
+              className="pt-3 [font-family:var(--font-display)] text-[0.72rem] uppercase tracking-[0.28em] text-white/40"
+            >
+              {block.text}
+            </h3>
+          );
+        }
+
+        if (block.type === "heading3") {
+          return (
+            <h4 key={`${block.type}-${index}`} className="text-lg font-semibold text-white/90">
+              {block.text}
+            </h4>
+          );
+        }
+
+        if (block.type === "list") {
+          return (
+            <ul key={`${block.type}-${index}`} className="space-y-3 pl-5 marker:text-white/46">
+              {block.items.map((item, itemIndex) => (
+                <li key={`${item}-${itemIndex}`} className="list-disc">
+                  {renderInlineDocumentText(item)}
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        return (
+          <p key={`${block.type}-${index}`} className="text-[0.98rem] leading-7 text-[var(--fg-muted)]">
+            {renderInlineDocumentText(block.text)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function SiteDocumentDialog({
+  activeDocument,
+  documents,
+  onClose,
+  onOpenDocument,
+}: {
+  activeDocument: SiteDocument | null;
+  documents: SiteDocument[];
+  onClose: () => void;
+  onOpenDocument: (documentId: SiteDocumentId) => void;
+}) {
+  if (!activeDocument) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-[#04060b]/84 px-4 py-6 sm:px-6" onClick={onClose}>
+      <div className="mx-auto flex h-full w-full max-w-5xl items-start justify-center">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="site-document-title"
+          className="mt-10 flex max-h-[calc(100vh-5rem)] w-full flex-col overflow-hidden border border-[var(--line)] bg-[#090b10]/96 shadow-[0_28px_80px_rgba(0,0,0,0.55)] backdrop-blur"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-4 border-b border-[var(--line)] px-5 py-5 sm:px-7">
+            <div className="max-w-3xl">
+              <p className="[font-family:var(--font-display)] text-[0.64rem] uppercase tracking-[0.3em] text-white/34">
+                {activeDocument.eyebrow}
+              </p>
+              <h2 id="site-document-title" className="mt-3 text-2xl font-semibold text-white sm:text-[2rem]">
+                {activeDocument.title}
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--fg-muted)]">{activeDocument.description}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="border border-white/18 px-3 py-2 [font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.22em] text-white/66 transition hover:border-white/40 hover:text-white"
+            >
+              Close
+            </button>
+          </div>
+
+          <div className="flex flex-wrap gap-2 border-b border-[var(--line)] px-5 py-3 sm:px-7">
+            {documents.map((document) => {
+              const isActive = document.id === activeDocument.id;
+
+              return (
+                <button
+                  key={document.id}
+                  type="button"
+                  onClick={() => onOpenDocument(document.id)}
+                  className={[
+                    "px-3 py-2 [font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.22em] transition",
+                    isActive
+                      ? "border border-white/48 bg-white/10 text-white"
+                      : "border border-white/12 text-white/58 hover:border-white/28 hover:text-white",
+                  ].join(" ")}
+                >
+                  {document.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="overflow-y-auto px-5 py-6 sm:px-7 sm:py-7">
+            <SiteDocumentBody content={activeDocument.content} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SiteHeader({
+  regulationLabel,
+  documentLinks,
+  onOpenDocument,
+}: {
+  regulationLabel: string;
+  documentLinks: Array<{ id: SiteDocumentId; label: string }>;
+  onOpenDocument: (documentId: SiteDocumentId) => void;
+}) {
   const navItems = [
     { href: "#overview", label: "Overview" },
     { href: "#roster", label: "Roster" },
@@ -1666,7 +1972,7 @@ function SiteHeader({ regulationLabel }: { regulationLabel: string }) {
 
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-black/35 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-[1680px] items-center justify-between gap-6 px-5 py-4 sm:px-8 lg:px-10">
+      <div className="mx-auto flex max-w-[1680px] flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8 lg:px-10">
         <div className="[font-family:var(--font-display)] text-[0.72rem] uppercase tracking-[0.42em] text-white/38">
           PCA
         </div>
@@ -1681,11 +1987,24 @@ function SiteHeader({ regulationLabel }: { regulationLabel: string }) {
             </a>
           ))}
         </nav>
-        <div className="text-right">
-          <p className="[font-family:var(--font-display)] text-[0.64rem] uppercase tracking-[0.3em] text-white/32">
-            Pokemon Champions
-          </p>
-          <p className="mt-1.5 text-sm text-white/58">{regulationLabel}</p>
+        <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          {documentLinks.map((document) => (
+            <button
+              key={document.id}
+              type="button"
+              onClick={() => onOpenDocument(document.id)}
+              className="border border-white/14 px-3 py-2 [font-family:var(--font-display)] text-[0.58rem] uppercase tracking-[0.22em] text-white/70 transition hover:border-white/36 hover:text-white"
+            >
+              {document.label}
+            </button>
+          ))}
+
+          <div className="min-w-[150px] text-right sm:min-w-[170px]">
+            <p className="[font-family:var(--font-display)] text-[0.64rem] uppercase tracking-[0.3em] text-white/32">
+              Pokemon Champions
+            </p>
+            <p className="mt-1.5 text-sm text-white/58">{regulationLabel}</p>
+          </div>
         </div>
       </div>
     </header>
