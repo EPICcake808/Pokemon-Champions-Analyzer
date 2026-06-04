@@ -5,18 +5,24 @@ import unittest
 
 from pokemon_team_analyzer.champions_m_a_meta import MODE_LABEL_ORDER
 from pokemon_team_analyzer.analyzer import (
+    _build_snapshot_interaction_summary,
+    _build_snapshot_target_matchup_summary,
     _normalized_hp_stat,
     _normalized_non_hp_stat,
     _render_mode_label,
+    _resolve_members,
+    analyze_team,
     analyze_team_text,
     classify_utility_roles,
 )
+from pokemon_team_analyzer.meta_snapshots import get_tournament_team_snapshots
 from pokemon_team_analyzer.cli import render_text_report
 from pokemon_team_analyzer.models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
     MODE_PACKAGE_ORDER,
     MoveData,
     MoveStatChange,
+    PokemonSet,
     SpeciesData,
     STYLE_PACKAGE_ORDER,
     TEAM_ARCHETYPE_ORDER,
@@ -1233,9 +1239,9 @@ Ability: Illusion
         self.assertGreaterEqual(len(analysis.speed_benchmark_notes), 6)
         self.assertTrue(any(note.startswith("Team speed shape:") for note in analysis.speed_benchmark_notes))
         self.assertTrue(any("fastest unboosted line at 197" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("below Jolly Garchomp (200)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("below Max-Speed Jolly Garchomp (200)" in note for note in analysis.speed_benchmark_notes))
         self.assertTrue(any("Tailwind line at 394" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("below Choice Scarf Jolly Basculegion (259)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("below Max-Speed Choice Scarf Jolly Basculegion (259)" in note for note in analysis.speed_benchmark_notes))
         self.assertIn(
             "Trick Room underspeed: the team has no Trick Room setter, so it cannot create its own slower-first mode.",
             analysis.speed_benchmark_notes,
@@ -1398,6 +1404,252 @@ Ability: Illusion
         self.assertIn("screens_offense", hyper_offense_analysis.team_win_condition_labels)
         self.assertIn("setup_sweep", hyper_offense_analysis.team_win_condition_labels)
         self.assertIn("sun_room", trick_room_analysis.team_mode_packages)
+
+    def test_screens_offense_requires_actual_screen_support(self) -> None:
+        class ComplaintMetadataProvider:
+            def __init__(self) -> None:
+                self.species = {
+                    "Palafin": SpeciesData("Palafin", "palafin", ("water",), 100, 70, 72, 53, 62, 100),
+                    "Kleavor": SpeciesData("Kleavor", "kleavor", ("bug", "rock"), 70, 135, 95, 45, 70, 85),
+                    "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
+                    "Mega Manectric": SpeciesData("Mega Manectric", "manectric-mega", ("electric",), 70, 75, 80, 135, 80, 135),
+                    "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
+                    "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
+                }
+                self.moves = {
+                    "Jet Punch": MoveData("Jet Punch", "jet-punch", "water", "physical", priority=1),
+                    "Wave Crash": MoveData("Wave Crash", "wave-crash", "water", "physical"),
+                    "Flip Turn": MoveData("Flip Turn", "flip-turn", "water", "physical"),
+                    "Protect": MoveData("Protect", "protect", "normal", "status", priority=4, target_name="user"),
+                    "Stone Axe": MoveData("Stone Axe", "stone-axe", "rock", "physical"),
+                    "X-Scissor": MoveData("X-Scissor", "x-scissor", "bug", "physical"),
+                    "Close Combat": MoveData("Close Combat", "close-combat", "fighting", "physical"),
+                    "U-turn": MoveData("U-turn", "u-turn", "bug", "physical"),
+                    "Fake Out": MoveData(
+                        "Fake Out",
+                        "fake-out",
+                        "normal",
+                        "physical",
+                        effect_chance=100,
+                        flinch_chance=100,
+                        priority=3,
+                        target_name="selected-pokemon",
+                    ),
+                    "Gigaton Hammer": MoveData("Gigaton Hammer", "gigaton-hammer", "steel", "physical"),
+                    "Play Rough": MoveData("Play Rough", "play-rough", "fairy", "physical"),
+                    "Thunder Wave": MoveData("Thunder Wave", "thunder-wave", "electric", "status"),
+                    "Thunderbolt": MoveData("Thunderbolt", "thunderbolt", "electric", "special"),
+                    "Volt Switch": MoveData("Volt Switch", "volt-switch", "electric", "special"),
+                    "Snarl": MoveData("Snarl", "snarl", "dark", "special"),
+                    "Tailwind": MoveData(
+                        "Tailwind",
+                        "tailwind",
+                        "flying",
+                        "status",
+                        category_name="field-effect",
+                        target_name="users-field",
+                    ),
+                    "Hydro Pump": MoveData("Hydro Pump", "hydro-pump", "water", "special"),
+                    "Hurricane": MoveData("Hurricane", "hurricane", "flying", "special"),
+                    "Electro Shot": MoveData("Electro Shot", "electro-shot", "electric", "special"),
+                    "Draco Meteor": MoveData("Draco Meteor", "draco-meteor", "dragon", "special"),
+                    "Flash Cannon": MoveData("Flash Cannon", "flash-cannon", "steel", "special"),
+                }
+
+            def get_species(self, species_name: str) -> SpeciesData:
+                return self.species[species_name]
+
+            def get_move(self, move_name: str) -> MoveData:
+                return self.moves[move_name]
+
+        team = [
+            PokemonSet("Palafin", ["Jet Punch", "Wave Crash", "Flip Turn", "Protect"], item="Mystic Water", ability="Zero to Hero", nature="Adamant", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Kleavor", ["Stone Axe", "X-Scissor", "Close Combat", "U-turn"], item="Choice Scarf", ability="Sharpness", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Play Rough", "Thunder Wave"], item="Mental Herb", ability="Mold Breaker", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Mega Manectric", ["Thunderbolt", "Volt Switch", "Snarl", "Protect"], item="Manectite", ability="Intimidate", nature="Timid", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Hurricane", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+
+        analysis = analyze_team(team, metadata_provider=ComplaintMetadataProvider(), regulation_id=None)
+
+        self.assertEqual(analysis.pokemon_role_counts["screen_setter"], 0)
+        self.assertEqual(analysis.utility_role_counts["screen"], 0)
+        self.assertLessEqual(analysis.team_archetype_scores["screens_offense"], 0.0)
+        self.assertNotIn("screens_offense", analysis.team_win_condition_labels)
+
+    def test_lightning_rod_and_mold_breaker_context_reduce_overstated_electric_and_room_flags(self) -> None:
+        class ComplaintContextProvider:
+            def __init__(self) -> None:
+                self.species = {
+                    "Palafin": SpeciesData("Palafin", "palafin", ("water",), 100, 70, 72, 53, 62, 100),
+                    "Kleavor": SpeciesData("Kleavor", "kleavor", ("bug", "rock"), 70, 135, 95, 45, 70, 85),
+                    "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
+                    "Manectric": SpeciesData("Manectric", "manectric", ("electric",), 70, 75, 60, 105, 60, 105),
+                    "Mega Manectric": SpeciesData("Mega Manectric", "manectric-mega", ("electric",), 70, 75, 80, 135, 80, 135),
+                    "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
+                    "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
+                }
+                self.moves = {
+                    "Jet Punch": MoveData("Jet Punch", "jet-punch", "water", "physical", priority=1),
+                    "Wave Crash": MoveData("Wave Crash", "wave-crash", "water", "physical"),
+                    "Flip Turn": MoveData("Flip Turn", "flip-turn", "water", "physical"),
+                    "Protect": MoveData("Protect", "protect", "normal", "status", priority=4, target_name="user"),
+                    "Stone Axe": MoveData("Stone Axe", "stone-axe", "rock", "physical"),
+                    "X-Scissor": MoveData("X-Scissor", "x-scissor", "bug", "physical"),
+                    "Close Combat": MoveData("Close Combat", "close-combat", "fighting", "physical"),
+                    "U-turn": MoveData("U-turn", "u-turn", "bug", "physical"),
+                    "Fake Out": MoveData(
+                        "Fake Out",
+                        "fake-out",
+                        "normal",
+                        "physical",
+                        effect_chance=100,
+                        flinch_chance=100,
+                        priority=3,
+                        target_name="selected-pokemon",
+                    ),
+                    "Gigaton Hammer": MoveData("Gigaton Hammer", "gigaton-hammer", "steel", "physical"),
+                    "Play Rough": MoveData("Play Rough", "play-rough", "fairy", "physical"),
+                    "Thunder Wave": MoveData("Thunder Wave", "thunder-wave", "electric", "status"),
+                    "Thunderbolt": MoveData("Thunderbolt", "thunderbolt", "electric", "special"),
+                    "Volt Switch": MoveData("Volt Switch", "volt-switch", "electric", "special"),
+                    "Snarl": MoveData("Snarl", "snarl", "dark", "special"),
+                    "Tailwind": MoveData(
+                        "Tailwind",
+                        "tailwind",
+                        "flying",
+                        "status",
+                        category_name="field-effect",
+                        target_name="users-field",
+                    ),
+                    "Hydro Pump": MoveData("Hydro Pump", "hydro-pump", "water", "special"),
+                    "Hurricane": MoveData("Hurricane", "hurricane", "flying", "special"),
+                    "Electro Shot": MoveData("Electro Shot", "electro-shot", "electric", "special"),
+                    "Draco Meteor": MoveData("Draco Meteor", "draco-meteor", "dragon", "special"),
+                    "Flash Cannon": MoveData("Flash Cannon", "flash-cannon", "steel", "special"),
+                }
+
+            def get_species(self, species_name: str) -> SpeciesData:
+                return self.species[species_name]
+
+            def get_move(self, move_name: str) -> MoveData:
+                return self.moves[move_name]
+
+        team = [
+            PokemonSet("Palafin", ["Jet Punch", "Wave Crash", "Flip Turn", "Protect"], item="Mystic Water", ability="Zero to Hero", nature="Adamant", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Kleavor", ["Stone Axe", "X-Scissor", "Close Combat", "U-turn"], item="Choice Scarf", ability="Sharpness", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Play Rough", "Thunder Wave"], item="Mental Herb", ability="Mold Breaker", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Manectric", ["Thunderbolt", "Volt Switch", "Snarl", "Protect"], item="Manectite", ability="Lightning Rod", nature="Timid", evs={"SpA": 32, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Hurricane", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+
+        analysis = analyze_team(team, metadata_provider=ComplaintContextProvider(), regulation_id=None)
+
+        self.assertEqual(analysis.defensive_profile["electric"]["immune_members"], 1)
+        self.assertLess(float(analysis.defensive_profile["electric"]["average_multiplier"]), 1.0)
+        self.assertNotIn("electric", analysis.top_defensive_weaknesses)
+
+        trick_room_reasons = analysis.matchup_details["trick_room"]["reasons"]
+        self.assertTrue(any("Mold Breaker Fake Out" in reason for reason in trick_room_reasons))
+
+        farigiraf_row = next(
+            row for row in analysis.meta_analysis["tournament_rows"] if row["label"] == "Farigiraf Torkoal Room"
+        )
+        self.assertTrue(any("Armor Tail" in reason for reason in farigiraf_row["context_reasons"]))
+
+    def test_snapshot_target_summary_rewards_real_dual_type_answer_lines(self) -> None:
+        class SnapshotContextProvider:
+            def __init__(self) -> None:
+                self.species = {
+                    "Palafin": SpeciesData("Palafin", "palafin", ("water",), 100, 70, 72, 53, 62, 100),
+                    "Kleavor": SpeciesData("Kleavor", "kleavor", ("bug", "rock"), 70, 135, 95, 45, 70, 85),
+                    "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
+                    "Mega Manectric": SpeciesData("Mega Manectric", "manectric-mega", ("electric",), 70, 75, 80, 135, 80, 135),
+                    "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
+                    "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
+                    "Sinistcha": SpeciesData("Sinistcha", "sinistcha", ("grass", "ghost"), 71, 60, 106, 121, 80, 70),
+                    "Incineroar": SpeciesData("Incineroar", "incineroar", ("fire", "dark"), 95, 115, 90, 80, 90, 60),
+                    "Scizor": SpeciesData("Scizor", "scizor", ("bug", "steel"), 70, 130, 100, 55, 80, 65),
+                }
+                self.moves = {
+                    "Jet Punch": MoveData("Jet Punch", "jet-punch", "water", "physical", priority=1),
+                    "Wave Crash": MoveData("Wave Crash", "wave-crash", "water", "physical"),
+                    "Flip Turn": MoveData("Flip Turn", "flip-turn", "water", "physical"),
+                    "Protect": MoveData("Protect", "protect", "normal", "status", priority=4, target_name="user"),
+                    "Stone Axe": MoveData("Stone Axe", "stone-axe", "rock", "physical"),
+                    "X-Scissor": MoveData("X-Scissor", "x-scissor", "bug", "physical"),
+                    "Close Combat": MoveData("Close Combat", "close-combat", "fighting", "physical"),
+                    "U-turn": MoveData("U-turn", "u-turn", "bug", "physical"),
+                    "Fake Out": MoveData(
+                        "Fake Out",
+                        "fake-out",
+                        "normal",
+                        "physical",
+                        effect_chance=100,
+                        flinch_chance=100,
+                        priority=3,
+                        target_name="selected-pokemon",
+                    ),
+                    "Gigaton Hammer": MoveData("Gigaton Hammer", "gigaton-hammer", "steel", "physical"),
+                    "Play Rough": MoveData("Play Rough", "play-rough", "fairy", "physical"),
+                    "Thunder Wave": MoveData("Thunder Wave", "thunder-wave", "electric", "status"),
+                    "Thunderbolt": MoveData("Thunderbolt", "thunderbolt", "electric", "special"),
+                    "Volt Switch": MoveData("Volt Switch", "volt-switch", "electric", "special"),
+                    "Snarl": MoveData("Snarl", "snarl", "dark", "special"),
+                    "Tailwind": MoveData(
+                        "Tailwind",
+                        "tailwind",
+                        "flying",
+                        "status",
+                        category_name="field-effect",
+                        target_name="users-field",
+                    ),
+                    "Hydro Pump": MoveData("Hydro Pump", "hydro-pump", "water", "special"),
+                    "Hurricane": MoveData("Hurricane", "hurricane", "flying", "special"),
+                    "Electro Shot": MoveData("Electro Shot", "electro-shot", "electric", "special"),
+                    "Draco Meteor": MoveData("Draco Meteor", "draco-meteor", "dragon", "special"),
+                    "Flash Cannon": MoveData("Flash Cannon", "flash-cannon", "steel", "special"),
+                }
+
+            def get_species(self, species_name: str) -> SpeciesData:
+                return self.species[species_name]
+
+            def get_move(self, move_name: str) -> MoveData:
+                return self.moves[move_name]
+
+        provider = SnapshotContextProvider()
+        answer_team = [
+            PokemonSet("Palafin", ["Jet Punch", "Wave Crash", "Flip Turn", "Protect"], item="Mystic Water", ability="Zero to Hero", nature="Adamant", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Kleavor", ["Stone Axe", "X-Scissor", "Close Combat", "U-turn"], item="Choice Scarf", ability="Sharpness", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Play Rough", "Thunder Wave"], item="Mental Herb", ability="Mold Breaker", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Manectric", ["Thunderbolt", "Volt Switch", "Snarl", "Protect"], item="Manectite", ability="Lightning Rod", nature="Timid", evs={"SpA": 32, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Hurricane", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+        neutral_team = [
+            PokemonSet("Palafin", ["Jet Punch", "Wave Crash", "Flip Turn", "Protect"], item="Mystic Water", ability="Zero to Hero", nature="Adamant", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Kleavor", ["Stone Axe", "X-Scissor", "Protect", "U-turn"], item="Choice Scarf", ability="Sharpness", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Protect", "Thunder Wave"], item="Mental Herb", ability="Mold Breaker", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Manectric", ["Thunderbolt", "Snarl", "Protect", "Protect"], item="Manectite", ability="Lightning Rod", nature="Timid", evs={"SpA": 32, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Protect", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+
+        answer_members = _resolve_members(answer_team, provider, regulation_id=None)
+        neutral_members = _resolve_members(neutral_team, provider, regulation_id=None)
+        snapshot = next(
+            entry for entry in get_tournament_team_snapshots(None) if entry["label"] == "Rain Archaludon"
+        )
+
+        answer_summary = _build_snapshot_target_matchup_summary(snapshot, answer_members, provider, regulation_id=None)
+        neutral_summary = _build_snapshot_target_matchup_summary(snapshot, neutral_members, provider, regulation_id=None)
+
+        self.assertGreater(answer_summary.resolved_targets, 0)
+        self.assertEqual(answer_summary.resolved_targets, neutral_summary.resolved_targets)
+        self.assertGreater(answer_summary.average_offensive_pressure, neutral_summary.average_offensive_pressure)
+        self.assertGreater(answer_summary.strong_answer_targets, neutral_summary.strong_answer_targets)
 
     def test_analysis_covers_terrain_and_snow_shells(self) -> None:
         provider = FakeMetadataProvider()
@@ -1750,6 +2002,9 @@ Ability: Illusion
         self.assertEqual(len(analysis.team_preview_plans), 1 + len(MODE_LABEL_ORDER))
         self.assertTrue(all(plan["recommended_into"] for plan in analysis.team_preview_plans[1:]))
         self.assertTrue(all(plan["label"].startswith("Into ") or "mirror plan" in plan["label"] for plan in analysis.team_preview_plans[1:]))
+        anchored_plans = [plan for plan in analysis.team_preview_plans[1:] if len(plan["recommended_into"]) > 1]
+        self.assertTrue(anchored_plans)
+        self.assertTrue(all(plan["recommended_into"][1] in plan["summary"] for plan in anchored_plans))
         plan_signatures = {
             (tuple(sorted(plan["leads"])), tuple(sorted(plan["pick_four"])), tuple(plan["recommended_into"]))
             for plan in analysis.team_preview_plans
@@ -1827,6 +2082,8 @@ Ability: Illusion
                 "meta_share",
                 "contextual_score",
                 "context_reasons",
+                "target_summary",
+                "interaction_summary",
                 "matchup_score",
                 "impact_score",
                 "standing",
@@ -1835,6 +2092,7 @@ Ability: Illusion
         self.assertTrue(top_tournament_row["key_cores"])
         self.assertTrue(top_tournament_row["key_pokemon"])
         self.assertTrue(top_tournament_row["context_reasons"])
+        self.assertGreaterEqual(top_tournament_row["target_summary"]["resolved_targets"], 1)
 
         matchup_details = analysis.to_dict()["matchup_profile"]["details"]
         self.assertIn("trick_room", matchup_details)
@@ -1887,6 +2145,82 @@ Ability: Illusion
 
         payload = analysis.to_dict()["meta_analysis"]
         self.assertEqual(payload, analysis.meta_analysis)
+
+    def test_snapshot_interaction_summary_credits_armor_tail_counterplay(self) -> None:
+        class InteractionProvider:
+            def __init__(self) -> None:
+                self.species = {
+                    "Tinkaton": SpeciesData("Tinkaton", "tinkaton", ("fairy", "steel"), 85, 75, 77, 70, 105, 94),
+                    "Mega Manectric": SpeciesData("Mega Manectric", "manectric-mega", ("electric",), 70, 75, 80, 135, 80, 135),
+                    "Pelipper": SpeciesData("Pelipper", "pelipper", ("water", "flying"), 60, 50, 100, 95, 70, 65),
+                    "Archaludon": SpeciesData("Archaludon", "archaludon", ("steel", "dragon"), 90, 105, 130, 125, 65, 85),
+                    "Farigiraf": SpeciesData("Farigiraf", "farigiraf", ("normal", "psychic"), 120, 90, 70, 110, 70, 60),
+                }
+                self.moves = {
+                    "Fake Out": MoveData(
+                        "Fake Out",
+                        "fake-out",
+                        "normal",
+                        "physical",
+                        effect_chance=100,
+                        flinch_chance=100,
+                        priority=3,
+                        target_name="selected-pokemon",
+                    ),
+                    "Gigaton Hammer": MoveData("Gigaton Hammer", "gigaton-hammer", "steel", "physical"),
+                    "Play Rough": MoveData("Play Rough", "play-rough", "fairy", "physical"),
+                    "Thunder Wave": MoveData("Thunder Wave", "thunder-wave", "electric", "status"),
+                    "Thunderbolt": MoveData("Thunderbolt", "thunderbolt", "electric", "special"),
+                    "Volt Switch": MoveData("Volt Switch", "volt-switch", "electric", "special"),
+                    "Snarl": MoveData("Snarl", "snarl", "dark", "special"),
+                    "Protect": MoveData("Protect", "protect", "normal", "status", priority=4, target_name="user"),
+                    "Tailwind": MoveData(
+                        "Tailwind",
+                        "tailwind",
+                        "flying",
+                        "status",
+                        category_name="field-effect",
+                        target_name="users-field",
+                    ),
+                    "Hydro Pump": MoveData("Hydro Pump", "hydro-pump", "water", "special"),
+                    "Hurricane": MoveData("Hurricane", "hurricane", "flying", "special"),
+                    "Electro Shot": MoveData("Electro Shot", "electro-shot", "electric", "special"),
+                    "Draco Meteor": MoveData("Draco Meteor", "draco-meteor", "dragon", "special"),
+                    "Flash Cannon": MoveData("Flash Cannon", "flash-cannon", "steel", "special"),
+                }
+
+            def get_species(self, species_name: str) -> SpeciesData:
+                return self.species[species_name]
+
+            def get_move(self, move_name: str) -> MoveData:
+                return self.moves[move_name]
+
+        provider = InteractionProvider()
+        answer_team = [
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Play Rough", "Thunder Wave"], item="Mental Herb", ability="Mold Breaker", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Manectric", ["Thunderbolt", "Volt Switch", "Snarl", "Protect"], item="Manectite", ability="Lightning Rod", nature="Timid", evs={"SpA": 32, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Hurricane", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+        neutral_team = [
+            PokemonSet("Tinkaton", ["Fake Out", "Gigaton Hammer", "Play Rough", "Thunder Wave"], item="Mental Herb", ability="Own Tempo", nature="Jolly", evs={"Atk": 66, "Spe": 66}),
+            PokemonSet("Manectric", ["Thunderbolt", "Volt Switch", "Snarl", "Protect"], item="Manectite", ability="Lightning Rod", nature="Timid", evs={"SpA": 32, "Spe": 66}),
+            PokemonSet("Pelipper", ["Tailwind", "Hydro Pump", "Hurricane", "Protect"], item="Focus Sash", ability="Drizzle", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+            PokemonSet("Archaludon", ["Electro Shot", "Draco Meteor", "Flash Cannon", "Protect"], item="Leftovers", ability="Stamina", nature="Modest", evs={"SpA": 66, "Spe": 66}),
+        ]
+
+        answer_members = _resolve_members(answer_team, provider, regulation_id=None)
+        neutral_members = _resolve_members(neutral_team, provider, regulation_id=None)
+        snapshot = next(
+            entry for entry in get_tournament_team_snapshots(None) if entry["label"] == "Farigiraf Torkoal Room"
+        )
+
+        answer_summary = _build_snapshot_interaction_summary(snapshot, answer_members, provider, regulation_id=None)
+        neutral_summary = _build_snapshot_interaction_summary(snapshot, neutral_members, provider, regulation_id=None)
+
+        self.assertGreater(answer_summary.ability_clause_targets, 0)
+        self.assertGreater(answer_summary.ability_clause_answers, neutral_summary.ability_clause_answers)
+        self.assertIn("ability-aware counterplay", answer_summary.tags)
 
     def test_contextual_meta_analysis_respects_grassy_shell_pressure_points(self) -> None:
         analysis = analyze_team_text(

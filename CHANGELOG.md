@@ -13,6 +13,12 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 - A top-navbar Changelog popup in the hosted web app.
 - A top-navbar Play Guide popup in the hosted web app with a complete-beginner explanation of what VGC is, what happens before turn one, what you choose each turn, and how doubles battles are won.
 - Bundled frontend fallback document content so the web app can still render the changelog and beginner guide modal content when the root changelog file is not available at runtime.
+- Shared `target_summary` and `interaction_summary` payloads on each `meta_analysis.tournament_rows` entry, so board rows now expose dual-type anchor pressure plus interaction tags such as redirection counterplay, setup denial, spread counterplay, and ability-aware counterplay.
+
+### Changed
+
+- Deepened tournament-row contextual scoring so current board teams are evaluated not just by type pressure, but also by broader interaction context like redirection support, setup branches, spread-damage shells, and key ability clauses such as Armor Tail.
+- Team-preview alternate plans now attach to the best matching current board shell for the relevant mode, and their summaries can reference that concrete team instead of only the generic mode label.
 
 ## [0.2.1] - 2026-06-01
 

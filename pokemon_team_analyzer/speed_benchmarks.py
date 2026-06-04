@@ -63,25 +63,25 @@ _REGULATION_SPEED_BENCHMARKS = {
                 benchmarks=(
                     SpeedBenchmark(
                         slug="jolly_garchomp",
-                        label="Jolly Garchomp",
+                        label="Max-Speed Jolly Garchomp",
                         target_speed=_level_50_speed(102),
                         source="Common M-A fast physical cleaner",
                     ),
                     SpeedBenchmark(
                         slug="timid_whimsicott",
-                        label="Timid Whimsicott",
+                        label="Max-Speed Timid Whimsicott",
                         target_speed=_level_50_speed(116),
                         source="Common M-A Tailwind setter reference",
                     ),
                     SpeedBenchmark(
                         slug="jolly_sneasler",
-                        label="Jolly Sneasler",
+                        label="Max-Speed Jolly Sneasler",
                         target_speed=_level_50_speed(120),
                         source="Common M-A high-end unboosted speed threat",
                     ),
                     SpeedBenchmark(
                         slug="timid_dragapult",
-                        label="Timid Dragapult",
+                        label="Max-Speed Timid Dragapult",
                         target_speed=_level_50_speed(142),
                         source="Top-end unboosted speed ceiling",
                     ),
@@ -93,19 +93,19 @@ _REGULATION_SPEED_BENCHMARKS = {
                 benchmarks=(
                     SpeedBenchmark(
                         slug="tailwind_garchomp",
-                        label="Tailwind Jolly Garchomp",
+                        label="Tailwind Max-Speed Jolly Garchomp",
                         target_speed=_level_50_speed(102) * 2,
                         source="Common Tailwind offense floor",
                     ),
                     SpeedBenchmark(
                         slug="tailwind_sneasler",
-                        label="Tailwind Jolly Sneasler",
+                        label="Tailwind Max-Speed Jolly Sneasler",
                         target_speed=_level_50_speed(120) * 2,
                         source="Common Tailwind high-end pressure line",
                     ),
                     SpeedBenchmark(
                         slug="tailwind_dragapult",
-                        label="Tailwind Timid Dragapult",
+                        label="Tailwind Max-Speed Timid Dragapult",
                         target_speed=_level_50_speed(142) * 2,
                         source="Top-end Tailwind ceiling",
                     ),
@@ -117,13 +117,13 @@ _REGULATION_SPEED_BENCHMARKS = {
                 benchmarks=(
                     SpeedBenchmark(
                         slug="choice_scarf_basculegion",
-                        label="Choice Scarf Jolly Basculegion",
+                        label="Max-Speed Choice Scarf Jolly Basculegion",
                         target_speed=_choice_scarf_speed(_level_50_speed(78)),
                         source="Common M-A rain and Tailwind Scarf reference",
                     ),
                     SpeedBenchmark(
                         slug="choice_scarf_garchomp",
-                        label="Choice Scarf Jolly Garchomp",
+                        label="Max-Speed Choice Scarf Jolly Garchomp",
                         target_speed=_choice_scarf_speed(_level_50_speed(102)),
                         source="Common M-A generic Scarf speed ceiling",
                     ),
