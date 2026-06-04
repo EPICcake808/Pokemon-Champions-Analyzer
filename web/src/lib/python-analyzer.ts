@@ -11,6 +11,7 @@ import type {
   AnalyzeRoutePayload,
   BuilderMoveDetails,
   BuilderSpeciesOptions,
+  ChangelogRoutePayload,
   PokemonTeamAnalysis,
   RegulationCatalogPayload,
 } from "@/lib/types";
@@ -190,6 +191,31 @@ export async function getRegulationCatalog(): Promise<RegulationCatalogPayload> 
 
   const stdout = await runPythonCli(["--catalog-json", "--include-rules"]);
   return JSON.parse(stdout) as RegulationCatalogPayload;
+}
+
+export async function getHostedChangelog(): Promise<string | null> {
+  if (!ANALYZER_API_BASE_URL) {
+    if (process.env.NODE_ENV === "production") {
+      return "# Changelog\n\nThe hosted web app is missing POKEMON_ANALYZER_API_BASE_URL, so it cannot load the live changelog from the analyzer service.";
+    }
+
+    return null;
+  }
+
+  if (!shouldUseRemoteAnalyzerApi()) {
+    return null;
+  }
+
+  try {
+    const { payload, response } = await fetchAnalyzerApi<ChangelogRoutePayload & { detail?: string }>("/api/changelog");
+    if (!response.ok || typeof payload.content !== "string" || !payload.content.trim()) {
+      throw new Error(payload.detail ?? "The analyzer API returned an invalid changelog response.");
+    }
+
+    return payload.content;
+  } catch {
+    return "# Changelog\n\nThe hosted web app could not load the latest changelog from the analyzer service right now. Retry in a moment.";
+  }
 }
 
 function parseBuilderSpeciesPayload(stdout: string): BuilderSpeciesOptions {

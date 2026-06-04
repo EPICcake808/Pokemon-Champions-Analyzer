@@ -364,6 +364,10 @@ export type AnalyzeRoutePayload =
       legality?: LegalityResult;
     };
 
+export interface ChangelogRoutePayload {
+  content: string;
+}
+
 export type EffortValueStat =
   | "hp"
   | "attack"

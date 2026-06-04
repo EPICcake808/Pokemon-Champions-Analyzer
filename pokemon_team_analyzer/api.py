@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -13,6 +15,9 @@ from .service import (
     build_regulation_catalog_payload,
 )
 from .version import __version__
+
+
+CHANGELOG_PATH = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
 
 
 app = FastAPI(
@@ -49,6 +54,19 @@ def get_catalog(
 @app.get("/api/meta-snapshot-source")
 def get_meta_snapshot_source() -> dict[str, object]:
     return build_built_in_meta_snapshot_feed()
+
+
+@app.get("/api/changelog")
+def get_changelog() -> JSONResponse:
+    try:
+        changelog_content = CHANGELOG_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError as error:
+        raise HTTPException(status_code=404, detail="CHANGELOG.md not found.") from error
+
+    return JSONResponse(
+        {"content": changelog_content},
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.post("/api/analyze")

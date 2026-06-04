@@ -4,7 +4,7 @@ import fallbackSampleAnalysis from "@/lib/fallback-sample-analysis.json";
 import fallbackRegulationCatalog from "@/lib/fallback-regulation-catalog.json";
 import { isAuthConfigured, isGoogleAuthConfigured } from "@/lib/auth/runtime";
 import { getFeaturedExampleTeams } from "@/lib/example-teams";
-import { getRegulationCatalog, runPokemonAnalyzer } from "@/lib/python-analyzer";
+import { getHostedChangelog, getRegulationCatalog, runPokemonAnalyzer } from "@/lib/python-analyzer";
 import { listSavedTeamsForUser } from "@/lib/saved-teams";
 import { GENERATED_CHANGELOG_CONTENT } from "@/lib/generated-changelog";
 import { PLAY_GUIDE_CONTENT } from "@/lib/site-documents";
@@ -20,10 +20,19 @@ export const dynamic = "force-dynamic";
 
 const USE_BUNDLED_DEV_SNAPSHOT = process.env.POKEMON_ANALYZER_USE_BUNDLED_DEV_SNAPSHOT?.trim() === "1";
 
+async function loadChangelogContent() {
+  const hostedChangelog = await getHostedChangelog();
+  if (hostedChangelog) {
+    return hostedChangelog;
+  }
+
+  return GENERATED_CHANGELOG_CONTENT;
+}
+
 export default async function Home() {
   let regulationCatalog = fallbackRegulationCatalog as unknown as RegulationCatalogPayload;
   const initialLoadIssues: string[] = [];
-  const changelogContent = GENERATED_CHANGELOG_CONTENT;
+  const changelogContent = await loadChangelogContent();
 
   if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(
