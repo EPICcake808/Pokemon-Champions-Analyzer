@@ -212,6 +212,10 @@ def _base_species_from_gender_suffix(normalized_species_name: str) -> str | None
     return None
 
 
+def _strip_trailing_gender_suffix_text(species_name: str) -> str:
+    return re.sub(r"\s+\((?:M|F|Male|Female)\)$", "", species_name.strip(), flags=re.IGNORECASE)
+
+
 def _normalized_species_name(species_name: str) -> str:
     lowered = species_name.strip().lower()
     if lowered in SHOWDOWN_SPECIES_ALIASES:
@@ -228,7 +232,7 @@ def _normalized_species_name(species_name: str) -> str:
 
 
 def _canonical_mega_name(species_name: str) -> str | None:
-    stripped = species_name.strip()
+    stripped = _strip_trailing_gender_suffix_text(species_name)
     lowered = stripped.lower()
     if lowered.startswith("mega "):
         return stripped.lower()
@@ -241,7 +245,7 @@ def _canonical_mega_name(species_name: str) -> str | None:
 
 
 def _base_species_from_mega_species(species_name: str) -> str | None:
-    stripped = species_name.strip()
+    stripped = _strip_trailing_gender_suffix_text(species_name)
     lowered = stripped.lower()
     if lowered.startswith("mega "):
         base_name = stripped[5:].strip()

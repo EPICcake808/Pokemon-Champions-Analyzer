@@ -741,6 +741,10 @@ class RegulationTests(unittest.TestCase):
         self.assertEqual(resolve_regulation_species_name("Palafin Hero"), "Palafin")
         self.assertEqual(resolve_regulation_species_name("Palafin (Hero Form)"), "Palafin")
 
+    def test_regulation_species_resolution_accepts_gender_suffixed_mega_aliases(self) -> None:
+        self.assertEqual(resolve_regulation_species_name("Manectric-Mega (M)"), "Mega Manectric")
+        self.assertEqual(resolve_regulation_species_name("Mega Manectric (F)"), "Mega Manectric")
+
     def test_regulation_pokemon_set_upgrades_gender_suffixed_mega_species(self) -> None:
         team = parse_showdown_team(
             """Gardevoir (F) @ Gardevoirite
@@ -755,6 +759,20 @@ Ability: Trace
         resolved_member = resolve_regulation_pokemon_set(team[0], regulation_id=DEFAULT_REGULATION_ID)
 
         self.assertEqual(resolved_member.species, "Mega Gardevoir")
+
+    def test_validate_team_legality_accepts_gender_suffixed_mega_species_names(self) -> None:
+        legality = validate_team_legality_text(
+            """Manectric-Mega (M) @ Manectite
+Ability: Intimidate
+- Thunderbolt
+- Protect
+- Snarl
+- Volt Switch
+"""
+        )
+
+        issue_codes = [issue.code for issue in legality.issues]
+        self.assertEqual(issue_codes, ["invalid_team_size"])
 
     def test_eternal_flower_floette_keeps_its_champions_move_pool(self) -> None:
         self.assertIn("light-of-ruin", get_allowed_moves_for_species("Eternal Flower Floette"))
