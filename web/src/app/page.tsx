@@ -1,6 +1,3 @@
-import { readFile } from "node:fs/promises";
-import path from "node:path";
-
 import { auth } from "@/auth";
 import { AnalyzerWorkspace } from "@/components/analyzer-workspace";
 import fallbackSampleAnalysis from "@/lib/fallback-sample-analysis.json";
@@ -9,7 +6,8 @@ import { isAuthConfigured, isGoogleAuthConfigured } from "@/lib/auth/runtime";
 import { getFeaturedExampleTeams } from "@/lib/example-teams";
 import { getRegulationCatalog, runPokemonAnalyzer } from "@/lib/python-analyzer";
 import { listSavedTeamsForUser } from "@/lib/saved-teams";
-import { BUNDLED_CHANGELOG_CONTENT, PLAY_GUIDE_CONTENT } from "@/lib/site-documents";
+import { GENERATED_CHANGELOG_CONTENT } from "@/lib/generated-changelog";
+import { PLAY_GUIDE_CONTENT } from "@/lib/site-documents";
 import type {
   AuthCapabilitySummary,
   AuthSessionUser,
@@ -22,25 +20,10 @@ export const dynamic = "force-dynamic";
 
 const USE_BUNDLED_DEV_SNAPSHOT = process.env.POKEMON_ANALYZER_USE_BUNDLED_DEV_SNAPSHOT?.trim() === "1";
 
-const ROOT_CHANGELOG_PATH = path.resolve(/* turbopackIgnore: true */ process.cwd(), "..", "CHANGELOG.md");
-
-async function loadChangelogContent() {
-  try {
-    const content = await readFile(ROOT_CHANGELOG_PATH, "utf8");
-    if (content.trim()) {
-      return content;
-    }
-  } catch {
-    return BUNDLED_CHANGELOG_CONTENT;
-  }
-
-  return BUNDLED_CHANGELOG_CONTENT;
-}
-
 export default async function Home() {
   let regulationCatalog = fallbackRegulationCatalog as unknown as RegulationCatalogPayload;
   const initialLoadIssues: string[] = [];
-  const changelogContent = await loadChangelogContent();
+  const changelogContent = GENERATED_CHANGELOG_CONTENT;
 
   if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(

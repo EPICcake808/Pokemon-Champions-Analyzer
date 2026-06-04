@@ -3,7 +3,10 @@
   "version": "0.2.1",
   "private": true,
   "scripts": {
+    "sync:site-docs": "node ./scripts/sync-site-documents.mjs",
+    "predev": "npm run sync:site-docs",
     "dev": "next dev --webpack",
+    "prebuild": "npm run sync:site-docs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
