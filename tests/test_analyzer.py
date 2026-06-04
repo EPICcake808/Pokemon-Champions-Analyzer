@@ -1986,7 +1986,8 @@ Ability: Illusion
         guidance_notes = "\n".join(analysis.beginner_guidance_notes)
 
         self.assertIn("live board", benchmark_notes)
-        self.assertIn("Farigiraf Torkoal Room", benchmark_notes)
+        self.assertIn("teams", benchmark_notes)
+        self.assertNotIn("Farigiraf Torkoal Room", benchmark_notes)
         self.assertIn("teams", difficulty_notes)
         self.assertIn("Start your matchup reps into teams", guidance_notes)
         self.assertNotIn("Mega Venusaur Kommo-o", difficulty_notes)

@@ -1689,8 +1689,9 @@ def _augment_speed_benchmark_notes_with_meta_context(
         ]
         room_anchor = _pick_meta_context_row(room_rows, meta_analysis, prefer_pressure=False)
         if room_anchor is not None:
+            room_context = _render_meta_team_note_context(room_anchor)
             notes.append(
-                f"Those slower benchmark lines matter on the live board because {cast(str, room_anchor['label'])} is a real Room anchor, so keeping your underspeed pieces intact matters more than winning the first natural-speed exchange."
+                f"Those slower benchmark lines matter on the live board because {room_context} still turn those games into real underspeed checks, so keeping your underspeed pieces intact matters more than winning the first natural-speed exchange."
             )
             return notes
 
@@ -1703,18 +1704,18 @@ def _augment_speed_benchmark_notes_with_meta_context(
     if fast_anchor is not None:
         interaction_summary = cast(dict[str, object], fast_anchor.get("interaction_summary", {}))
         interaction_tags = cast(list[str], interaction_summary.get("tags", []))
-        label = cast(str, fast_anchor["label"])
+        fast_context = _render_meta_team_note_context(fast_anchor)
         if "spread counterplay" in interaction_tags:
             notes.append(
-                f"Those benchmark lines matter most into {label}, where fast tempo plus spread pressure punishes any missed speed-control turn."
+                f"Those benchmark lines matter most into {fast_context}, where fast tempo plus spread pressure punishes any missed speed-control turn."
             )
         elif "setup denial" in interaction_tags:
             notes.append(
-                f"Those benchmark lines matter into {label}, where the first speed exchange often decides whether their setup branch gets a safe turn."
+                f"Those benchmark lines matter into {fast_context}, where the first speed exchange often decides whether their setup branch gets a safe turn."
             )
         else:
             notes.append(
-                f"Those benchmark lines matter most into {label}, where the live board still rewards the side that controls the first speed exchange."
+                f"Those benchmark lines matter most into {fast_context}, where the live board still rewards the side that controls the first speed exchange."
             )
 
     return notes

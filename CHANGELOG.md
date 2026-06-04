@@ -25,8 +25,9 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ### Fixed
 
-- Fixed Champions species normalization so generic Showdown gender suffixes like `Tinkaton (F)` and `Tinkaton (M)` now resolve to the correct legal species, while real gendered forms like Meowstic still keep their canonical form handling.
-- Fixed Palafin Hero form handling in the builder and web UI so Hero-form imports, including `Palafin (Hero Form)`, load the correct Palafin stat data and render the Hero-form sprite.
+- Fixed Champions species normalization so generic Showdown gender suffixes like `Tinkaton (F)` and `Tinkaton (M)` now resolve to the correct legal species, real gendered forms like Meowstic still keep their canonical form handling, and gender-suffixed Mega imports still upgrade to the correct Mega species.
+- Fixed Palafin Hero form handling in the builder, roster, and web UI so Hero-form imports, including `Palafin (Hero Form)` and `Palafin-Hero`, load the correct Palafin stat data, restore roster stat bars, and render the Hero-form sprite.
+- Fixed benchmark-note live-field wording so the added meta context now uses broader `teams with ...` style phrasing instead of explicit board shell names.
 
 ## [0.2.1] - 2026-06-01
 

@@ -17,9 +17,11 @@ from pokemon_team_analyzer.regulations import (
     IllegalTeamError,
     get_regulation,
     regulation_catalog_as_dict,
+    resolve_regulation_pokemon_set,
     resolve_regulation_species_name,
     validate_team_legality_text,
 )
+from pokemon_team_analyzer.showdown import parse_showdown_team
 
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
@@ -738,6 +740,21 @@ class RegulationTests(unittest.TestCase):
     def test_regulation_species_resolution_accepts_palafin_hero_form_aliases(self) -> None:
         self.assertEqual(resolve_regulation_species_name("Palafin Hero"), "Palafin")
         self.assertEqual(resolve_regulation_species_name("Palafin (Hero Form)"), "Palafin")
+
+    def test_regulation_pokemon_set_upgrades_gender_suffixed_mega_species(self) -> None:
+        team = parse_showdown_team(
+            """Gardevoir (F) @ Gardevoirite
+Ability: Trace
+- Hyper Voice
+- Protect
+- Psychic
+- Mystical Fire
+"""
+        )
+
+        resolved_member = resolve_regulation_pokemon_set(team[0], regulation_id=DEFAULT_REGULATION_ID)
+
+        self.assertEqual(resolved_member.species, "Mega Gardevoir")
 
     def test_eternal_flower_floette_keeps_its_champions_move_pool(self) -> None:
         self.assertIn("light-of-ruin", get_allowed_moves_for_species("Eternal Flower Floette"))

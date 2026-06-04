@@ -3634,6 +3634,13 @@ function buildRegulationSpeciesLookup(regulation: RegulationCatalogEntry) {
   for (const officialName of officialSpecies) {
     appendSpeciesAlias(lookup, officialName, officialName);
 
+    if (officialName === "Palafin") {
+      appendSpeciesAlias(lookup, "Palafin-Hero", officialName);
+      appendSpeciesAlias(lookup, "Palafin Hero", officialName);
+      appendSpeciesAlias(lookup, "Palafin (Hero Form)", officialName);
+      appendSpeciesAlias(lookup, "Palafin-Hero-Form", officialName);
+    }
+
     const megaMatch = officialName.match(/^Mega\s+(.+?)(?:\s+([XY]))?$/i);
     if (megaMatch) {
       const baseName = megaMatch[1].trim();
