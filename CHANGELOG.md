@@ -9,6 +9,7 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 ### Added
 
 - That's a secret ;>
+- More coming soon
 
 ## [0.2.2] - 2026-06-03
 
