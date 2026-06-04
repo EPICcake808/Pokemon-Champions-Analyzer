@@ -2659,6 +2659,11 @@ function TeamPreviewPlanCard({
       <p className="[font-family:var(--font-display)] text-[0.68rem] uppercase tracking-[0.26em] text-white/38">
         {plan.label}
       </p>
+      {plan.recommended_into.length ? (
+        <p className="mt-3 text-[0.64rem] uppercase tracking-[0.24em] text-white/38">
+          Recommended into {plan.recommended_into.join(" / ")}
+        </p>
+      ) : null}
       <p className="mt-3 text-sm leading-6 text-white/72">{plan.summary}</p>
       <div className="mt-5 space-y-4">
         <PreviewMemberStrip label="Lead" members={plan.leads} rosterLookup={rosterLookup} />

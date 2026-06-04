@@ -14,11 +14,14 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 - A top-navbar Play Guide popup in the hosted web app with a complete-beginner explanation of what VGC is, what happens before turn one, what you choose each turn, and how doubles battles are won.
 - Bundled frontend fallback document content so the web app can still render the changelog and beginner guide modal content when the root changelog file is not available at runtime.
 - Shared `target_summary` and `interaction_summary` payloads on each `meta_analysis.tournament_rows` entry, so board rows now expose dual-type anchor pressure plus interaction tags such as redirection counterplay, setup denial, spread counterplay, and ability-aware counterplay.
+- Live-board context is now folded into the existing benchmark and team-note payloads, so the web app can surface broader matchup cues and meta-Pokemon interactions inside Benchmark notes and Team Notes instead of only inside the meta board.
+- Matchup-specific preview cards in the web app now show their `recommended_into` targets directly.
 
 ### Changed
 
 - Deepened tournament-row contextual scoring so current board teams are evaluated not just by type pressure, but also by broader interaction context like redirection support, setup branches, spread-damage shells, and key ability clauses such as Armor Tail.
 - Team-preview alternate plans now attach to the best matching current board shell for the relevant mode, and their summaries can reference that concrete team instead of only the generic mode label.
+- Matchup-specific preview selection and per-member reasoning now reuse the board-anchor context, so the chosen four and their explanations are more specific than the generic mode matchup alone.
 
 ## [0.2.1] - 2026-06-01
 

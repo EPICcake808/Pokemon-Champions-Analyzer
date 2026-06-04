@@ -21,6 +21,8 @@ It is scoped to Pokemon Champions and ships with an official, data-first regulat
 - Added structured `target_summary` and `interaction_summary` data to each live meta-board row so the analysis can track dual-type anchor pressure and broader interaction context.
 - Deepened the tournament-row scorer so it now considers redirection counterplay, setup denial, spread-damage control, and key ability clauses instead of only coarse shell labels and type buckets.
 - Matchup-specific preview plans can now attach themselves to a concrete live board shell, so alternate plans can describe what they are actually targeting instead of only naming the generic mode.
+- The existing Benchmark notes and Team Notes surfaces now fold in live-board context, so the hosted app can surface broader matchup cues such as multi-mode pressure, repeated spread damage, or Farigiraf-style Armor Tail support without needing a separate board explainer section.
+- Matchup-specific preview cards now surface their `recommended_into` targets directly in the web UI, and the member reasons can inherit board-anchor context instead of only repeating generic mode text.
 
 ### 0.2.1 Highlights
 
@@ -348,6 +350,7 @@ The analyzer is intentionally deterministic. It does not use machine learning or
 - It still computes weighted mode-level pressure for internal routing, but it now projects that data into a curated May 2026 tournament-team snapshot table so the user-facing board can talk about real teams instead of only shell labels.
 - Each board row carries a concrete team name, a source/result label, defining cores, repeated key Pokemon, popularity weight, result weight, a dual-type `target_summary`, and an `interaction_summary` that tracks broader board answers like redirection counterplay, setup denial, spread control, and ability-aware lines.
 - This keeps the live-field read explainable: the analyzer can say both "you are good into Rain Archaludon" and why that matters because the shell is both popular and converting strong finishes.
+- The same board layer now also feeds the already-visible Benchmark notes and Team Notes blocks, so speed guidance and beginner-facing coaching can point at the concrete live shells that are creating the pressure.
 
 ### Team preview planning
 
@@ -355,6 +358,7 @@ The analyzer is intentionally deterministic. It does not use machine learning or
 - It builds up to three default bring plans from the already inferred mode packages, win-condition labels, member roles, and normalized speed tiers.
 - The primary plan can now spawn opponent-aware alternates keyed to the current weighted meta layer, so the analyzer can surface lines such as `Into Rain` or `Into Sand` instead of only giving generic fallback plans.
 - When a live board row is the clearest anchor for that mode, the alternate plan can now name that shell directly in `recommended_into` and in the preview summary so the advice points at a real current team instead of only the mode label.
+- Those same board anchors now lightly weight the matchup-specific Pick-4 selection and can show up in `member_reasons`, so the preview rationale is tied more tightly to the concrete shell the plan is trying to answer.
 - Lead pairs are chosen by scoring support plus attacker balance, speed-mode access, and specific opener synergies such as Tailwind setter plus pressure, Trick Room setter plus support, or screen setter plus setup threat.
 - The back two are then filled greedily to preserve the key setter, enough damage to close games, and a fallback support piece when the opener is denied.
 - Each preview plan also now returns a `member_reasons` map so the UI and CLI can explain why every selected Pokemon is in that four rather than only listing names.

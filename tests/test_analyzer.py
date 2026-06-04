@@ -1978,6 +1978,21 @@ Ability: Illusion
         self.assertIn("only has one real speed-mode button", low_support_notes)
         self.assertIn("wants setup turns, but it has very few tools", low_support_notes)
 
+    def test_live_board_context_flows_into_benchmark_and_team_notes(self) -> None:
+        analysis = analyze_team_text(TRICK_ROOM_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+
+        benchmark_notes = "\n".join(analysis.speed_benchmark_notes)
+        difficulty_notes = "\n".join(analysis.team_difficulty_factors)
+        guidance_notes = "\n".join(analysis.beginner_guidance_notes)
+
+        self.assertIn("live board", benchmark_notes)
+        self.assertIn("Farigiraf Torkoal Room", benchmark_notes)
+        self.assertIn("teams", difficulty_notes)
+        self.assertIn("Start your matchup reps into teams", guidance_notes)
+        self.assertNotIn("Mega Venusaur Kommo-o", difficulty_notes)
+        self.assertNotIn("Mega Venusaur Kommo-o", guidance_notes)
+        self.assertNotIn("Rain Archaludon", guidance_notes)
+
     def test_team_preview_builds_default_plans_and_watchlists(self) -> None:
         analysis = analyze_team_text(TRICK_ROOM_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
 
@@ -2005,6 +2020,7 @@ Ability: Illusion
         anchored_plans = [plan for plan in analysis.team_preview_plans[1:] if len(plan["recommended_into"]) > 1]
         self.assertTrue(anchored_plans)
         self.assertTrue(all(plan["recommended_into"][1] in plan["summary"] for plan in anchored_plans))
+        self.assertTrue(any(plan["recommended_into"][1] in " ".join(plan["member_reasons"].values()) for plan in anchored_plans))
         plan_signatures = {
             (tuple(sorted(plan["leads"])), tuple(sorted(plan["pick_four"])), tuple(plan["recommended_into"]))
             for plan in analysis.team_preview_plans
