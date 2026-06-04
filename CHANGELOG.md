@@ -6,7 +6,7 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
-## [0.2.2] - 2026-06-01
+## [0.2.2] - 2026-06-03
 
 ### Added
 
