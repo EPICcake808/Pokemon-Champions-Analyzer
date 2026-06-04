@@ -372,9 +372,9 @@
       },
       "notes": [
         "Team speed shape: The roster has 3 fast members and 2 slow members, so preview planning matters more than on a one-speed team. Raw battle Speed runs from Sableye at 63 (Trick Room Slow) to Aerodactyl at 197 (Elite Fast).",
-        "Natural Speed: Aerodactyl is your fastest unboosted line at 197. That is still below Jolly Garchomp (200), so this mode does not clear any current curated benchmark.",
-        "Tailwind Speed: Aerodactyl is your fastest Tailwind line at 394. That is still below Tailwind Jolly Garchomp (400), so this mode does not clear any current curated benchmark.",
-        "Choice Scarf Speed: Basculegion (M) is your best Choice Scarf line at 208. That is still below Choice Scarf Jolly Basculegion (259), so this mode does not clear any current curated benchmark.",
+        "Natural Speed: Aerodactyl is your fastest unboosted line at 197. That is still below Max-Speed Jolly Garchomp (200), so this mode does not clear any current curated benchmark.",
+        "Tailwind Speed: Aerodactyl is your fastest Tailwind line at 394. That is still below Tailwind Max-Speed Jolly Garchomp (400), so this mode does not clear any current curated benchmark.",
+        "Choice Scarf Speed: Basculegion (M) is your best Choice Scarf line at 208. That is still below Max-Speed Choice Scarf Jolly Basculegion (259), so this mode does not clear any current curated benchmark.",
         "Trick Room underspeed: the team has no Trick Room setter, so it cannot create its own slower-first mode.",
         "Benchmark depth: 0 members reach at least one natural-speed anchor; 0 members reach at least one Tailwind anchor; 0 Scarf lines clear at least one curated Scarf anchor.",
         "Additional speed spikes: Basculegion (M) jumps from 139 to 417 with Tailwind + Choice Scarf."
@@ -389,7 +389,7 @@
           "benchmarks": [
             {
               "slug": "jolly_garchomp",
-              "label": "Jolly Garchomp",
+              "label": "Max-Speed Jolly Garchomp",
               "target_speed": 200,
               "source": "Common M-A fast physical cleaner",
               "comparison": "faster",
@@ -399,7 +399,7 @@
             },
             {
               "slug": "timid_whimsicott",
-              "label": "Timid Whimsicott",
+              "label": "Max-Speed Timid Whimsicott",
               "target_speed": 215,
               "source": "Common M-A Tailwind setter reference",
               "comparison": "faster",
@@ -409,7 +409,7 @@
             },
             {
               "slug": "jolly_sneasler",
-              "label": "Jolly Sneasler",
+              "label": "Max-Speed Jolly Sneasler",
               "target_speed": 220,
               "source": "Common M-A high-end unboosted speed threat",
               "comparison": "faster",
@@ -419,7 +419,7 @@
             },
             {
               "slug": "timid_dragapult",
-              "label": "Timid Dragapult",
+              "label": "Max-Speed Timid Dragapult",
               "target_speed": 244,
               "source": "Top-end unboosted speed ceiling",
               "comparison": "faster",
@@ -438,7 +438,7 @@
           "benchmarks": [
             {
               "slug": "tailwind_garchomp",
-              "label": "Tailwind Jolly Garchomp",
+              "label": "Tailwind Max-Speed Jolly Garchomp",
               "target_speed": 400,
               "source": "Common Tailwind offense floor",
               "comparison": "faster",
@@ -448,7 +448,7 @@
             },
             {
               "slug": "tailwind_sneasler",
-              "label": "Tailwind Jolly Sneasler",
+              "label": "Tailwind Max-Speed Jolly Sneasler",
               "target_speed": 440,
               "source": "Common Tailwind high-end pressure line",
               "comparison": "faster",
@@ -458,7 +458,7 @@
             },
             {
               "slug": "tailwind_dragapult",
-              "label": "Tailwind Timid Dragapult",
+              "label": "Tailwind Max-Speed Timid Dragapult",
               "target_speed": 488,
               "source": "Top-end Tailwind ceiling",
               "comparison": "faster",
@@ -477,7 +477,7 @@
           "benchmarks": [
             {
               "slug": "choice_scarf_basculegion",
-              "label": "Choice Scarf Jolly Basculegion",
+              "label": "Max-Speed Choice Scarf Jolly Basculegion",
               "target_speed": 259,
               "source": "Common M-A rain and Tailwind Scarf reference",
               "comparison": "faster",
@@ -487,7 +487,7 @@
             },
             {
               "slug": "choice_scarf_garchomp",
-              "label": "Choice Scarf Jolly Garchomp",
+              "label": "Max-Speed Choice Scarf Jolly Garchomp",
               "target_speed": 300,
               "source": "Common M-A generic Scarf speed ceiling",
               "comparison": "faster",

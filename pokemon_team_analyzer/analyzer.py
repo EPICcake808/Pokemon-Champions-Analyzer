@@ -17,6 +17,7 @@ from .models import (
     SPEED_TIER_ORDER,
     STYLE_PACKAGE_ORDER,
     TEAM_ARCHETYPE_ORDER,
+    SpeciesData,
     PokemonSet,
     TeamAnalysis,
     TeamMember,
@@ -32,7 +33,12 @@ from .regulations import (
     validate_team_legality,
 )
 from .showdown import parse_showdown_team
-from .speed_benchmarks import SpeedBenchmarkGroup, RegulationSpeedBenchmarkCatalog, get_speed_benchmark_catalog
+from .speed_benchmarks import (
+    CHAMPIONS_TOTAL_SPS,
+    RegulationSpeedBenchmarkCatalog,
+    SpeedBenchmarkGroup,
+    get_speed_benchmark_catalog,
+)
 
 
 TYPE_EFFECTIVENESS = {
@@ -122,6 +128,26 @@ WEATHER_SETTER_ABILITIES = {"drizzle", "drought", "sand stream", "snow warning"}
 TERRAIN_SETTER_ABILITIES = {"electric surge", "grassy surge", "misty surge", "psychic surge"}
 PIVOT_ABILITIES = {"intimidate", "regenerator"}
 SUPPORT_ABILITIES = {"intimidate", "magic bounce", "prankster"}
+MEGA_STONE_CONTEXT_ABILITIES = {
+    "manectite": ("intimidate",),
+}
+DEFENSIVE_ABILITY_IMMUNITIES = {
+    "dry skin": ("water",),
+    "earth eater": ("ground",),
+    "flash fire": ("fire",),
+    "levitate": ("ground",),
+    "lightning rod": ("electric",),
+    "motor drive": ("electric",),
+    "sap sipper": ("grass",),
+    "storm drain": ("water",),
+    "volt absorb": ("electric",),
+    "water absorb": ("water",),
+    "well-baked body": ("fire",),
+}
+TEAM_REDIRECTION_ABILITIES = {
+    "electric": ("lightning rod",),
+    "water": ("storm drain",),
+}
 CHOICE_ITEMS = {"choice band", "choice scarf", "choice specs"}
 CHOICE_POWER_ITEMS = {"choice band", "choice specs"}
 PREVIEW_ATTACKER_ROLES = {
@@ -448,6 +474,24 @@ SCREENS_PRESSURE_SPECIES = {"grimmsnarl", "sableye"}
 SLEEP_PRESSURE_SPECIES = {"amoonguss", "roserade", "venusaur", "vivillon"}
 BULKY_GRASS_PRESSURE_SPECIES = {"abomasnow", "hydrapple", "venusaur", "venusaur-mega"}
 ILLUSION_SPECIES = {"zoroark", "zoroark-hisui"}
+REDIRECTION_PRESSURE_SPECIES = {"amoonguss", "indeedee-f", "sinistcha"}
+SPREAD_PRESSURE_SPECIES = {"blastoise-mega", "charizard-mega-y", "garchomp", "glimmora", "torkoal"}
+SPREAD_DAMAGE_TARGET_NAMES = {"all-opponents", "all-other-pokemon", "entire-field"}
+SETUP_PRESSURE_CORE_PHRASES = (
+    "shell smash",
+    "dual screens",
+    "screens",
+    "calm mind",
+    "swords dance",
+    "dragon dance",
+    "belly drum",
+    "nasty plot",
+    "quiver dance",
+)
+SNAPSHOT_ABILITY_CLAUSE_FALLBACKS: dict[str, tuple[str, ...]] = {
+    "farigiraf": ("armor tail",),
+    "indeedee-f": ("psychic surge",),
+}
 
 
 @dataclass(frozen=True)
@@ -477,6 +521,8 @@ class ContextualMatchupProfile:
     water_resistance: int
     fire_resistance: int
     electric_resistance: int
+    intimidate_support: int
+    priority_block_bypass: int
     fire_exposure: float
     water_exposure: float
     rock_exposure: float
@@ -498,6 +544,29 @@ class ContextualMatchupProfile:
     disruption_pressure: float
     mindgame_pressure: float
     coverage_gaps: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class SnapshotTargetMatchupSummary:
+    resolved_targets: int
+    strong_answer_targets: int
+    shaky_answer_targets: int
+    fast_cleanup_targets: int
+    average_offensive_pressure: float
+    average_stab_pressure: float
+
+
+@dataclass(frozen=True)
+class SnapshotInteractionSummary:
+    redirection_targets: int
+    redirection_answers: int
+    setup_pressure_targets: int
+    setup_denial_answers: int
+    spread_pressure_targets: int
+    spread_answers: int
+    ability_clause_targets: int
+    ability_clause_answers: int
+    tags: tuple[str, ...]
 
 
 def analyze_team_text(
@@ -580,7 +649,7 @@ def analyze_team(
         immune_members = 0
 
         for member in members:
-            multiplier = defensive_multiplier(member.species_data.types, attack_type)
+            multiplier = _defensive_multiplier_for_member(member, attack_type)
             multipliers.append(multiplier)
             if multiplier == 0.0:
                 immune_members += 1
@@ -589,8 +658,11 @@ def analyze_team(
             elif multiplier < 1.0:
                 resistant_members += 1
 
+        average_multiplier = sum(multipliers) / len(multipliers)
+        average_multiplier = max(0.0, average_multiplier - _team_redirection_support_bonus(members, attack_type))
+
         defensive_profile[attack_type] = {
-            "average_multiplier": round(sum(multipliers) / len(multipliers), 4),
+            "average_multiplier": round(average_multiplier, 4),
             "weak_members": weak_members,
             "resistant_members": resistant_members,
             "immune_members": immune_members,
@@ -713,6 +785,7 @@ def analyze_team(
         matchup_scores,
     )
     meta_analysis = infer_meta_analysis(
+        members,
         team_mode_scores,
         team_mode_labels,
         mode_matchup_scores,
@@ -720,6 +793,7 @@ def analyze_team(
         favorable_modes,
         unfavorable_modes,
         contextual_matchup_profile,
+        provider,
         regulation_id=regulation_id,
     )
     team_difficulty_label, team_difficulty_score, team_difficulty_factors = infer_team_difficulty(
@@ -738,6 +812,17 @@ def analyze_team(
         team_speed_tier,
         coverage_gaps,
         team_win_condition_labels,
+    )
+    speed_benchmark_notes = _augment_speed_benchmark_notes_with_meta_context(
+        speed_benchmark_notes,
+        meta_analysis,
+        team_speed_tier,
+        team_mode_packages,
+    )
+    team_difficulty_factors, beginner_guidance_notes = _augment_team_notes_with_meta_context(
+        team_difficulty_factors,
+        beginner_guidance_notes,
+        meta_analysis,
     )
     (
         team_preview_plans,
@@ -883,6 +968,46 @@ def defensive_multiplier(defending_types: tuple[str, ...], attack_type: str) -> 
     for defending_type in defending_types:
         multiplier *= matchups.get(defending_type, 1.0)
     return multiplier
+
+
+def _member_context_ability_names(member: TeamMember) -> tuple[str, ...]:
+    ability_names: list[str] = []
+
+    ability_name = _normalized_ability_name(member.pokemon_set.ability)
+    if ability_name:
+        ability_names.append(ability_name)
+
+    item_name = _normalized_item_name(member.pokemon_set.item)
+    for extra_ability in MEGA_STONE_CONTEXT_ABILITIES.get(item_name, ()): 
+        if extra_ability not in ability_names:
+            ability_names.append(extra_ability)
+
+    return tuple(ability_names)
+
+
+def _defensive_multiplier_for_member(member: TeamMember, attack_type: str) -> float:
+    multiplier = defensive_multiplier(member.species_data.types, attack_type)
+    immunity_types = DEFENSIVE_ABILITY_IMMUNITIES.get(_normalized_ability_name(member.pokemon_set.ability), ())
+    if attack_type in immunity_types:
+        return 0.0
+    return multiplier
+
+
+def _team_redirection_support_bonus(members: list[TeamMember], attack_type: str) -> float:
+    redirect_abilities = TEAM_REDIRECTION_ABILITIES.get(attack_type, ())
+    if not redirect_abilities:
+        return 0.0
+
+    redirectors = sum(
+        1
+        for member in members
+        if _normalized_ability_name(member.pokemon_set.ability) in redirect_abilities
+    )
+    if redirectors == 0:
+        return 0.0
+
+    weak_members = sum(1 for member in members if _defensive_multiplier_for_member(member, attack_type) > 1.0)
+    return min(0.75, 0.32 * redirectors + 0.15 * weak_members)
 
 
 def _build_target_coverage_profile(offensive_coverage: dict[str, int]) -> dict[str, dict[str, float | int]]:
@@ -1542,6 +1667,185 @@ def _expand_speed_benchmark_notes(
     return notes
 
 
+def _augment_speed_benchmark_notes_with_meta_context(
+    benchmark_notes: list[str],
+    meta_analysis: dict[str, object],
+    team_speed_tier: str,
+    team_mode_packages: list[str],
+) -> list[str]:
+    rows = cast(list[dict[str, object]], meta_analysis.get("tournament_rows", []))
+    if not rows:
+        return benchmark_notes
+
+    notes = list(benchmark_notes)
+    room_pref = team_speed_tier in {"trick_room_slow", "slow"} or any(
+        _team_preview_is_trick_room_mode(mode_name) for mode_name in team_mode_packages
+    )
+    if room_pref:
+        room_rows = [
+            row
+            for row in rows
+            if any("room" in mode_name.lower() for mode_name in cast(list[str], row.get("modes", [])))
+        ]
+        room_anchor = _pick_meta_context_row(room_rows, meta_analysis, prefer_pressure=False)
+        if room_anchor is not None:
+            notes.append(
+                f"Those slower benchmark lines matter on the live board because {cast(str, room_anchor['label'])} is a real Room anchor, so keeping your underspeed pieces intact matters more than winning the first natural-speed exchange."
+            )
+            return notes
+
+    fast_rows = [
+        row
+        for row in rows
+        if _row_has_fast_meta_pressure(row)
+    ]
+    fast_anchor = _pick_meta_context_row(fast_rows, meta_analysis, prefer_pressure=True)
+    if fast_anchor is not None:
+        interaction_summary = cast(dict[str, object], fast_anchor.get("interaction_summary", {}))
+        interaction_tags = cast(list[str], interaction_summary.get("tags", []))
+        label = cast(str, fast_anchor["label"])
+        if "spread counterplay" in interaction_tags:
+            notes.append(
+                f"Those benchmark lines matter most into {label}, where fast tempo plus spread pressure punishes any missed speed-control turn."
+            )
+        elif "setup denial" in interaction_tags:
+            notes.append(
+                f"Those benchmark lines matter into {label}, where the first speed exchange often decides whether their setup branch gets a safe turn."
+            )
+        else:
+            notes.append(
+                f"Those benchmark lines matter most into {label}, where the live board still rewards the side that controls the first speed exchange."
+            )
+
+    return notes
+
+
+def _pick_meta_context_row(
+    rows: list[dict[str, object]],
+    meta_analysis: dict[str, object],
+    *,
+    prefer_pressure: bool,
+) -> dict[str, object] | None:
+    if not rows:
+        return None
+
+    preferred_labels = set(
+        cast(list[str], meta_analysis.get("pressured_targets" if prefer_pressure else "strongest_targets", []))
+    )
+    preferred_rows = [row for row in rows if cast(str, row.get("label", "")) in preferred_labels]
+    ranked_rows = preferred_rows or rows
+    return max(
+        ranked_rows,
+        key=lambda row: (cast(float, row.get("meta_share", 0.0)), abs(cast(float, row.get("matchup_score", 0.0)))),
+    )
+
+
+def _row_has_fast_meta_pressure(row: dict[str, object]) -> bool:
+    modes = [mode_name.lower() for mode_name in cast(list[str], row.get("modes", []))]
+    target_summary = cast(dict[str, object], row.get("target_summary", {}))
+    return any("tailwind" in mode_name for mode_name in modes) or cast(int, target_summary.get("fast_cleanup_targets", 0)) > 0
+
+
+def _augment_team_notes_with_meta_context(
+    difficulty_factors: list[str],
+    guidance_notes: list[str],
+    meta_analysis: dict[str, object],
+) -> tuple[list[str], list[str]]:
+    rows = cast(list[dict[str, object]], meta_analysis.get("tournament_rows", []))
+    if not rows:
+        return difficulty_factors, guidance_notes
+
+    updated_difficulty = list(difficulty_factors)
+    updated_guidance = list(guidance_notes)
+
+    pressured_row = _pick_meta_context_row(rows, meta_analysis, prefer_pressure=True)
+    strongest_row = _pick_meta_context_row(rows, meta_analysis, prefer_pressure=False)
+
+    if pressured_row is not None:
+        pressured_context = _render_meta_team_note_context(pressured_row)
+        interaction_summary = cast(dict[str, object], pressured_row.get("interaction_summary", {}))
+        interaction_tags = cast(list[str], interaction_summary.get("tags", []))
+        if interaction_tags:
+            updated_difficulty.append(
+                f"The live board adds extra sequencing pressure because {pressured_context} still demand {_render_series(interaction_tags[:2])}, not just a generic mode answer."
+            )
+        else:
+            updated_difficulty.append(
+                f"The live board adds extra sequencing pressure because {pressured_context} still create a real current pressure point, so preview choices matter more than the broad archetype label suggests."
+            )
+
+        reason_text = ""
+        context_reasons = cast(list[str], pressured_row.get("context_reasons", []))
+        if context_reasons:
+            reason_text = context_reasons[0].rstrip(".")
+            if reason_text and reason_text[0].isupper():
+                reason_text = reason_text[0].lower() + reason_text[1:]
+        if reason_text:
+            updated_guidance.append(
+                f"Start your matchup reps into {pressured_context}. That kind of board is one of the clearest current checks on this build, and {reason_text}."
+            )
+        else:
+            updated_guidance.append(
+                f"Start your matchup reps into {pressured_context}. That kind of board is one of the clearest current checks on this build, so practice that board before defaulting to generic archetype guesses."
+            )
+
+    if strongest_row is not None and strongest_row is not pressured_row:
+        updated_guidance.append(
+            f"Your cleanest live-field punish currently shows up into {_render_meta_team_note_context(strongest_row)}, so use those games to learn which four actually cash in your main mode instead of defaulting to the same opener every round."
+        )
+
+    return updated_difficulty[:7], updated_guidance[:8]
+
+
+def _render_meta_team_note_context(row: dict[str, object]) -> str:
+    interaction_summary = cast(dict[str, object], row.get("interaction_summary", {}))
+    key_pokemon = cast(list[str], row.get("key_pokemon", []))
+    modes = cast(list[str], row.get("modes", []))
+
+    examples = _render_meta_team_note_examples(key_pokemon)
+    mode_prefix = _render_meta_team_note_mode_prefix(modes)
+
+    if cast(int, interaction_summary.get("ability_clause_targets", 0)) > 0:
+        if "Farigiraf" in key_pokemon:
+            return "teams with Farigiraf-style Armor Tail support"
+        if examples:
+            return f"{mode_prefix} with key ability pressure from pieces like {examples}"
+        return "teams with key ability clauses protecting their main attackers"
+
+    if cast(int, interaction_summary.get("setup_pressure_targets", 0)) > 0:
+        if examples:
+            return f"{mode_prefix} with setup pressure from pieces like {examples}"
+        return f"{mode_prefix} that lean on early setup pressure"
+
+    if cast(int, interaction_summary.get("spread_pressure_targets", 0)) > 0:
+        return f"{mode_prefix} with repeated spread pressure"
+
+    if cast(int, interaction_summary.get("redirection_targets", 0)) > 0:
+        return f"{mode_prefix} with layered redirection support"
+
+    if examples:
+        return f"{mode_prefix} using pieces like {examples}"
+    return "the current high-pressure meta teams"
+
+
+def _render_meta_team_note_examples(key_pokemon: list[str]) -> str:
+    if not key_pokemon:
+        return ""
+    if len(key_pokemon) == 1:
+        return key_pokemon[0]
+    return f"{key_pokemon[0]} or {key_pokemon[1]}"
+
+
+def _render_meta_team_note_mode_prefix(modes: list[str]) -> str:
+    if not modes:
+        return "teams"
+
+    primary_mode = modes[0]
+    if primary_mode == "Dual Mode":
+        return "teams that can pivot between multiple speed modes"
+    return f"{primary_mode} teams"
+
+
 def _sorted_context_speeds(
     group: SpeedBenchmarkGroup,
     context_speeds: dict[str, int],
@@ -1697,10 +2001,11 @@ def infer_pokemon_roles(
 
     support_categories = role_presence & SUPPORT_UTILITY_ROLES
     ability_name = _normalized_ability_name(member.pokemon_set.ability)
+    context_ability_names = set(_member_context_ability_names(member))
     item_name = _normalized_item_name(member.pokemon_set.item)
-    weather_from_ability = ability_name in WEATHER_SETTER_ABILITIES
-    terrain_from_ability = ability_name in TERRAIN_SETTER_ABILITIES
-    has_regenerator = ability_name == "regenerator"
+    weather_from_ability = bool(context_ability_names & WEATHER_SETTER_ABILITIES)
+    terrain_from_ability = bool(context_ability_names & TERRAIN_SETTER_ABILITIES)
+    has_regenerator = "regenerator" in context_ability_names
     has_choice_power_item = item_name in CHOICE_POWER_ITEMS
     has_choice_scarf = item_name == "choice scarf"
     has_assault_vest = item_name == "assault vest"
@@ -1708,8 +2013,8 @@ def infer_pokemon_roles(
     has_defensive_item = item_name in DEFENSIVE_ITEMS
     has_recovery_item = item_name in RECOVERY_ITEMS
     has_eviolite = item_name == "eviolite"
-    has_pivot_ability = ability_name in PIVOT_ABILITIES
-    has_support_ability = ability_name in SUPPORT_ABILITIES
+    has_pivot_ability = bool(context_ability_names & PIVOT_ABILITIES)
+    has_support_ability = bool(context_ability_names & SUPPORT_ABILITIES)
     has_persistent_trapping = _has_persistent_trapping(member, ability_name, item_name)
     wall_bulk_threshold = 260 if has_eviolite else 280
 
@@ -1822,8 +2127,7 @@ def infer_team_archetype(
     fast_members = 0
 
     for member, classified_moves in classified_members:
-        ability_name = _normalized_ability_name(member.pokemon_set.ability)
-        if ability_name:
+        for ability_name in _member_context_ability_names(member):
             ability_counts[ability_name] += 1
 
         item_name = _normalized_item_name(member.pokemon_set.item)
@@ -2291,7 +2595,7 @@ def infer_team_archetype(
     if psychic_pressure < 2 and move_counts["expanding-force"] == 0:
         scores["psyspam"] -= 4.0
     if screen_setters == 0:
-        scores["screens_offense"] -= 6.0
+        scores["screens_offense"] = min(scores["screens_offense"] - 6.0, 0.0)
     elif offense_core < 3 and setup_sweepers == 0:
         scores["screens_offense"] -= 2.0
     if perish_song_moves == 0:
@@ -2591,6 +2895,8 @@ def infer_matchup_profile(
     taunt_count = move_counts["taunt"]
     encore_count = move_counts["encore"]
     imprison_count = move_counts["imprison"]
+    intimidate_count = ability_counts["intimidate"]
+    priority_block_bypass = int(fake_out_count > 0 and ability_counts["mold breaker"] > 0)
     distinct_weather_modes = sum(
         1
         for source_count in (
@@ -2635,6 +2941,8 @@ def infer_matchup_profile(
         + 0.4 * utility_role_counts["speed_control"]
         + 0.5 * utility_role_counts["anti_setup"]
         + 0.4 * utility_role_counts["phazing"]
+        + 0.8 * priority_block_bypass
+        + 0.4 * intimidate_count
     )
     stallbreak_tools = (
         0.9 * utility_role_counts["item_control"]
@@ -2795,8 +3103,7 @@ def infer_meta_mode_profile(
     priority_attack_count = 0
 
     for member, classified_moves in classified_members:
-        ability_name = _normalized_ability_name(member.pokemon_set.ability)
-        if ability_name:
+        for ability_name in _member_context_ability_names(member):
             ability_counts[ability_name] += 1
         species_tokens.update(_species_tokens_for_member(member))
 
@@ -2840,6 +3147,8 @@ def infer_meta_mode_profile(
     misty_terrain_sources = move_counts["misty-terrain"]
     psychic_terrain_sources = move_counts["psychic-terrain"]
     expanding_force_count = move_counts["expanding-force"]
+    intimidate_count = ability_counts["intimidate"]
+    priority_block_bypass = int(fake_out_count > 0 and ability_counts["mold breaker"] > 0)
 
     tailwind_counterplay = (
         0.7 * utility_role_counts["speed_control"]
@@ -2869,6 +3178,8 @@ def infer_meta_mode_profile(
         + 0.4 * utility_role_counts["speed_control"]
         + 0.5 * utility_role_counts["anti_setup"]
         + 0.4 * utility_role_counts["phazing"]
+        + 0.8 * priority_block_bypass
+        + 0.4 * intimidate_count
     )
 
     feature_values = {
@@ -3032,8 +3343,7 @@ def _build_contextual_matchup_profile(
 
     for member in members:
         species_tokens.update(_species_tokens_for_member(member))
-        ability_name = _normalized_ability_name(member.pokemon_set.ability)
-        if ability_name:
+        for ability_name in _member_context_ability_names(member):
             ability_counts[ability_name] += 1
 
         stats = _normalized_member_stats(member)
@@ -3089,6 +3399,8 @@ def _build_contextual_matchup_profile(
     water_resistance = _resistance_count("water")
     fire_resistance = _resistance_count("fire")
     electric_resistance = _resistance_count("electric")
+    intimidate_support = ability_counts["intimidate"]
+    priority_block_bypass = int(move_counts["fake-out"] > 0 and ability_counts["mold breaker"] > 0)
     fire_exposure = round(
         _weighted_defensive_exposure(defensive_profile, top_defensive_weaknesses, {"fire": 1.0}),
         2,
@@ -3165,6 +3477,10 @@ def _build_contextual_matchup_profile(
         + 0.35 * sleep_pressure,
         2,
     )
+    trick_room_counter_tools = round(
+        trick_room_counter_tools + 0.8 * priority_block_bypass + 0.4 * intimidate_support,
+        2,
+    )
     screen_counter_tools = round(
         0.9 * utility_role_counts["item_control"]
         + 0.8 * setup_pressure
@@ -3236,6 +3552,8 @@ def _build_contextual_matchup_profile(
         water_resistance=water_resistance,
         fire_resistance=fire_resistance,
         electric_resistance=electric_resistance,
+        intimidate_support=intimidate_support,
+        priority_block_bypass=priority_block_bypass,
         fire_exposure=fire_exposure,
         water_exposure=water_exposure,
         rock_exposure=rock_exposure,
@@ -3379,7 +3697,15 @@ def _score_broad_contextual_matchup(
     elif archetype == "trick_room":
         contest_help = 0.09 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
         score += contest_help
-        _push_context_reason(reasons, contest_help, "Encore, reverse Room lines, and other anti-room tools give it real setup contesting play.")
+        _push_context_reason(reasons, contest_help, "Encore, Fake Out, reverse Room lines, and other anti-room tools give it real setup contesting play.")
+
+        bypass_help = 0.08 * contextual_matchup_profile.priority_block_bypass
+        score += bypass_help
+        _push_context_reason(reasons, bypass_help, "Mold Breaker Fake Out gives it a real line through Armor Tail-style setup turns.")
+
+        intimidate_help = 0.06 * min(contextual_matchup_profile.intimidate_support, 2)
+        score += intimidate_help
+        _push_context_reason(reasons, intimidate_help, "Intimidate softens the physical Room attackers that usually punish fast teams once Room is active.")
 
         slow_help = 0.04 * min(contextual_matchup_profile.slow_members + contextual_matchup_profile.bulky_members, 5)
         score += slow_help
@@ -3390,6 +3716,8 @@ def _score_broad_contextual_matchup(
             and contextual_matchup_profile.move_counts["trick-room"] == 0
             and contextual_matchup_profile.move_counts["encore"] == 0
             and contextual_matchup_profile.move_counts["taunt"] == 0
+            and contextual_matchup_profile.move_counts["fake-out"] == 0
+            and contextual_matchup_profile.priority_block_bypass == 0
         ):
             score -= 0.18
             _push_context_reason(reasons, -0.18, "A very speed-heavy structure with no direct Room contest usually folds once Trick Room sticks.")
@@ -3402,6 +3730,7 @@ def _score_broad_contextual_matchup(
 
 
 def infer_meta_analysis(
+    members: list[TeamMember],
     team_mode_scores: dict[str, float],
     team_mode_labels: list[str],
     mode_matchup_scores: dict[str, float],
@@ -3409,6 +3738,7 @@ def infer_meta_analysis(
     favorable_modes: list[str],
     unfavorable_modes: list[str],
     contextual_matchup_profile: ContextualMatchupProfile,
+    metadata_provider: MetadataProvider,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> dict[str, object]:
     total_mode_weight = sum(TOURNAMENT_MODE_SNAPSHOTS[mode]["tournament_weight"] for mode in MODE_LABEL_ORDER)
@@ -3453,9 +3783,11 @@ def infer_meta_analysis(
         key=lambda entry: (-cast(float, entry["tournament_weight"]), -abs(cast(float, entry["impact_score"])), cast(str, entry["mode"])),
     )
     tournament_rows = _build_tournament_meta_rows(
+        members,
         mode_matchup_scores,
         broad_matchup_scores,
         contextual_matchup_profile,
+        metadata_provider,
         regulation_id=regulation_id,
     )
     high_presence_team_modes = [
@@ -3668,9 +4000,11 @@ def infer_meta_analysis(
 
 
 def _build_tournament_meta_rows(
+    members: list[TeamMember],
     mode_matchup_scores: dict[str, float],
     broad_matchup_scores: dict[str, float],
     contextual_matchup_profile: ContextualMatchupProfile,
+    metadata_provider: MetadataProvider,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> list[dict[str, object]]:
     eligible_snapshots = [
@@ -3685,7 +4019,13 @@ def _build_tournament_meta_rows(
         meta_weight = _tournament_snapshot_weight(snapshot)
         mode_score = _tournament_snapshot_mode_score(snapshot, mode_matchup_scores)
         broad_score = _tournament_snapshot_broad_score(snapshot, broad_matchup_scores)
-        contextual_score, context_reasons = _score_tournament_snapshot_contextual_matchup(snapshot, contextual_matchup_profile)
+        contextual_score, context_reasons, target_summary, interaction_summary = _score_tournament_snapshot_contextual_matchup(
+            snapshot,
+            contextual_matchup_profile,
+            members,
+            metadata_provider,
+            regulation_id=regulation_id,
+        )
         matchup_score = round(0.34 * mode_score + 0.1 * broad_score + 0.56 * contextual_score, 2)
         rows.append(
             {
@@ -3705,6 +4045,25 @@ def _build_tournament_meta_rows(
                 "meta_share": round(100 * meta_weight / total_weight, 1),
                 "contextual_score": contextual_score,
                 "context_reasons": context_reasons,
+                "target_summary": {
+                    "resolved_targets": target_summary.resolved_targets,
+                    "strong_answer_targets": target_summary.strong_answer_targets,
+                    "shaky_answer_targets": target_summary.shaky_answer_targets,
+                    "fast_cleanup_targets": target_summary.fast_cleanup_targets,
+                    "average_offensive_pressure": target_summary.average_offensive_pressure,
+                    "average_stab_pressure": target_summary.average_stab_pressure,
+                },
+                "interaction_summary": {
+                    "redirection_targets": interaction_summary.redirection_targets,
+                    "redirection_answers": interaction_summary.redirection_answers,
+                    "setup_pressure_targets": interaction_summary.setup_pressure_targets,
+                    "setup_denial_answers": interaction_summary.setup_denial_answers,
+                    "spread_pressure_targets": interaction_summary.spread_pressure_targets,
+                    "spread_answers": interaction_summary.spread_answers,
+                    "ability_clause_targets": interaction_summary.ability_clause_targets,
+                    "ability_clause_answers": interaction_summary.ability_clause_answers,
+                    "tags": list(interaction_summary.tags),
+                },
                 "matchup_score": matchup_score,
                 "impact_score": round(meta_weight * matchup_score, 2),
                 "standing": _classify_meta_matchup_standing(matchup_score),
@@ -3720,7 +4079,10 @@ def _build_tournament_meta_rows(
 def _score_tournament_snapshot_contextual_matchup(
     snapshot: dict[str, object],
     contextual_matchup_profile: ContextualMatchupProfile,
-) -> tuple[float, list[str]]:
+    members: list[TeamMember],
+    metadata_provider: MetadataProvider,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> tuple[float, list[str], SnapshotTargetMatchupSummary, SnapshotInteractionSummary]:
     modes = set(cast(tuple[str, ...], snapshot["modes"]))
     key_tokens = set(cast(tuple[str, ...], snapshot["key_pokemon"]))
     key_cores = cast(tuple[str, ...], snapshot["key_cores"])
@@ -3729,6 +4091,146 @@ def _score_tournament_snapshot_contextual_matchup(
     core_text = " ".join(core.lower() for core in key_cores)
     score = 0.0
     reasons: list[tuple[float, str]] = []
+    target_summary = _build_snapshot_target_matchup_summary(
+        snapshot,
+        members,
+        metadata_provider,
+        regulation_id=regulation_id,
+    )
+    interaction_summary = _build_snapshot_interaction_summary(
+        snapshot,
+        members,
+        metadata_provider,
+        regulation_id=regulation_id,
+    )
+
+    if target_summary.resolved_targets >= 2:
+        target_pressure_bonus = 0.008 * min(target_summary.average_offensive_pressure, 2.5)
+        score += target_pressure_bonus
+        _push_context_reason(
+            reasons,
+            target_pressure_bonus,
+            "The actual move pool gives it real pressure into several of this board's dual-type anchors.",
+        )
+
+        strong_target_threshold = max(2, (target_summary.resolved_targets + 2) // 3)
+        if target_summary.strong_answer_targets >= strong_target_threshold:
+            strong_target_bonus = 0.008 * min(target_summary.strong_answer_targets, 3)
+            score += strong_target_bonus
+            _push_context_reason(
+                reasons,
+                strong_target_bonus,
+                "Several key anchors already face clean super-effective lines instead of only neutral trading.",
+            )
+
+        shaky_target_threshold = max(2, (target_summary.resolved_targets + 1) // 2)
+        if target_summary.shaky_answer_targets >= shaky_target_threshold:
+            shaky_target_penalty = -0.06 * min(target_summary.shaky_answer_targets, 3)
+            score += shaky_target_penalty
+            _push_context_reason(
+                reasons,
+                shaky_target_penalty,
+                "Several anchors only face neutral pressure, so their dual-type pivots stay hard to punish cleanly.",
+            )
+
+        fast_cleanup_bonus = 0.02 * min(target_summary.fast_cleanup_targets, 2)
+        score += fast_cleanup_bonus
+        _push_context_reason(
+            reasons,
+            fast_cleanup_bonus,
+            "Priority and real speed answers keep some of the board's faster payoffs from being safe endgame pieces.",
+        )
+
+        stab_shell_adjustment = (
+            0.03 * max(0.0, -target_summary.average_stab_pressure)
+            - 0.03 * max(0.0, target_summary.average_stab_pressure)
+        )
+        score += stab_shell_adjustment
+        if target_summary.average_stab_pressure <= -0.08:
+            _push_context_reason(
+                reasons,
+                stab_shell_adjustment,
+                "Its defensive shell lines up reasonably well into the board's main STAB mix.",
+            )
+        elif target_summary.average_stab_pressure >= 0.08:
+            _push_context_reason(
+                reasons,
+                stab_shell_adjustment,
+                "The board's actual STAB mix still strains the current defensive shell even when the mode matchup looks playable.",
+            )
+
+    if interaction_summary.redirection_targets > 0:
+        if interaction_summary.redirection_answers > 0:
+            redirection_bonus = 0.04 * min(interaction_summary.redirection_answers, 2)
+            score += redirection_bonus
+            _push_context_reason(
+                reasons,
+                redirection_bonus,
+                "Spread damage and board control give it real play through the redirection pieces protecting this shell's anchors.",
+            )
+        else:
+            redirection_penalty = -0.04 * min(interaction_summary.redirection_targets, 2)
+            score += redirection_penalty
+            _push_context_reason(
+                reasons,
+                redirection_penalty,
+                "The board's redirection support still makes it harder to turn neutral hits into clean progress.",
+            )
+
+    if interaction_summary.setup_pressure_targets > 0:
+        if interaction_summary.setup_denial_answers > 0:
+            setup_bonus = 0.04 * min(interaction_summary.setup_denial_answers, 2)
+            score += setup_bonus
+            _push_context_reason(
+                reasons,
+                setup_bonus,
+                "Its anti-setup buttons give it a cleaner answer into the board's dedicated snowball lines.",
+            )
+        else:
+            setup_penalty = -0.05 * min(interaction_summary.setup_pressure_targets, 2)
+            score += setup_penalty
+            _push_context_reason(
+                reasons,
+                setup_penalty,
+                "The board still has real setup branches that are awkward to stop once the first turn stabilizes.",
+            )
+
+    if interaction_summary.spread_pressure_targets > 0:
+        if interaction_summary.spread_answers > 0:
+            spread_bonus = 0.01 * max(0, min(interaction_summary.spread_answers, 2) - 1)
+            score += spread_bonus
+            if spread_bonus > 0:
+                _push_context_reason(
+                    reasons,
+                    spread_bonus,
+                    "Wide Guard and layered Protect turns keep the board's main spread-damage shells from snowballing freely.",
+                )
+        else:
+            spread_penalty = -0.04 * min(interaction_summary.spread_pressure_targets, 2)
+            score += spread_penalty
+            _push_context_reason(
+                reasons,
+                spread_penalty,
+                "Repeated spread damage still forces awkward trades because the team has limited direct answers to it.",
+            )
+
+    if interaction_summary.ability_clause_targets > 0:
+        if interaction_summary.ability_clause_answers > 0:
+            ability_bonus = 0.04 * min(interaction_summary.ability_clause_answers, 2)
+            score += ability_bonus
+            _push_context_reason(
+                reasons,
+                ability_bonus,
+                "Ability-specific lines are already covered, so the board's defensive clauses are not fully safe.",
+            )
+        else:
+            ability_penalty = -0.03 * min(interaction_summary.ability_clause_targets, 2)
+            score += ability_penalty
+            _push_context_reason(
+                reasons,
+                ability_penalty,
+                "One of the board's ability clauses still blanks a clean line unless the positioning turn goes perfectly.",
+            )
 
     shared_modes = modes & set(contextual_matchup_profile.team_mode_packages)
     if shared_modes:
@@ -3778,7 +4280,11 @@ def _score_tournament_snapshot_contextual_matchup(
     if any(_team_preview_is_trick_room_mode(mode_name) for mode_name in modes):
         trick_room_counter_bonus = 0.13 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
         score += trick_room_counter_bonus
-        _push_context_reason(reasons, trick_room_counter_bonus, "Encore, Taunt, or reverse Room lines give it real Trick Room counterplay.")
+        _push_context_reason(reasons, trick_room_counter_bonus, "Encore, Taunt, Fake Out, or reverse Room lines give it real Trick Room counterplay.")
+
+        intimidate_room_bonus = 0.05 * min(contextual_matchup_profile.intimidate_support, 2)
+        score += intimidate_room_bonus
+        _push_context_reason(reasons, intimidate_room_bonus, "Intimidate helps it survive the physical payoffs that normally cash in once Room goes up.")
 
         recovery_bonus = 0.04 * min(contextual_matchup_profile.recovery_loop, 3)
         score += recovery_bonus
@@ -3788,6 +4294,8 @@ def _score_tournament_snapshot_contextual_matchup(
             and contextual_matchup_profile.move_counts["trick-room"] == 0
             and contextual_matchup_profile.move_counts["taunt"] == 0
             and contextual_matchup_profile.move_counts["encore"] == 0
+            and contextual_matchup_profile.move_counts["fake-out"] == 0
+            and contextual_matchup_profile.priority_block_bypass == 0
         ):
             score -= 0.2
             _push_context_reason(reasons, -0.2, "A speed-heavy shell with no direct Trick Room contest is fragile once Room sticks.")
@@ -3908,6 +4416,10 @@ def _score_tournament_snapshot_contextual_matchup(
         room_setter_bonus = 0.05 * min(contextual_matchup_profile.trick_room_counter_tools, 3)
         score += room_setter_bonus
         _push_context_reason(reasons, room_setter_bonus, "The roster has real lines to contest dedicated Trick Room setters.")
+        if "farigiraf" in key_tokens and contextual_matchup_profile.priority_block_bypass > 0:
+            armor_tail_bonus = 0.12 * contextual_matchup_profile.priority_block_bypass
+            score += armor_tail_bonus
+            _push_context_reason(reasons, armor_tail_bonus, "Mold Breaker Fake Out means Armor Tail does not make the setup turn fully safe.")
     if any(token in key_tokens for token in HAZARD_PRESSURE_SPECIES):
         hazard_answer_bonus = 0.04 * min(
             contextual_matchup_profile.attack_type_counts["ground"]
@@ -3928,6 +4440,16 @@ def _score_tournament_snapshot_contextual_matchup(
         if any(token in key_tokens for token in FIRE_PRESSURE_SPECIES):
             score -= 0.24
             _push_context_reason(reasons, -0.24, "Hazards layered with fire pressure create especially punishing chip races for this shell.")
+    if "sneasler" in key_tokens:
+        sneasler_answer_lines = min(
+            contextual_matchup_profile.attack_type_counts["flying"]
+            + contextual_matchup_profile.attack_type_counts["psychic"]
+            + contextual_matchup_profile.priority_attacks
+            + contextual_matchup_profile.intimidate_support,
+            4,
+        )
+        sneasler_bonus = 0.04 * sneasler_answer_lines
+        score += sneasler_bonus
     if any(token in key_tokens for token in SCREENS_PRESSURE_SPECIES):
         screen_species_bonus = 0.05 * min(contextual_matchup_profile.screen_counter_tools, 2.0)
         score += screen_species_bonus
@@ -4017,7 +4539,303 @@ def _score_tournament_snapshot_contextual_matchup(
         _push_context_reason(reasons, mindgame_bonus, "Flexible mode presentation helps it avoid becoming fully predictable in preview.")
 
     bounded_score = max(-1.5, min(1.5, round(score, 2)))
-    return bounded_score, _finalize_context_reasons(reasons)
+    return bounded_score, _finalize_context_reasons(reasons), target_summary, interaction_summary
+
+
+def _build_snapshot_target_matchup_summary(
+    snapshot: dict[str, object],
+    members: list[TeamMember],
+    metadata_provider: MetadataProvider,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> SnapshotTargetMatchupSummary:
+    if not members:
+        return SnapshotTargetMatchupSummary(0, 0, 0, 0, 0.0, 0.0)
+
+    offensive_pressures: list[float] = []
+    stab_pressures: list[float] = []
+    strong_answer_targets = 0
+    shaky_answer_targets = 0
+    fast_cleanup_targets = 0
+
+    for species_token in cast(tuple[str, ...], snapshot["key_pokemon"]):
+        target_species = _resolve_snapshot_species_data(
+            species_token,
+            metadata_provider,
+            regulation_id=regulation_id,
+        )
+        if target_species is None:
+            continue
+
+        target_speed = _normalized_non_hp_stat(
+            target_species.base_speed,
+            CHAMPIONS_TOTAL_SPS,
+            level=50,
+            nature_multiplier=1.1,
+        )
+        best_multiplier = 0.0
+        super_effective_lines = 0
+        neutral_or_better_lines = 0
+        fast_answers = 0
+        priority_answers = 0
+
+        for member in members:
+            member_speed = _normalized_member_stats(member)["speed"]
+            for move in member.move_data:
+                if move.damage_class == "status":
+                    continue
+
+                multiplier = defensive_multiplier(target_species.types, move.type_name)
+                best_multiplier = max(best_multiplier, multiplier)
+                if multiplier >= 1.0:
+                    neutral_or_better_lines += 1
+                    if member_speed >= target_speed:
+                        fast_answers += 1
+                    if move.priority > 0:
+                        priority_answers += 1
+                if multiplier > 1.0:
+                    super_effective_lines += 1
+
+        offensive_pressure = min(
+            3.0,
+            max(0.0, best_multiplier - 1.0)
+            + 0.18 * min(super_effective_lines, 4)
+            + 0.05 * min(neutral_or_better_lines, 6)
+            + 0.1 * int(fast_answers > 0)
+            + 0.12 * int(target_species.base_speed >= 100 and priority_answers > 0),
+        )
+        offensive_pressures.append(offensive_pressure)
+
+        if offensive_pressure >= 0.95:
+            strong_answer_targets += 1
+        elif offensive_pressure <= 0.2:
+            shaky_answer_targets += 1
+
+        if target_species.base_speed >= 100 and (priority_answers > 0 or fast_answers > 0):
+            fast_cleanup_targets += 1
+
+        target_stab_pressures = [
+            (
+                sum(_defensive_multiplier_for_member(member, target_type) for member in members) / len(members)
+                - 1.0
+            )
+            for target_type in target_species.types
+        ]
+        stab_pressures.append(sum(target_stab_pressures) / len(target_stab_pressures))
+
+    resolved_targets = len(offensive_pressures)
+    if resolved_targets == 0:
+        return SnapshotTargetMatchupSummary(0, 0, 0, 0, 0.0, 0.0)
+
+    return SnapshotTargetMatchupSummary(
+        resolved_targets=resolved_targets,
+        strong_answer_targets=strong_answer_targets,
+        shaky_answer_targets=shaky_answer_targets,
+        fast_cleanup_targets=fast_cleanup_targets,
+        average_offensive_pressure=round(sum(offensive_pressures) / resolved_targets, 2),
+        average_stab_pressure=round(sum(stab_pressures) / resolved_targets, 2),
+    )
+
+
+def _build_snapshot_interaction_summary(
+    snapshot: dict[str, object],
+    members: list[TeamMember],
+    metadata_provider: MetadataProvider,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> SnapshotInteractionSummary:
+    if not members:
+        return SnapshotInteractionSummary(0, 0, 0, 0, 0, 0, 0, 0, ())
+
+    key_tokens = cast(tuple[str, ...], snapshot["key_pokemon"])
+    label_text = cast(str, snapshot["label"]).lower()
+    core_text = " ".join(core.lower() for core in cast(tuple[str, ...], snapshot["key_cores"]))
+    move_names = {
+        move.api_name
+        for member in members
+        for move in member.move_data
+    }
+    spread_damage_count = sum(
+        1
+        for member in members
+        for move in member.move_data
+        if _is_spread_damage_move(move)
+    )
+    protect_turns = sum(
+        1
+        for member in members
+        for move in member.move_data
+        if move.api_name in PROTECTION_MOVES
+    )
+    wide_guard_count = sum(
+        1
+        for member in members
+        for move in member.move_data
+        if move.api_name == "wide-guard"
+    )
+    setup_denial_tools = sum(
+        1
+        for move_name in move_names
+        if move_name in ANTI_SETUP_MOVES | {"taunt", "encore", "imprison", "roar", "whirlwind", "dragon-tail", "fake-out", "psychic-fangs", "brick-break"}
+    )
+    mold_breaker_fake_out = any(
+        "mold breaker" in _member_context_ability_names(member)
+        and any(move.api_name == "fake-out" for move in member.move_data)
+        for member in members
+    )
+    non_priority_room_contest = bool(move_names & {"taunt", "encore", "imprison", "trick-room"})
+
+    redirection_targets = sum(1 for species_token in key_tokens if species_token in REDIRECTION_PRESSURE_SPECIES)
+    setup_pressure_targets = sum(1 for phrase in SETUP_PRESSURE_CORE_PHRASES if phrase in core_text or phrase in label_text)
+    spread_pressure_targets = sum(1 for species_token in key_tokens if species_token in SPREAD_PRESSURE_SPECIES)
+    if "helping hand" in core_text and any(species_token in SPREAD_PRESSURE_SPECIES for species_token in key_tokens):
+        spread_pressure_targets += 1
+
+    redirection_answers = min(2, int(spread_damage_count > 0) + int(bool(move_names & {"taunt", "encore"})))
+    setup_denial_answers = min(2, int(setup_denial_tools > 0) + int(setup_denial_tools >= 3))
+    spread_answers = min(2, int(wide_guard_count > 0) + int(protect_turns >= 4))
+
+    ability_clause_targets = 0
+    ability_clause_answers = 0
+    for species_token in key_tokens:
+        target_species = _resolve_snapshot_species_data(
+            species_token,
+            metadata_provider,
+            regulation_id=regulation_id,
+        )
+        for ability_name in _resolve_snapshot_ability_names(
+            species_token,
+            metadata_provider,
+            regulation_id=regulation_id,
+        ):
+            if ability_name == "armor tail":
+                ability_clause_targets += 1
+                if mold_breaker_fake_out or non_priority_room_contest:
+                    ability_clause_answers += 1
+                continue
+            blocked_types = DEFENSIVE_ABILITY_IMMUNITIES.get(ability_name, ())
+            if not blocked_types or target_species is None:
+                continue
+            ability_clause_targets += 1
+            if _team_has_unblocked_pressure_into_target(target_species, blocked_types, members):
+                ability_clause_answers += 1
+
+    tags: list[str] = []
+    if redirection_targets > 0 and redirection_answers > 0:
+        tags.append("redirection counterplay")
+    if setup_pressure_targets > 0 and setup_denial_answers > 0:
+        tags.append("setup denial")
+    if spread_pressure_targets > 0 and spread_answers > 0:
+        tags.append("spread counterplay")
+    if ability_clause_targets > 0 and ability_clause_answers > 0:
+        tags.append("ability-aware counterplay")
+
+    return SnapshotInteractionSummary(
+        redirection_targets=redirection_targets,
+        redirection_answers=redirection_answers,
+        setup_pressure_targets=setup_pressure_targets,
+        setup_denial_answers=setup_denial_answers,
+        spread_pressure_targets=spread_pressure_targets,
+        spread_answers=spread_answers,
+        ability_clause_targets=ability_clause_targets,
+        ability_clause_answers=ability_clause_answers,
+        tags=tuple(tags),
+    )
+
+
+def _resolve_snapshot_ability_names(
+    species_token: str,
+    metadata_provider: MetadataProvider,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> tuple[str, ...]:
+    get_species_abilities = getattr(metadata_provider, "get_species_abilities", None)
+    if callable(get_species_abilities):
+        for candidate_name in _snapshot_species_name_candidates(species_token, regulation_id=regulation_id):
+            try:
+                ability_names = tuple(
+                    ability_name
+                    for ability_name in (
+                        _normalized_ability_name(name)
+                        for name in cast(Iterable[str], get_species_abilities(candidate_name))
+                    )
+                    if ability_name
+                )
+            except Exception:
+                continue
+            if ability_names:
+                return ability_names
+    return SNAPSHOT_ABILITY_CLAUSE_FALLBACKS.get(species_token, ())
+
+
+def _team_has_unblocked_pressure_into_target(
+    target_species: SpeciesData,
+    blocked_types: tuple[str, ...],
+    members: list[TeamMember],
+) -> bool:
+    blocked_type_names = set(blocked_types)
+    return any(
+        move.damage_class != "status"
+        and move.type_name not in blocked_type_names
+        and defensive_multiplier(target_species.types, move.type_name) >= 1.0
+        for member in members
+        for move in member.move_data
+    )
+
+
+def _is_spread_damage_move(move: MoveData) -> bool:
+    return move.damage_class != "status" and move.target_name in SPREAD_DAMAGE_TARGET_NAMES
+
+
+def _resolve_snapshot_species_data(
+    species_token: str,
+    metadata_provider: MetadataProvider,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> SpeciesData | None:
+    for candidate_name in _snapshot_species_name_candidates(species_token, regulation_id=regulation_id):
+        try:
+            return metadata_provider.get_species(candidate_name)
+        except Exception:
+            continue
+    return None
+
+
+def _snapshot_species_name_candidates(
+    species_token: str,
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> tuple[str, ...]:
+    rendered_name = _render_species_token(species_token)
+    candidates: list[str] = []
+
+    def _push(candidate: str | None) -> None:
+        if candidate and candidate not in candidates:
+            candidates.append(candidate)
+
+    _push(rendered_name)
+    _push(species_token)
+    if regulation_id is not None:
+        _push(resolve_regulation_species_name(rendered_name, regulation_id=regulation_id))
+        _push(resolve_regulation_species_name(species_token, regulation_id=regulation_id))
+
+    if rendered_name.startswith("Mega "):
+        base_name = rendered_name[len("Mega "):]
+        if base_name.endswith(" X") or base_name.endswith(" Y"):
+            _push(f"{base_name[:-2]}-Mega-{base_name[-1]}")
+        _push(f"{base_name}-Mega")
+    if rendered_name.startswith("Alolan "):
+        _push(f"{rendered_name[len('Alolan '):]}-Alola")
+    if rendered_name.startswith("Hisuian "):
+        _push(f"{rendered_name[len('Hisuian '):]}-Hisui")
+    if rendered_name.endswith(" (M)"):
+        base_name = rendered_name[:-4]
+        _push(f"{base_name} (Male)")
+        _push(f"{base_name}-M")
+    if rendered_name.endswith(" (F)"):
+        base_name = rendered_name[:-4]
+        _push(f"{base_name} (Female)")
+        _push(f"{base_name}-F")
+    if species_token == "basculegion":
+        _push("Basculegion (M)")
+        _push("Basculegion (Male)")
+
+    return tuple(candidates)
 
 
 COMMON_META_POKEMON_CONTEXT: dict[str, dict[str, str]] = {
@@ -4538,6 +5356,7 @@ def infer_team_preview(
         focus = cast(str, descriptor["focus"])
         opponent_mode = cast(str | None, descriptor.get("opponent_mode"))
         recommended_into = cast(list[str], descriptor.get("recommended_into", []))
+        board_anchor = cast(dict[str, object] | None, descriptor.get("board_anchor"))
         lead_pair, pick_four = _select_team_preview_plan(
             members,
             member_roles,
@@ -4546,6 +5365,7 @@ def infer_team_preview(
             focus,
             opponent_mode,
             bring_plans,
+            board_anchor,
         )
         back_line = [member_name for member_name in pick_four if member_name not in lead_pair]
         if not pick_four:
@@ -4559,6 +5379,7 @@ def infer_team_preview(
             member_roles,
             focus,
             opponent_mode,
+            board_anchor,
         )
         bring_plans.append(
             {
@@ -4568,6 +5389,7 @@ def infer_team_preview(
                     lead_pair,
                     back_line,
                     opponent_mode,
+                    board_anchor,
                     member_lookup,
                     member_roles,
                 ),
@@ -4591,6 +5413,7 @@ def infer_team_preview(
                     fallback_leads,
                     fallback_back,
                     None,
+                    None,
                     member_lookup,
                     member_roles,
                 ),
@@ -4605,6 +5428,7 @@ def infer_team_preview(
                     member_lookup,
                     member_roles,
                     "safe_default",
+                    None,
                     None,
                 ),
             }
@@ -4646,14 +5470,38 @@ def _build_team_preview_descriptors(
     )
 
     for opponent_mode in _build_team_preview_matchup_modes(primary_focus, meta_analysis):
+        board_anchor = _select_team_preview_board_anchor(opponent_mode, meta_analysis)
+        recommended_into = [_render_mode_label(opponent_mode)]
+        if board_anchor is not None:
+            recommended_into.append(cast(str, board_anchor["label"]))
         descriptors.append(
             {
                 "focus": primary_focus,
                 "opponent_mode": opponent_mode,
-                "recommended_into": [_render_mode_label(opponent_mode)],
+                "recommended_into": recommended_into,
+                "board_anchor": board_anchor,
             }
         )
     return descriptors
+
+
+def _select_team_preview_board_anchor(
+    opponent_mode: str,
+    meta_analysis: dict[str, object],
+) -> dict[str, object] | None:
+    rendered_mode = _render_mode_label(opponent_mode)
+    tournament_rows = cast(list[dict[str, object]], meta_analysis.get("tournament_rows", []))
+    matching_rows = [
+        row
+        for row in tournament_rows
+        if rendered_mode in cast(list[str], row.get("modes", []))
+    ]
+    if not matching_rows:
+        return None
+    return max(
+        matching_rows,
+        key=lambda row: (cast(float, row.get("meta_share", 0.0)), abs(cast(float, row.get("matchup_score", 0.0)))),
+    )
 
 
 def _build_team_preview_matchup_modes(
@@ -4718,6 +5566,7 @@ def _select_team_preview_leads(
     member_speed_tiers: dict[str, str],
     focus: str,
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None = None,
 ) -> list[str]:
     member_names = [member.pokemon_set.display_name for member in members]
     if len(member_names) <= 2:
@@ -4733,6 +5582,7 @@ def _select_team_preview_leads(
             member_speed_tiers,
             focus,
             opponent_mode,
+            board_anchor,
         ),
         reverse=True,
     )
@@ -4747,6 +5597,7 @@ def _select_team_preview_plan(
     focus: str,
     opponent_mode: str | None,
     existing_plans: list[dict[str, object]],
+    board_anchor: dict[str, object] | None = None,
 ) -> tuple[list[str], list[str]]:
     member_names = [member.pokemon_set.display_name for member in members]
     if len(member_names) <= 2:
@@ -4764,6 +5615,7 @@ def _select_team_preview_plan(
             member_speed_tiers,
             focus,
             opponent_mode,
+            board_anchor,
         ),
         reverse=True,
     )
@@ -4784,6 +5636,7 @@ def _select_team_preview_plan(
             lead_pair,
             opponent_mode,
             existing_plans,
+            board_anchor,
         )
         if not pick_four:
             continue
@@ -4798,6 +5651,7 @@ def _select_team_preview_plan(
             focus,
             opponent_mode,
             existing_plans,
+            board_anchor,
         )
         if _is_duplicate_team_preview_plan(lead_pair, pick_four, existing_plans):
             if plan_score > fallback_score:
@@ -4821,6 +5675,7 @@ def _select_team_preview_plan(
         member_speed_tiers,
         focus,
         opponent_mode,
+        board_anchor,
     )
     fallback_pick_four = _select_team_preview_pick_four(
         members,
@@ -4830,6 +5685,7 @@ def _select_team_preview_plan(
         focus,
         fallback_leads,
         opponent_mode,
+        board_anchor=board_anchor,
     )
     return fallback_leads, fallback_pick_four
 
@@ -4843,6 +5699,7 @@ def _select_team_preview_pick_four(
     lead_pair: list[str],
     opponent_mode: str | None,
     existing_plans: list[dict[str, object]] | None = None,
+    board_anchor: dict[str, object] | None = None,
 ) -> list[str]:
     target_size = min(4, len(members))
     if len(lead_pair) >= target_size:
@@ -4868,6 +5725,7 @@ def _select_team_preview_pick_four(
             focus,
             member_lookup,
             opponent_mode,
+            board_anchor,
         )
         candidate_score = _score_team_preview_plan(
             list(lead_pair),
@@ -4879,6 +5737,7 @@ def _select_team_preview_pick_four(
             focus,
             opponent_mode,
             prior_plans,
+            board_anchor,
         )
         if candidate_score > best_score:
             best_pick_four = ordered_pick_four
@@ -4896,6 +5755,7 @@ def _order_team_preview_pick_four_candidate(
     focus: str,
     member_lookup: dict[str, TeamMember],
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None = None,
 ) -> list[str]:
     ordered_pick_four = list(lead_pair)
     remaining = list(candidate_members)
@@ -4913,6 +5773,7 @@ def _order_team_preview_pick_four_candidate(
                 member_roles,
                 member_lookup,
                 opponent_mode,
+                board_anchor,
             ),
         )
         ordered_pick_four.append(next_member)
@@ -4931,6 +5792,7 @@ def _score_team_preview_plan(
     focus: str,
     opponent_mode: str | None,
     existing_plans: list[dict[str, object]],
+    board_anchor: dict[str, object] | None = None,
 ) -> float:
     member_lookup = {member.pokemon_set.display_name: member for member in members}
     score = _score_team_preview_pair(
@@ -4941,6 +5803,7 @@ def _score_team_preview_plan(
         member_speed_tiers,
         focus,
         opponent_mode,
+        board_anchor,
     )
     selected = list(lead_pair)
     for member_name in pick_four:
@@ -4956,6 +5819,7 @@ def _score_team_preview_plan(
             member_roles,
             member_lookup,
             opponent_mode,
+            board_anchor,
         )
         selected.append(member_name)
     score += _score_team_preview_plan_diversity(lead_pair, pick_four, existing_plans, opponent_mode)
@@ -5030,6 +5894,7 @@ def _score_team_preview_pair(
     member_speed_tiers: dict[str, str],
     focus: str,
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None = None,
 ) -> float:
     member_lookup = {member.pokemon_set.display_name: member for member in members}
     first_name, second_name = pair
@@ -5160,6 +6025,13 @@ def _score_team_preview_pair(
         second_roles,
         opponent_mode,
     )
+    score += _score_team_preview_board_anchor_pair_context(
+        member_lookup[first_name],
+        first_roles,
+        member_lookup[second_name],
+        second_roles,
+        board_anchor,
+    )
     return score
 
 
@@ -5173,6 +6045,7 @@ def _score_team_preview_member_selection(
     member_roles: dict[str, list[str]],
     member_lookup: dict[str, TeamMember],
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None = None,
 ) -> float:
     score = _score_team_preview_member_base(
         member,
@@ -5250,6 +6123,7 @@ def _score_team_preview_member_selection(
         selected_role_sets,
         member_lookup,
     )
+    score += _score_team_preview_board_anchor_member_context(member, roles, board_anchor, lead_slot=False)
     return score
 
 
@@ -5437,6 +6311,106 @@ def _team_preview_is_trick_room_mode(mode_name: str) -> bool:
 
 def _team_preview_is_tailwind_mode(mode_name: str) -> bool:
     return mode_name == "tailwind" or "tailwind" in mode_name or mode_name == "tailroom"
+
+
+def _team_preview_board_anchor_tags(board_anchor: dict[str, object] | None) -> set[str]:
+    if not board_anchor:
+        return set()
+
+    interaction_summary = cast(dict[str, object], board_anchor.get("interaction_summary", {}))
+    return set(cast(list[str], interaction_summary.get("tags", [])))
+
+
+def _team_preview_has_spread_move(member: TeamMember) -> bool:
+    return any(move.target_name in SPREAD_DAMAGE_TARGET_NAMES for move in member.move_data)
+
+
+def _team_preview_has_setup_disruption(member: TeamMember) -> bool:
+    move_names = _team_preview_move_names(member)
+    return bool(move_names & {"taunt", "encore", "imprison", "haze", "clear-smog", "psychic-fangs", "brick-break", "fake-out"})
+
+
+def _score_team_preview_board_anchor_pair_context(
+    first_member: TeamMember,
+    first_roles: set[str],
+    second_member: TeamMember,
+    second_roles: set[str],
+    board_anchor: dict[str, object] | None,
+) -> float:
+    interaction_tags = _team_preview_board_anchor_tags(board_anchor)
+    if not interaction_tags:
+        return 0.0
+
+    pair_move_names = _team_preview_move_names(first_member) | _team_preview_move_names(second_member)
+    score = 0.0
+
+    if "spread counterplay" in interaction_tags:
+        if "wide-guard" in pair_move_names:
+            score += 1.6
+        if any(move_name in pair_move_names for move_name in PROTECTION_MOVES):
+            score += 0.4
+    if "setup denial" in interaction_tags and (
+        _team_preview_has_setup_disruption(first_member) or _team_preview_has_setup_disruption(second_member)
+    ):
+        score += 1.5
+    if "redirection counterplay" in interaction_tags and (
+        _team_preview_has_spread_move(first_member) or _team_preview_has_spread_move(second_member)
+    ):
+        score += 1.2
+    if "ability-aware counterplay" in interaction_tags:
+        first_ability_names = set(_member_context_ability_names(first_member))
+        second_ability_names = set(_member_context_ability_names(second_member))
+        if (
+            ("mold breaker" in first_ability_names and "fake-out" in _team_preview_move_names(first_member))
+            or ("mold breaker" in second_ability_names and "fake-out" in _team_preview_move_names(second_member))
+        ):
+            score += 1.8
+        elif pair_move_names & {"taunt", "encore", "imprison", "trick-room"}:
+            score += 0.9
+
+    if first_roles & PREVIEW_ATTACKER_ROLES and second_roles & PREVIEW_SUPPORT_ROLES:
+        score += 0.2
+
+    return score
+
+
+def _score_team_preview_board_anchor_member_context(
+    member: TeamMember,
+    roles: set[str],
+    board_anchor: dict[str, object] | None,
+    *,
+    lead_slot: bool,
+) -> float:
+    interaction_tags = _team_preview_board_anchor_tags(board_anchor)
+    if not interaction_tags:
+        return 0.0
+
+    move_names = _team_preview_move_names(member)
+    ability_names = set(_member_context_ability_names(member))
+    score = 0.0
+
+    if "spread counterplay" in interaction_tags:
+        if "wide-guard" in move_names:
+            score += 1.8 if lead_slot else 1.2
+        elif move_names & PROTECTION_MOVES:
+            score += 0.6 if lead_slot else 0.3
+    if "setup denial" in interaction_tags and _team_preview_has_setup_disruption(member):
+        score += 1.5 if lead_slot else 1.0
+    if "redirection counterplay" in interaction_tags:
+        if _team_preview_has_spread_move(member):
+            score += 1.3 if lead_slot else 0.9
+        elif move_names & {"taunt", "encore"}:
+            score += 1.0 if lead_slot else 0.7
+    if "ability-aware counterplay" in interaction_tags:
+        if "mold breaker" in ability_names and "fake-out" in move_names:
+            score += 1.9 if lead_slot else 1.1
+        elif move_names & {"taunt", "encore", "imprison", "trick-room"}:
+            score += 1.1 if lead_slot else 0.7
+
+    if roles & PREVIEW_ATTACKER_ROLES and any(tag in interaction_tags for tag in {"redirection counterplay", "spread counterplay"}):
+        score += 0.3
+
+    return score
 
 
 def _team_preview_opponent_weather(mode_name: str) -> str | None:
@@ -5658,6 +6632,7 @@ def _build_team_preview_member_reasons(
     member_roles: dict[str, list[str]],
     focus: str,
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None,
 ) -> dict[str, str]:
     reasons: dict[str, str] = {}
     for member_name in pick_four:
@@ -5666,6 +6641,7 @@ def _build_team_preview_member_reasons(
             set(member_roles.get(member_name, [])),
             focus,
             opponent_mode,
+            board_anchor,
             member_name in lead_pair,
             member_name in back_line,
         )
@@ -5677,6 +6653,7 @@ def _describe_team_preview_member_reason(
     roles: set[str],
     focus: str,
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None,
     in_lead: bool,
     in_back: bool,
 ) -> str:
@@ -5685,6 +6662,10 @@ def _describe_team_preview_member_reason(
     counter_reason = _describe_team_preview_counter_reason(member, roles, opponent_mode, in_lead)
     if counter_reason:
         return counter_reason
+
+    board_anchor_reason = _describe_team_preview_board_anchor_reason(member, roles, board_anchor, in_lead, in_back)
+    if board_anchor_reason:
+        return board_anchor_reason
 
     if in_lead:
         if focus_flags["perish"] and "perish-song" in move_names:
@@ -5737,6 +6718,53 @@ def _describe_team_preview_member_reason(
             return "Stays in back as the stabilizing midgame piece if the opener gets messy."
 
     return "Rounds out the four by covering a role the opening pair should not expose too early."
+
+
+def _describe_team_preview_board_anchor_reason(
+    member: TeamMember,
+    roles: set[str],
+    board_anchor: dict[str, object] | None,
+    in_lead: bool,
+    in_back: bool,
+) -> str | None:
+    if not board_anchor:
+        return None
+
+    label = cast(str, board_anchor.get("label", ""))
+    if not label:
+        return None
+
+    interaction_tags = _team_preview_board_anchor_tags(board_anchor)
+    if not interaction_tags:
+        return None
+
+    move_names = _team_preview_move_names(member)
+    ability_names = set(_member_context_ability_names(member))
+    key_pokemon = cast(list[str], board_anchor.get("key_pokemon", []))
+    anchor_text = _render_series(key_pokemon[:2]) if key_pokemon else label
+
+    if "ability-aware counterplay" in interaction_tags:
+        if "mold breaker" in ability_names and "fake-out" in move_names:
+            return f"Gives the line its cleanest ability-aware answer into {label}, so {anchor_text} cannot assume the first support turn is safe."
+        if move_names & {"taunt", "encore", "imprison", "trick-room"}:
+            return f"Keeps the key ability or setup turn from {label} from becoming automatic."
+    if "spread counterplay" in interaction_tags:
+        if "wide-guard" in move_names:
+            return f"Blunts the spread-pressure turns that usually let {label} snowball early."
+        if in_lead and move_names & PROTECTION_MOVES:
+            return f"Buys a safer first cycle against the immediate spread pressure attached to {label}."
+    if "setup denial" in interaction_tags and _team_preview_has_setup_disruption(member):
+        return f"Directly contests the setup turns that make {label} hard to stabilize."
+    if "redirection counterplay" in interaction_tags:
+        if _team_preview_has_spread_move(member):
+            return f"Pressures through the support shell around {label} instead of letting its redirectors soak single-target turns."
+        if move_names & {"taunt", "encore"}:
+            return f"Disrupts the support shell that usually keeps {label} stable through the first exchanges."
+
+    if in_back and roles & PREVIEW_ATTACKER_ROLES:
+        return f"Stays in back as the direct punish line once {label} has been forced into a fair trade pattern."
+
+    return None
 
 
 def _describe_team_preview_counter_reason(
@@ -5795,6 +6823,7 @@ def _summarize_team_preview_plan(
     lead_pair: list[str],
     back_line: list[str],
     opponent_mode: str | None,
+    board_anchor: dict[str, object] | None,
     member_lookup: dict[str, TeamMember],
     member_roles: dict[str, list[str]],
 ) -> str:
@@ -5805,7 +6834,43 @@ def _summarize_team_preview_plan(
     opener = _summarize_team_preview_opener(focus, lead_pair, opponent_mode, member_lookup, member_roles)
 
     opener = opener[0].upper() + opener[1:]
-    return f"{opener} Keep {back_text} in back as the cleaner or stabilizing endgame line."
+    summary = f"{opener} Keep {back_text} in back as the cleaner or stabilizing endgame line."
+    anchor_note = _summarize_team_preview_board_anchor(board_anchor)
+    if anchor_note:
+        summary += f" {anchor_note}"
+    return summary
+
+
+def _summarize_team_preview_board_anchor(board_anchor: dict[str, object] | None) -> str:
+    if not board_anchor:
+        return ""
+
+    label = cast(str, board_anchor.get("label", ""))
+    if not label:
+        return ""
+
+    interaction_summary = cast(dict[str, object], board_anchor.get("interaction_summary", {}))
+    interaction_tags = cast(list[str], interaction_summary.get("tags", []))
+    key_pokemon = cast(list[str], board_anchor.get("key_pokemon", []))
+    context_reasons = cast(list[str], board_anchor.get("context_reasons", []))
+    target_summary = cast(dict[str, object], board_anchor.get("target_summary", {}))
+
+    if interaction_tags:
+        anchor_pokemon = _render_series(key_pokemon[:2]) if key_pokemon else "its main anchors"
+        return (
+            f"This is the clearest direct plan into {label}, where {_render_series(interaction_tags[:2])} matters most around {anchor_pokemon}."
+        )
+
+    if context_reasons:
+        reason_text = context_reasons[0].rstrip(".")
+        if reason_text and reason_text[0].isupper():
+            reason_text = reason_text[0].lower() + reason_text[1:]
+        return f"This is the clearest direct plan into {label}, where {reason_text}."
+
+    if cast(int, target_summary.get("strong_answer_targets", 0)) > 0:
+        return f"This is the clearest direct plan into {label}, where the move pool already pressures several of the board's main anchors."
+
+    return f"This is the clearest direct plan into {label}."
 
 
 def _summarize_team_preview_opener(

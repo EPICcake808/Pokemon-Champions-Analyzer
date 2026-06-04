@@ -1,28 +1,54 @@
 import { NextResponse } from "next/server";
 
 import { isDatabaseConfigured } from "@/db";
-import { enrichMetaSnapshotDocumentsWithLiveSignals } from "@/lib/live-meta-ingestion";
+import {
+  AUTOMATED_META_SOURCE_URL,
+  buildAutomatedMetaSnapshotDocuments,
+} from "@/lib/live-meta-ingestion";
 import {
   fetchMetaSnapshotSource,
+  getPublishedMetaSnapshot,
   isMetaSnapshotRefreshAuthorized,
+  type PublishedMetaSnapshotDocument,
   upsertPublishedMetaSnapshot,
 } from "@/lib/meta-snapshots";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function resolveMetaSnapshotSourceUrl() {
-  const configuredSourceUrl = process.env.META_SNAPSHOT_SOURCE_URL?.trim() || "";
-  if (configuredSourceUrl) {
-    return configuredSourceUrl;
+function toPublishedSnapshotDocument(
+  snapshot: Awaited<ReturnType<typeof getPublishedMetaSnapshot>>,
+): PublishedMetaSnapshotDocument | null {
+  if (!snapshot) {
+    return null;
   }
 
-  const analyzerApiBaseUrl = process.env.POKEMON_ANALYZER_API_BASE_URL?.trim() || "";
-  if (!analyzerApiBaseUrl) {
-    return "";
+  return {
+    regulationId: snapshot.regulationId,
+    updatedAt: snapshot.updatedAt,
+    sourceLabel: snapshot.sourceLabel,
+    notes: snapshot.notes,
+    commonMetaPokemon: snapshot.commonMetaPokemon,
+    tournamentTeamSnapshots: snapshot.tournamentTeamSnapshots,
+  };
+}
+
+async function getSeedDocuments() {
+  const sourceUrl = process.env.META_SNAPSHOT_SOURCE_URL?.trim();
+  if (sourceUrl) {
+    try {
+      const sourceDocuments = await fetchMetaSnapshotSource(sourceUrl);
+      const regulationDocument = sourceDocuments.find((document) => document.regulationId === "champions_regulation_m_a");
+      if (regulationDocument) {
+        return [regulationDocument];
+      }
+    } catch {
+      // Fall through to the currently published board if the source feed is temporarily unavailable.
+    }
   }
 
-  return `${analyzerApiBaseUrl.replace(/\/+$/, "")}/api/meta-snapshot-source`;
+  const publishedSnapshot = await getPublishedMetaSnapshot("champions_regulation_m_a");
+  return publishedSnapshot ? [toPublishedSnapshotDocument(publishedSnapshot)!] : [];
 }
 
 async function refreshMetaSnapshots(request: Request) {
@@ -44,25 +70,18 @@ async function refreshMetaSnapshots(request: Request) {
     );
   }
 
-  const sourceUrl = resolveMetaSnapshotSourceUrl();
-  if (!sourceUrl) {
-    return NextResponse.json(
-      {
-        message: "Neither META_SNAPSHOT_SOURCE_URL nor POKEMON_ANALYZER_API_BASE_URL is configured.",
-      },
-      { status: 503 },
-    );
-  }
-
   try {
-    const baseDocuments = await fetchMetaSnapshotSource(sourceUrl);
-    const documents = await enrichMetaSnapshotDocumentsWithLiveSignals(baseDocuments);
+    const seedDocuments = await getSeedDocuments();
+    const documents = await buildAutomatedMetaSnapshotDocuments({
+      sourceMode: "default",
+      seedDocuments,
+    });
     const refreshedSnapshots = [];
 
     for (const document of documents) {
       const refreshedSnapshot = await upsertPublishedMetaSnapshot({
         document,
-        sourceUrl,
+        sourceUrl: AUTOMATED_META_SOURCE_URL,
       });
       refreshedSnapshots.push({
         regulationId: refreshedSnapshot.regulationId,
