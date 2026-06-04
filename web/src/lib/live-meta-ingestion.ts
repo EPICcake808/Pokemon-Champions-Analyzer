@@ -120,7 +120,7 @@ type AutomatedSnapshotCandidate = {
 
 const LIVE_SOURCE_HEADERS = {
   Accept: "text/html,application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
-  "User-Agent": "pokemon-champions-analyzer-live-ingestion/0.2.1",
+  "User-Agent": "pokemon-champions-analyzer-live-ingestion/0.2.2",
 };
 
 const LIVE_SOURCE_TIMEOUT_MS = 7_000;
