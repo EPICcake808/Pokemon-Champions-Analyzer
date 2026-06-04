@@ -58,6 +58,8 @@ SHOWDOWN_SPECIES_ALIASES = {
     "morpeko-hangry": "morpeko",
     "ninetales-alola": "ninetales (alolan form)",
     "palafin-hero": "palafin",
+    "palafin (hero form)": "palafin",
+    "palafin-hero-form": "palafin",
     "raichu-alola": "raichu (alolan form)",
     "rotom": "rotom (rotom)",
     "rotom-fan": "rotom (fan rotom)",
@@ -86,6 +88,7 @@ REGIONAL_FORM_SYNONYMS = {
 def _build_generated_species_aliases() -> dict[str, str]:
     aliases: dict[str, str] = {}
 
+    gender_form_pattern = re.compile(r"^(?P<base>.+) \((?P<gender>Male|Female)\)$", re.IGNORECASE)
     regional_form_pattern = re.compile(r"^(?P<base>.+) \((?P<form>Alolan|Galarian|Hisuian) Form\)$", re.IGNORECASE)
     paldean_form_pattern = re.compile(
         r"^(?P<base>.+) \(Paldean Form \((?P<breed>Combat Breed|Blaze Breed|Aqua Breed)\)\)$",
@@ -94,6 +97,21 @@ def _build_generated_species_aliases() -> dict[str, str]:
 
     for species_name in ELIGIBLE_SPECIES:
         canonical_name = species_name.lower()
+
+        gender_match = gender_form_pattern.match(species_name)
+        if gender_match is not None:
+            base_name = gender_match.group("base")
+            gender_name = gender_match.group("gender").lower()
+            short_gender = "m" if gender_name == "male" else "f"
+            for alias in (
+                f"{base_name} {gender_name}",
+                f"{base_name} ({gender_name})",
+                f"{base_name} ({short_gender.upper()})",
+                f"{base_name}-{short_gender}",
+                f"{base_name}-{gender_name}",
+            ):
+                aliases[normalize_showdown_name(alias, convert_gender_suffix=True)] = canonical_name
+            continue
 
         regional_match = regional_form_pattern.match(species_name)
         if regional_match is not None:
@@ -186,6 +204,14 @@ def _normalized_item_name(item: str | None) -> str:
     return (item or "").strip().lower()
 
 
+def _base_species_from_gender_suffix(normalized_species_name: str) -> str | None:
+    if normalized_species_name.endswith("-male"):
+        return normalized_species_name.removesuffix("-male")
+    if normalized_species_name.endswith("-female"):
+        return normalized_species_name.removesuffix("-female")
+    return None
+
+
 def _normalized_species_name(species_name: str) -> str:
     lowered = species_name.strip().lower()
     if lowered in SHOWDOWN_SPECIES_ALIASES:
@@ -195,6 +221,9 @@ def _normalized_species_name(species_name: str) -> str:
         return SHOWDOWN_SPECIES_ALIASES[normalized]
     if normalized in GENERATED_SPECIES_ALIASES:
         return GENERATED_SPECIES_ALIASES[normalized]
+    base_species_name = _base_species_from_gender_suffix(normalized)
+    if base_species_name:
+        return base_species_name
     return lowered
 
 

@@ -3611,7 +3611,17 @@ function resolveRegulationSpeciesAlias(
   regulation: RegulationCatalogEntry,
 ) {
   const lookup = buildRegulationSpeciesLookup(regulation);
-  return lookup.get(normalizeAssetId(speciesName)) ?? null;
+  const resolvedSpecies = lookup.get(normalizeAssetId(speciesName));
+  if (resolvedSpecies) {
+    return resolvedSpecies;
+  }
+
+  const genderlessSpecies = stripPlainGenderSuffix(speciesName);
+  if (!genderlessSpecies) {
+    return null;
+  }
+
+  return lookup.get(normalizeAssetId(genderlessSpecies)) ?? null;
 }
 
 function buildRegulationSpeciesLookup(regulation: RegulationCatalogEntry) {
@@ -3668,6 +3678,15 @@ function appendSpeciesAlias(lookup: Map<string, string>, alias: string, official
   }
 
   lookup.set(aliasKey, officialName);
+}
+
+function stripPlainGenderSuffix(speciesName: string) {
+  const stripped = speciesName.trim().replace(/\s+\((?:M|F|Male|Female)\)$/i, "").trim();
+  if (!stripped || stripped === speciesName.trim()) {
+    return null;
+  }
+
+  return stripped;
 }
 
 function resolveMegaSpeciesFromItem(

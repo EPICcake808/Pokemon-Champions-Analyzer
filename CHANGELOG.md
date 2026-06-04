@@ -23,6 +23,11 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 - Team-preview alternate plans now attach to the best matching current board shell for the relevant mode, and their summaries can reference that concrete team instead of only the generic mode label.
 - Matchup-specific preview selection and per-member reasoning now reuse the board-anchor context, so the chosen four and their explanations are more specific than the generic mode matchup alone.
 
+### Fixed
+
+- Fixed Champions species normalization so generic Showdown gender suffixes like `Tinkaton (F)` and `Tinkaton (M)` now resolve to the correct legal species, while real gendered forms like Meowstic still keep their canonical form handling.
+- Fixed Palafin Hero form handling in the builder and web UI so Hero-form imports, including `Palafin (Hero Form)`, load the correct Palafin stat data and render the Hero-form sprite.
+
 ## [0.2.1] - 2026-06-01
 
 ### Added

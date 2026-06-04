@@ -729,6 +729,16 @@ class RegulationTests(unittest.TestCase):
         self.assertEqual(resolve_regulation_species_name("Floette-Eternal"), "Eternal Flower Floette")
         self.assertEqual(resolve_regulation_species_name("Mega Floette"), "Mega Eternal Flower Floette")
 
+    def test_regulation_species_resolution_handles_gender_suffix_aliases(self) -> None:
+        self.assertEqual(resolve_regulation_species_name("Tinkaton (F)"), "Tinkaton")
+        self.assertEqual(resolve_regulation_species_name("Tinkaton (M)"), "Tinkaton")
+        self.assertEqual(resolve_regulation_species_name("Meowstic (F)"), "Meowstic (Female)")
+        self.assertEqual(resolve_regulation_species_name("Meowstic (M)"), "Meowstic (Male)")
+
+    def test_regulation_species_resolution_accepts_palafin_hero_form_aliases(self) -> None:
+        self.assertEqual(resolve_regulation_species_name("Palafin Hero"), "Palafin")
+        self.assertEqual(resolve_regulation_species_name("Palafin (Hero Form)"), "Palafin")
+
     def test_eternal_flower_floette_keeps_its_champions_move_pool(self) -> None:
         self.assertIn("light-of-ruin", get_allowed_moves_for_species("Eternal Flower Floette"))
 

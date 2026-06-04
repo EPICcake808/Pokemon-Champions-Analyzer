@@ -13,6 +13,14 @@ const SPECIAL_SHOWDOWN_IDS: Record<string, string> = {
   "floette (eternal flower)": "floette-eternal",
   "mega eternal flower floette": "floette-mega",
   "mega floette": "floette-mega",
+  "meowstic (m)": "meowstic",
+  "meowstic (male)": "meowstic",
+  "meowstic (f)": "meowstic-f",
+  "meowstic (female)": "meowstic-f",
+  "palafin-hero": "palafin-hero",
+  "palafin hero": "palafin-hero",
+  "palafin (hero form)": "palafin-hero",
+  "palafin-hero-form": "palafin-hero",
 };
 
 const SHOWDOWN_EV_ORDER: Array<{ stat: EffortValueStat; label: string }> = [
@@ -248,7 +256,21 @@ function toPokemonShowdownId(speciesName: string): string {
     return formatMegaShowdownId(dashedMegaMatch[1], dashedMegaMatch[2]);
   }
 
+  const genderlessSpecies = stripPlainGenderSuffix(speciesName);
+  if (genderlessSpecies) {
+    return toPokemonShowdownId(genderlessSpecies);
+  }
+
   return normalizeShowdownAssetId(normalized);
+}
+
+function stripPlainGenderSuffix(speciesName: string): string | null {
+  const stripped = speciesName.trim().replace(/\s+\((?:M|F|Male|Female)\)$/i, "").trim();
+  if (!stripped || stripped === speciesName.trim()) {
+    return null;
+  }
+
+  return stripped;
 }
 
 function formatMegaShowdownId(baseName: string, suffix: string | undefined) {
