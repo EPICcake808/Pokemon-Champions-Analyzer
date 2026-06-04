@@ -6,7 +6,7 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
-## Added
+### Added
 
 - That's a secret ;>
 
