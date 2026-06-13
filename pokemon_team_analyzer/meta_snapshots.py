@@ -8,7 +8,12 @@ from typing import Any, cast
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
 
-from .champions_m_a_tournament_meta import TOURNAMENT_TEAM_SNAPSHOTS as BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS
+from .champions_m_a_tournament_meta import (
+    TOURNAMENT_META_AS_OF as BUILT_IN_TOURNAMENT_META_AS_OF,
+    TOURNAMENT_META_METHODOLOGY as BUILT_IN_TOURNAMENT_META_METHODOLOGY,
+    TOURNAMENT_META_SOURCES as BUILT_IN_TOURNAMENT_META_SOURCES,
+    TOURNAMENT_TEAM_SNAPSHOTS as BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS,
+)
 from .regulations import DEFAULT_REGULATION_ID
 
 
@@ -23,6 +28,36 @@ BUILT_IN_META_SNAPSHOT_NOTES = (
 
 def clear_runtime_meta_snapshot_cache() -> None:
     _SNAPSHOT_CACHE.clear()
+
+
+def _built_in_meta_provenance() -> dict[str, object]:
+    return {
+        "as_of": BUILT_IN_TOURNAMENT_META_AS_OF,
+        "source_label": "Built-in curated Regulation M-A board",
+        "sources": [dict(source) for source in BUILT_IN_TOURNAMENT_META_SOURCES],
+        "methodology": BUILT_IN_TOURNAMENT_META_METHODOLOGY,
+        "is_live": False,
+    }
+
+
+def get_tournament_meta_provenance(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> dict[str, object]:
+    """Return provenance (as-of date, sources, methodology) for the active meta board.
+
+    When a live runtime snapshot is in use, its ``updatedAt``/``sourceLabel`` are surfaced
+    so the UI can stamp the panel with the real publish time. Otherwise the honest built-in
+    curated as-of date is used.
+    """
+
+    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
+    base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
+    if resolved_regulation_id == DEFAULT_REGULATION_ID and base_url:
+        cache_key = f"{resolved_regulation_id}:{base_url}"
+        cached_entry = _SNAPSHOT_CACHE.get(cache_key)
+        if cached_entry and cached_entry.get("provenance"):
+            return cast(dict[str, object], cached_entry["provenance"])
+    return _built_in_meta_provenance()
 
 
 def _isoformat_utc(moment: datetime | None = None) -> str:
@@ -167,7 +202,7 @@ def _normalize_runtime_snapshot(raw_snapshot: dict[str, Any]) -> dict[str, objec
 def _fetch_runtime_tournament_team_snapshots(
     base_url: str,
     regulation_id: str,
-) -> tuple[dict[str, object], ...]:
+) -> tuple[tuple[dict[str, object], ...], dict[str, object]]:
     request = Request(
         _build_meta_snapshot_url(base_url, regulation_id),
         headers={
@@ -192,7 +227,17 @@ def _fetch_runtime_tournament_team_snapshots(
             raise ValueError("The runtime meta snapshot contains an invalid team snapshot entry.")
         normalized_snapshots.append(_normalize_runtime_snapshot(cast(dict[str, Any], raw_snapshot)))
 
-    return tuple(normalized_snapshots)
+    updated_at = payload.get("updatedAt")
+    source_label = payload.get("sourceLabel")
+    provenance: dict[str, object] = {
+        "as_of": str(updated_at) if isinstance(updated_at, str) and updated_at else BUILT_IN_TOURNAMENT_META_AS_OF,
+        "source_label": str(source_label) if isinstance(source_label, str) and source_label else "Live published meta snapshot",
+        "sources": [dict(source) for source in BUILT_IN_TOURNAMENT_META_SOURCES],
+        "methodology": BUILT_IN_TOURNAMENT_META_METHODOLOGY,
+        "is_live": True,
+    }
+
+    return tuple(normalized_snapshots), provenance
 
 
 def get_tournament_team_snapshots(
@@ -213,7 +258,7 @@ def get_tournament_team_snapshots(
         return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
 
     try:
-        runtime_snapshots = _fetch_runtime_tournament_team_snapshots(base_url, resolved_regulation_id)
+        runtime_snapshots, runtime_provenance = _fetch_runtime_tournament_team_snapshots(base_url, resolved_regulation_id)
     except Exception:
         if cached_entry:
             return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
@@ -222,5 +267,6 @@ def get_tournament_team_snapshots(
     _SNAPSHOT_CACHE[cache_key] = {
         "expires_at": now + _runtime_meta_snapshot_ttl_seconds(),
         "snapshots": runtime_snapshots,
+        "provenance": runtime_provenance,
     }
     return runtime_snapshots

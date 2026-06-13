@@ -36,14 +36,14 @@ export default async function Home() {
 
   if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(
-      "The app is using the bundled Regulation M-A snapshot for its initial load because POKEMON_ANALYZER_USE_BUNDLED_DEV_SNAPSHOT=1. Refresh analysis to fetch live results.",
+      "Showing the bundled Regulation M-A snapshot for the initial load. Refresh analysis to fetch live results.",
     );
   } else {
     try {
       regulationCatalog = await getRegulationCatalog();
     } catch {
       initialLoadIssues.push(
-        "The Next.js app could not reach the analyzer API for the regulation catalog. Showing the bundled Regulation M-A snapshot instead.",
+        "Live results are temporarily unavailable, so the bundled Regulation M-A snapshot is shown instead.",
       );
     }
   }

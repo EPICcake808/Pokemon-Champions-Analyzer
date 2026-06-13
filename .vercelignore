@@ -8,11 +8,3 @@ node_modules
 pokemon_team_analyzer.egg-info
 **/__pycache__
 **/*.pyc
-output.json
-result.json
-analyze_snippet.py
-evaluate_variants.py
-run_analysis.py
-solution.py
-task_run.py
-task_script.py

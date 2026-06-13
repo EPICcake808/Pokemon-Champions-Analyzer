@@ -8,7 +8,7 @@ from typing import Iterable, cast
 
 from .champions_m_a_meta import MODE_LABEL_ORDER, TOURNAMENT_MODE_SNAPSHOTS
 from .data import CachedPokeApiClient, MetadataProvider
-from .meta_snapshots import get_tournament_team_snapshots
+from .meta_snapshots import get_tournament_meta_provenance, get_tournament_team_snapshots
 from .models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
     MODE_PACKAGE_ORDER,
@@ -34,10 +34,13 @@ from .regulations import (
 )
 from .showdown import parse_showdown_team
 from .speed_benchmarks import (
-    CHAMPIONS_TOTAL_SPS,
     RegulationSpeedBenchmarkCatalog,
     SpeedBenchmarkGroup,
     get_speed_benchmark_catalog,
+)
+from .stats import (
+    CHAMPIONS_MAX_STAT_SPS,
+    compute_stat,
 )
 
 
@@ -204,7 +207,6 @@ DEFENSIVE_ITEMS = {
     "sitrus berry",
 }
 RECOVERY_ITEMS = {"black sludge", "leftovers"}
-CHAMPIONS_FIXED_IV = 31
 NATURE_MODIFIERS = {
     "lonely": ("attack", "defense"),
     "brave": ("attack", "speed"),
@@ -1067,62 +1069,57 @@ def _normalized_battle_speed(member: TeamMember) -> int:
 
 
 def _normalized_member_stats(member: TeamMember) -> dict[str, int]:
-    level = 50
+    nature = member.pokemon_set.nature
+    evs = member.pokemon_set.evs
+    species = member.species_data
     return {
-        "hp": _normalized_hp_stat(member.species_data.base_hp, member.pokemon_set.evs.get("HP", 0), level=level),
-        "attack": _normalized_non_hp_stat(
-            member.species_data.base_attack,
-            member.pokemon_set.evs.get("Atk", 0),
-            level=level,
-            nature_multiplier=_nature_multiplier(member.pokemon_set.nature, "attack"),
+        "hp": compute_stat(species.base_hp, evs.get("HP", 0), is_hp=True),
+        "attack": compute_stat(
+            species.base_attack,
+            evs.get("Atk", 0),
+            nature=_nature_direction(nature, "attack"),
         ),
-        "defense": _normalized_non_hp_stat(
-            member.species_data.base_defense,
-            member.pokemon_set.evs.get("Def", 0),
-            level=level,
-            nature_multiplier=_nature_multiplier(member.pokemon_set.nature, "defense"),
+        "defense": compute_stat(
+            species.base_defense,
+            evs.get("Def", 0),
+            nature=_nature_direction(nature, "defense"),
         ),
-        "special_attack": _normalized_non_hp_stat(
-            member.species_data.base_special_attack,
-            member.pokemon_set.evs.get("SpA", 0),
-            level=level,
-            nature_multiplier=_nature_multiplier(member.pokemon_set.nature, "special_attack"),
+        "special_attack": compute_stat(
+            species.base_special_attack,
+            evs.get("SpA", 0),
+            nature=_nature_direction(nature, "special_attack"),
         ),
-        "special_defense": _normalized_non_hp_stat(
-            member.species_data.base_special_defense,
-            member.pokemon_set.evs.get("SpD", 0),
-            level=level,
-            nature_multiplier=_nature_multiplier(member.pokemon_set.nature, "special_defense"),
+        "special_defense": compute_stat(
+            species.base_special_defense,
+            evs.get("SpD", 0),
+            nature=_nature_direction(nature, "special_defense"),
         ),
-        "speed": _normalized_non_hp_stat(
-            member.species_data.base_speed,
-            member.pokemon_set.evs.get("Spe", 0),
-            level=level,
-            nature_multiplier=_nature_multiplier(member.pokemon_set.nature, "speed"),
+        "speed": compute_stat(
+            species.base_speed,
+            evs.get("Spe", 0),
+            nature=_nature_direction(nature, "speed"),
         ),
     }
 
 
-def _normalized_hp_stat(base_stat: int, ev: int, *, level: int) -> int:
-    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV) * level) // 100
-    return base_component + level + 10 + ev
+def _normalized_hp_stat(base_stat: int, ev: int, *, level: int = 50) -> int:
+    return compute_stat(base_stat, ev, is_hp=True, level=level)
 
 
-def _normalized_non_hp_stat(base_stat: int, ev: int, *, level: int, nature_multiplier: float) -> int:
-    base_component = ((2 * base_stat + CHAMPIONS_FIXED_IV) * level) // 100
-    return int((base_component + 5) * nature_multiplier) + ev
+def _normalized_non_hp_stat(base_stat: int, ev: int, *, level: int = 50, nature: int = 0) -> int:
+    return compute_stat(base_stat, ev, nature=nature, level=level)
 
 
-def _nature_multiplier(nature: str | None, stat_name: str) -> float:
+def _nature_direction(nature: str | None, stat_name: str) -> int:
     normalized_nature = (nature or "").strip().lower()
     if normalized_nature not in NATURE_MODIFIERS:
-        return 1.0
+        return 0
     boosted_stat, lowered_stat = NATURE_MODIFIERS[normalized_nature]
     if stat_name == boosted_stat:
-        return 1.1
+        return 1
     if stat_name == lowered_stat:
-        return 0.9
-    return 1.0
+        return -1
+    return 0
 
 
 def _speed_nature_multiplier(nature: str | None) -> float:
@@ -3598,6 +3595,107 @@ def _finalize_context_reasons(reasons: list[tuple[float, str]], limit: int = 3) 
     return ordered
 
 
+# Display labels for the disruptive "tools" that matchup reason strings may cite. Reason
+# strings must only name a tool when the team actually carries the move, so these labels are
+# resolved against the team's real ``move_counts`` before they appear in any explainer.
+COUNTER_TOOL_MOVE_LABELS: dict[str, str] = {
+    "encore": "Encore",
+    "fake-out": "Fake Out",
+    "taunt": "Taunt",
+    "wide-guard": "Wide Guard",
+    "imprison": "Imprison",
+    "trick-room": "reverse Trick Room",
+    "haze": "Haze",
+    "clear-smog": "Clear Smog",
+}
+
+
+def _join_clause(parts: list[str], conjunction: str = "and") -> str:
+    cleaned = [part for part in parts if part]
+    if not cleaned:
+        return ""
+    if len(cleaned) == 1:
+        return cleaned[0]
+    if len(cleaned) == 2:
+        return f"{cleaned[0]} {conjunction} {cleaned[1]}"
+    return f"{', '.join(cleaned[:-1])}, {conjunction} {cleaned[-1]}"
+
+
+def _present_move_labels(profile: ContextualMatchupProfile, move_keys: tuple[str, ...]) -> list[str]:
+    labels: list[str] = []
+    for key in move_keys:
+        if profile.move_counts.get(key, 0) > 0:
+            label = COUNTER_TOOL_MOVE_LABELS.get(key, key)
+            if label not in labels:
+                labels.append(label)
+    return labels
+
+
+def _team_has_item_control(profile: ContextualMatchupProfile) -> bool:
+    return any(profile.move_counts.get(move_name, 0) > 0 for move_name in ITEM_CONTROL_MOVES)
+
+
+def _counter_reason(
+    tools: list[str],
+    fallback: str,
+    *,
+    plural_verb: str,
+    singular_verb: str,
+    suffix: str,
+) -> str:
+    """Build a reason sentence that only cites tools actually present on the team.
+
+    ``tools`` is the list of present tool labels; when empty the generic ``fallback`` noun
+    phrase is used so the sentence never asserts a specific move the team does not run.
+    """
+
+    if not tools:
+        subject, verb = fallback, plural_verb
+    elif len(tools) == 1:
+        subject, verb = tools[0], singular_verb
+    else:
+        subject, verb = _join_clause(tools), plural_verb
+    return f"{subject} {verb} {suffix}"
+
+
+def _fast_offense_counter_tools(profile: ContextualMatchupProfile, *, include_protect: bool) -> list[str]:
+    tools = _present_move_labels(profile, ("encore", "fake-out", "wide-guard"))
+    if profile.priority_attacks > 0:
+        tools.append("priority")
+    if profile.redirection > 0:
+        tools.append("redirection")
+    if include_protect and profile.protective_turns > 0:
+        tools.append("layered Protect")
+    return tools
+
+
+def _trick_room_counter_tool_labels(profile: ContextualMatchupProfile) -> list[str]:
+    tools = _present_move_labels(
+        profile,
+        ("encore", "taunt", "fake-out", "imprison", "trick-room", "wide-guard"),
+    )
+    if profile.priority_block_bypass > 0 and "Fake Out" not in tools:
+        tools.append("Mold Breaker Fake Out")
+    if profile.intimidate_support > 0:
+        tools.append("Intimidate")
+    return tools
+
+
+def _setup_counter_tool_labels(profile: ContextualMatchupProfile) -> list[str]:
+    tools = _present_move_labels(profile, ("encore", "taunt", "haze"))
+    if profile.priority_attacks > 0:
+        tools.append("priority")
+    return tools
+
+
+def _screen_counter_tool_labels(profile: ContextualMatchupProfile) -> list[str]:
+    tools: list[str] = []
+    if _team_has_item_control(profile):
+        tools.append("item control")
+    tools.extend(_present_move_labels(profile, ("taunt", "encore", "haze")))
+    return tools
+
+
 def _score_broad_contextual_matchup(
     archetype: str,
     contextual_matchup_profile: ContextualMatchupProfile,
@@ -3608,7 +3706,17 @@ def _score_broad_contextual_matchup(
     if archetype == "hyper_offense":
         tailwind_help = 0.09 * min(contextual_matchup_profile.tailwind_counter_tools, 3.0)
         score += tailwind_help
-        _push_context_reason(reasons, tailwind_help, "Encore, Protect, and speed-control tools give it real ways to blunt fast offense.")
+        _push_context_reason(
+            reasons,
+            tailwind_help,
+            _counter_reason(
+                _fast_offense_counter_tools(contextual_matchup_profile, include_protect=True),
+                "Its speed-control tools",
+                plural_verb="give",
+                singular_verb="gives",
+                suffix="it real ways to blunt fast offense.",
+            ),
+        )
 
         bulk_help = 0.05 * min(contextual_matchup_profile.bulky_members, 4)
         score += bulk_help
@@ -3650,7 +3758,17 @@ def _score_broad_contextual_matchup(
 
         counter_help = 0.05 * min(contextual_matchup_profile.setup_counter_tools, 2.5)
         score += counter_help
-        _push_context_reason(reasons, counter_help, "Encore and anti-setup tools make opposing setup windows less free.")
+        _push_context_reason(
+            reasons,
+            counter_help,
+            _counter_reason(
+                _setup_counter_tool_labels(contextual_matchup_profile),
+                "Its anti-setup tools",
+                plural_verb="make",
+                singular_verb="makes",
+                suffix="opposing setup windows less free.",
+            ),
+        )
 
         if contextual_matchup_profile.progress_pressure < 1.5:
             score -= 0.1
@@ -3698,7 +3816,17 @@ def _score_broad_contextual_matchup(
     elif archetype == "trick_room":
         contest_help = 0.09 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
         score += contest_help
-        _push_context_reason(reasons, contest_help, "Encore, Fake Out, reverse Room lines, and other anti-room tools give it real setup contesting play.")
+        _push_context_reason(
+            reasons,
+            contest_help,
+            _counter_reason(
+                _trick_room_counter_tool_labels(contextual_matchup_profile),
+                "Its anti-room tools",
+                plural_verb="give",
+                singular_verb="gives",
+                suffix="it real setup contesting play.",
+            ),
+        )
 
         bypass_help = 0.08 * contextual_matchup_profile.priority_block_bypass
         score += bypass_help
@@ -3997,6 +4125,7 @@ def infer_meta_analysis(
         "weighted_matchups": top_weighted_entries,
         "common_pokemon": common_pokemon,
         "notes": notes,
+        "provenance": get_tournament_meta_provenance(regulation_id),
     }
 
 
@@ -4246,7 +4375,17 @@ def _score_tournament_snapshot_contextual_matchup(
     if any(_team_preview_is_tailwind_mode(mode_name) for mode_name in modes):
         tailwind_counter_bonus = 0.08 * min(contextual_matchup_profile.tailwind_counter_tools, 3.0)
         score += tailwind_counter_bonus
-        _push_context_reason(reasons, tailwind_counter_bonus, "Encore, Fake Out, and speed-control tools give it real play into Tailwind tempo.")
+        _push_context_reason(
+            reasons,
+            tailwind_counter_bonus,
+            _counter_reason(
+                _fast_offense_counter_tools(contextual_matchup_profile, include_protect=False),
+                "Its speed-control tools",
+                plural_verb="give",
+                singular_verb="gives",
+                suffix="it real play into Tailwind tempo.",
+            ),
+        )
 
         protect_bonus = 0.02 * min(contextual_matchup_profile.protective_turns, 4)
         score += protect_bonus
@@ -4281,7 +4420,17 @@ def _score_tournament_snapshot_contextual_matchup(
     if any(_team_preview_is_trick_room_mode(mode_name) for mode_name in modes):
         trick_room_counter_bonus = 0.13 * min(contextual_matchup_profile.trick_room_counter_tools, 3.0)
         score += trick_room_counter_bonus
-        _push_context_reason(reasons, trick_room_counter_bonus, "Encore, Taunt, Fake Out, or reverse Room lines give it real Trick Room counterplay.")
+        _push_context_reason(
+            reasons,
+            trick_room_counter_bonus,
+            _counter_reason(
+                _trick_room_counter_tool_labels(contextual_matchup_profile),
+                "Its anti-room tools",
+                plural_verb="give",
+                singular_verb="gives",
+                suffix="it real Trick Room counterplay.",
+            ),
+        )
 
         intimidate_room_bonus = 0.05 * min(contextual_matchup_profile.intimidate_support, 2)
         score += intimidate_room_bonus
@@ -4348,11 +4497,31 @@ def _score_tournament_snapshot_contextual_matchup(
     if any("screen" in core.lower() for core in key_cores) or "screens" in label_text:
         screens_bonus = 0.12 * min(contextual_matchup_profile.screen_counter_tools, 2.5)
         score += screens_bonus
-        _push_context_reason(reasons, screens_bonus, "Its item control and anti-setup tools stop screens from becoming a free snowball.")
+        _push_context_reason(
+            reasons,
+            screens_bonus,
+            _counter_reason(
+                _screen_counter_tool_labels(contextual_matchup_profile),
+                "Its offensive pressure",
+                plural_verb="stop",
+                singular_verb="stops",
+                suffix="screens from becoming a free snowball.",
+            ),
+        )
     if "shell smash" in core_text:
         shell_smash_bonus = 0.11 * min(contextual_matchup_profile.setup_counter_tools, 2.5)
         score += shell_smash_bonus
-        _push_context_reason(reasons, shell_smash_bonus, "Encore and anti-setup tools keep Shell Smash lines more honest.")
+        _push_context_reason(
+            reasons,
+            shell_smash_bonus,
+            _counter_reason(
+                _setup_counter_tool_labels(contextual_matchup_profile),
+                "Its anti-setup tools",
+                plural_verb="keep",
+                singular_verb="keeps",
+                suffix="Shell Smash lines more honest.",
+            ),
+        )
 
     if broad_mix.get("hyper_offense", 0.0) >= 0.45:
         ho_pressure_bonus = 0.04 * min(contextual_matchup_profile.immediate_pressure, 4.0)
@@ -4567,11 +4736,10 @@ def _build_snapshot_target_matchup_summary(
         if target_species is None:
             continue
 
-        target_speed = _normalized_non_hp_stat(
+        target_speed = compute_stat(
             target_species.base_speed,
-            CHAMPIONS_TOTAL_SPS,
-            level=50,
-            nature_multiplier=1.1,
+            CHAMPIONS_MAX_STAT_SPS,
+            nature=1,
         )
         best_multiplier = 0.0
         super_effective_lines = 0
