@@ -270,6 +270,10 @@ export interface MetaProvenance {
   sources: MetaProvenanceSource[];
   methodology: string;
   is_live: boolean;
+  // True when the common-meta board reflects measured overall usage (share of sampled
+  // tournament teams) rather than curated board share. sample_size is the team count.
+  usage_based?: boolean;
+  sample_size?: number | null;
 }
 
 export interface MetaAnalysis {

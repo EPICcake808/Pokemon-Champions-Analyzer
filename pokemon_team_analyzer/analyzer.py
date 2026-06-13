@@ -8,7 +8,11 @@ from typing import Iterable, cast
 
 from .champions_m_a_meta import MODE_LABEL_ORDER, TOURNAMENT_MODE_SNAPSHOTS
 from .data import CachedPokeApiClient, MetadataProvider
-from .meta_snapshots import get_tournament_meta_provenance, get_tournament_team_snapshots
+from .meta_snapshots import (
+    get_runtime_common_meta_pokemon,
+    get_tournament_meta_provenance,
+    get_tournament_team_snapshots,
+)
 from .models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
     MODE_PACKAGE_ORDER,
@@ -5064,6 +5068,13 @@ MAX_COMMON_META_POKEMON = 10
 def _build_common_meta_pokemon(
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> list[dict[str, object]]:
+    # Prefer real overall usage from the live feed (share of sampled tournament teams
+    # running each Pokemon). Only fall back to curated board-share derivation when no
+    # live usage feed is configured/available.
+    runtime_usage = get_runtime_common_meta_pokemon(regulation_id)
+    if runtime_usage:
+        return [dict(row) for row in runtime_usage][:MAX_COMMON_META_POKEMON]
+
     eligible_snapshots = [
         snapshot
         for snapshot in get_tournament_team_snapshots(regulation_id)

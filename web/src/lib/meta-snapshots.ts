@@ -332,27 +332,6 @@ export async function upsertPublishedMetaSnapshot({
   return serializePublishedMetaSnapshot(row);
 }
 
-export async function fetchMetaSnapshotSource(sourceUrl: string) {
-  const response = await fetch(sourceUrl, {
-    cache: "no-store",
-    headers: {
-      Accept: "application/json",
-      "User-Agent": "pokemon-champions-analyzer-meta-refresh/0.1",
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`The meta snapshot source responded with ${response.status}.`);
-  }
-
-  const parsedPayload = metaSnapshotFeedSchema.safeParse(await response.json());
-  if (!parsedPayload.success) {
-    throw new Error(parsedPayload.error.issues[0]?.message ?? "The meta snapshot source payload is invalid.");
-  }
-
-  return parsedPayload.data.regulations.map(normalizePublishedMetaSnapshotDocument);
-}
-
 export function isMetaSnapshotRefreshAuthorized(request: Request) {
   const expectedSecret =
     process.env.META_SNAPSHOT_REFRESH_SECRET?.trim() || process.env.CRON_SECRET?.trim() || "";

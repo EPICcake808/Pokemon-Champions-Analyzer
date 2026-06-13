@@ -1,0 +1,205 @@
+[
+  {
+    "name": "AceWinner",
+    "player": "acewinner",
+    "placing": 1,
+    "record": {
+      "wins": 8,
+      "losses": 0,
+      "ties": 0
+    },
+    "decklist": [
+      {
+        "id": "pelipper",
+        "name": "Pelipper",
+        "item": "Focus Sash",
+        "ability": "Drizzle",
+        "attacks": [
+          "Hurricane",
+          "Tailwind",
+          "Protect",
+          "Hydro Pump"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "archaludon",
+        "name": "Archaludon",
+        "item": "Assault Vest",
+        "ability": "Stamina",
+        "attacks": [
+          "Electro Shot",
+          "Draco Meteor",
+          "Body Press",
+          "Flash Cannon"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "basculegion",
+        "name": "Basculegion",
+        "item": "Choice Scarf",
+        "ability": "Adaptability",
+        "attacks": [
+          "Wave Crash",
+          "Last Respects",
+          "Flip Turn",
+          "Aqua Jet"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "incineroar",
+        "name": "Incineroar",
+        "item": "Safety Goggles",
+        "ability": "Intimidate",
+        "attacks": [
+          "Fake Out",
+          "Knock Off",
+          "Parting Shot",
+          "Flare Blitz"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "sinistcha",
+        "name": "Sinistcha",
+        "item": "Sitrus Berry",
+        "ability": "Hospitality",
+        "attacks": [
+          "Matcha Gotcha",
+          "Rage Powder",
+          "Life Dew",
+          "Trick Room"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "charizard",
+        "name": "Charizard",
+        "item": "Charizardite Y",
+        "ability": "Blaze",
+        "attacks": [
+          "Heat Wave",
+          "Solar Beam",
+          "Protect",
+          "Tera Blast"
+        ],
+        "nature": "Modest",
+        "tera": null
+      }
+    ]
+  },
+  {
+    "name": "RunnerUp",
+    "player": "runnerup",
+    "placing": 2,
+    "record": {
+      "wins": 7,
+      "losses": 1,
+      "ties": 0
+    },
+    "decklist": [
+      {
+        "id": "pelipper",
+        "name": "Pelipper",
+        "item": "Focus Sash",
+        "ability": "Drizzle",
+        "attacks": [
+          "Hurricane",
+          "Tailwind",
+          "Protect",
+          "Wide Guard"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "archaludon",
+        "name": "Archaludon",
+        "item": "Assault Vest",
+        "ability": "Stamina",
+        "attacks": [
+          "Electro Shot",
+          "Draco Meteor",
+          "Body Press",
+          "Snarl"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "basculegion",
+        "name": "Basculegion",
+        "item": "Mystic Water",
+        "ability": "Adaptability",
+        "attacks": [
+          "Wave Crash",
+          "Last Respects",
+          "Flip Turn",
+          "Protect"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "incineroar",
+        "name": "Incineroar",
+        "item": "Sitrus Berry",
+        "ability": "Intimidate",
+        "attacks": [
+          "Fake Out",
+          "Knock Off",
+          "Parting Shot",
+          "Flare Blitz"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "rillaboom",
+        "name": "Rillaboom",
+        "item": "Assault Vest",
+        "ability": "Grassy Surge",
+        "attacks": [
+          "Grassy Glide",
+          "Fake Out",
+          "U-turn",
+          "Wood Hammer"
+        ],
+        "nature": "Modest",
+        "tera": null
+      },
+      {
+        "id": "lucario",
+        "name": "Lucario",
+        "item": "Lucarionite",
+        "ability": "Inner Focus",
+        "attacks": [
+          "Meteor Mash",
+          "Bullet Punch",
+          "Close Combat",
+          "Protect"
+        ],
+        "nature": "Modest",
+        "tera": null
+      }
+    ]
+  },
+  {
+    "name": "NoList",
+    "player": "nolist",
+    "placing": 3,
+    "record": {
+      "wins": 6,
+      "losses": 2,
+      "ties": 0
+    },
+    "decklist": []
+  }
+]

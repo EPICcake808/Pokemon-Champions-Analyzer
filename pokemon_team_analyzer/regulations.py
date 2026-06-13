@@ -111,6 +111,15 @@ def _build_generated_species_aliases() -> dict[str, str]:
                 f"{base_name}-{gender_name}",
             ):
                 aliases[normalize_showdown_name(alias, convert_gender_suffix=True)] = canonical_name
+            # Showdown and Limitless exports write gender-difference species under
+            # their bare genderless name, which defaults to the male form (e.g.
+            # bare "Basculegion" is the male Blue-Striped form). Resolve the bare
+            # name to that default so genuine legal teams aren't rejected.
+            if gender_name == "male":
+                aliases.setdefault(
+                    normalize_showdown_name(base_name, convert_gender_suffix=True),
+                    canonical_name,
+                )
             continue
 
         regional_match = regional_form_pattern.match(species_name)

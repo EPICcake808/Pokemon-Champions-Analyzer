@@ -175,19 +175,13 @@ AUTH_TRUST_HOST=true
 POKEMON_ANALYZER_API_BASE_URL=https://your-analyzer-api.vercel.app
 ```
 
-Optional for automated hosted meta-board refreshes:
+Required on the frontend project so the scheduled GitHub Action can publish the meta board (see "Automated Meta Snapshot Refresh" below):
 
 ```bash
-CRON_SECRET=replace-with-a-shared-secret
+META_SNAPSHOT_REFRESH_SECRET=replace-with-a-shared-secret
 ```
 
-Optional for advanced manual or local deep-discovery runs:
-
-```bash
-POKEMON_ANALYZER_ENABLE_DEEP_DISCOVERY=1
-```
-
-If you already set `POKEMON_ANALYZER_API_BASE_URL` for the frontend, the hosted refresh route now defaults to `https://your-analyzer-api.vercel.app/api/meta-snapshot-source` automatically. Only set `META_SNAPSHOT_SOURCE_URL` when you want to override that with a separate external curated feed.
+This must match the `META_SNAPSHOT_REFRESH_SECRET` repository secret used by the Action. (`CRON_SECRET` is accepted as an alias if you already use that name.)
 
 Required to enable Google OAuth as well:
 
@@ -211,25 +205,51 @@ npm run db:push
 Local development and deployment notes:
 
 - Vercel should receive the same `DATABASE_URL`, `AUTH_SECRET`, `AUTH_TRUST_HOST`, `POKEMON_ANALYZER_API_BASE_URL`, `AUTH_GOOGLE_ID`, and `AUTH_GOOGLE_SECRET` values.
-- Add `CRON_SECRET` to the frontend project if you want the hosted site to refresh the meta board automatically. If `POKEMON_ANALYZER_API_BASE_URL` is already set, the refresh routes can use the analyzer API's built-in `/api/meta-snapshot-source` endpoint without any extra source-feed configuration. Only add `META_SNAPSHOT_SOURCE_URL` when you want to override that default with a separate curated JSON feed.
-- You do not need `POKEMON_ANALYZER_ENABLE_DEEP_DISCOVERY` for the hosted automatic path. The dedicated deep-refresh route enables deep discovery on its own. Only set that env var when you want to force deep discovery on the standard refresh route or during manual/local runs.
+- Add `META_SNAPSHOT_REFRESH_SECRET` to the frontend project (and the matching repository secret) so the scheduled GitHub Action can publish the meta board. See "Automated Meta Snapshot Refresh" for the full secret list.
 - Add `POKEMON_ANALYZER_META_SNAPSHOT_URL=https://your-frontend-domain/api/meta-snapshot` to the analyzer API project so live analysis uses the published board.
 - The saved-team and auth routes use the Node runtime, while the analyzer itself now runs as a separate Python Vercel project in the same GitHub repository.
 - If you want to inspect or evolve the database schema locally, `cd web && npm run db:studio` opens Drizzle Studio.
 
-### Automated Meta Snapshot Refresh
+### Automated Meta Snapshot Refresh (inverted pipeline)
 
-The hosted site can now publish the meta board from a runtime feed instead of only from a checked-in mirror file.
+The meta board is refreshed by a **scheduled GitHub Action**, not by an in-request Vercel cron. The heavy work (scraping/ingesting, usage stats, discovery, reconciliation, validation) runs in a full Python runtime with real retries and readable logs; Vercel just serves the result.
 
-1. The frontend project stores the latest published meta snapshot in Neon.
-2. `GET /api/meta-snapshot` exposes the latest published snapshot for a regulation.
-3. `GET /api/meta-snapshot/refresh` is the secured hosted-safe route intended for the daily base refresh and manual admin calls.
-4. `GET /api/meta-snapshot/deep-refresh` is the secured follow-up route that starts from the published board and runs the heavier export/article discovery pass.
-5. The included `web/vercel.json` schedules both routes automatically, with the deep refresh running after the base refresh.
-6. By default, the base refresh derives its source from `POKEMON_ANALYZER_API_BASE_URL` and pulls the analyzer API's built-in `/api/meta-snapshot-source` feed.
-7. The analyzer API project can read the published snapshot by setting `POKEMON_ANALYZER_META_SNAPSHOT_URL` to the frontend route.
+How it flows (`.github/workflows/meta-refresh.yml`, daily + manual `workflow_dispatch`):
 
-The hosted automation is intentionally split in two. The daily base refresh keeps the smaller, reliable live-source set so the published board stays healthy on Vercel's request-path runtime budget. The separate deep-refresh route then layers the heavier Pokepaste, export, and supported article-roster discovery sources on top automatically. If you want to force that heavier discovery path on the standard refresh route or during manual local runs, set `POKEMON_ANALYZER_ENABLE_DEEP_DISCOVERY=1`.
+1. Runs `python -m pokemon_team_analyzer.meta_ingest --since 30 --write`, building and validating the board from real tournament data (see "Meta ingestion" below).
+2. **Commits** the refreshed `web/public/meta-snapshots.json` to the repo (git-history provenance; no secret needed beyond the workflow's `GITHUB_TOKEN`).
+3. **POSTs** the validated feed to the secured `POST /api/meta-snapshot/publish` route, which authorizes (`Authorization: Bearer <secret>`), re-validates against `metaSnapshotFeedSchema`, and upserts it into the published board.
+4. `GET /api/meta-snapshot` then serves the latest published snapshot, and the analyzer reads it when `POKEMON_ANALYZER_META_SNAPSHOT_URL` points at that route.
+
+Required GitHub repository secrets (the Action degrades gracefully without them — the repo-commit half always runs; the DB-publish half activates only when both are set):
+
+- `META_SNAPSHOT_PUBLISH_URL` — e.g. `https://your-frontend-domain/api/meta-snapshot/publish`
+- `META_SNAPSHOT_REFRESH_SECRET` (or `CRON_SECRET`) — must match the value the frontend project uses for `isMetaSnapshotRefreshAuthorized`
+- `LIMITLESS_API_KEY` — optional; raises Limitless rate limits
+
+> The legacy in-request `/api/meta-snapshot/refresh` and `/api/meta-snapshot/deep-refresh` routes — and the ~2,100-line request-path scraping module (`live-meta-ingestion.ts`) that backed them — have been **removed**. All ingestion now happens in the scheduled Action; Vercel only serves (`GET /api/meta-snapshot`) and stores (`POST /api/meta-snapshot/publish`).
+
+### Meta ingestion (local, structured-source pipeline)
+
+`pokemon_team_analyzer.meta_ingest` builds the meta board from **real tournament data** instead of the curated in-repo shells. It runs outside the Vercel request path (locally, and in the scheduled GitHub Action above) so it gets full Python, real retries, and readable logs.
+
+```bash
+python -m pokemon_team_analyzer.meta_ingest --since 30 --report
+# or, equivalently:
+python scripts/build_meta_snapshot.py --since 30 --report
+```
+
+What it does:
+
+- **Authoritative source — Limitless tournament API** (`play.limitlesstcg.com/api`). It lists completed Champions Regulation M-A tournaments (`format == "M-A"`, auto-detected) within `--since` days and pulls each player's structured roster from the standings endpoint. One call per tournament yields both placements and full team lists — no HTML scraping for the core data. Set `LIMITLESS_API_KEY` to raise rate limits.
+- **Real usage** — each Pokémon's headline percentage is its share of *sampled real teams* (`teams_running_it / total_teams`), not curated board share. Output lands in each document's `commonMetaPokemon[].metaShare` (with extra `usagePercent` / `weightedUsagePercent` / `teamCount` / `sampleSize` provenance fields).
+- **Automatic shell discovery** — rosters are clustered into representative `tournamentTeamSnapshots` using modes/archetypes inferred from each team's structured decklist (weather abilities, Trick Room / Tailwind, the offensive-support move mix). Each shell is stamped with real Limitless tournament provenance URLs and a result label from actual placings.
+- **Multi-source reconciliation** — Limitless is cross-checked against Pikalytics (server-rendered usage) and Pokémon Zone (best-effort; it is bot-protected and often 403s). Disagreements and unavailable sources are flagged in the run report and the published `notes`; the run never aborts because a secondary source is down.
+- **Schema-gated** — the assembled feed is validated against the same contract the web app enforces (`web/src/lib/meta-snapshots.ts`) before anything is written.
+
+Useful flags: `--since DAYS`, `--min-players N`, `--max-tournaments N`, `--report` (print the reconciliation table), `--no-secondary` (skip cross-checks), `--write` (write `web/public/meta-snapshots.json` instead of the scratch `build/meta-snapshots.json`), `--publish-url URL` (POST the validated feed to a `/api/meta-snapshot/publish` route; auth via `META_SNAPSHOT_REFRESH_SECRET`/`CRON_SECRET`).
+
+**Consumption:** when `POKEMON_ANALYZER_META_SNAPSHOT_URL` points the analyzer at a published feed that carries `commonMetaPokemon`, the analyzer surfaces that **real usage** in `meta_analysis.common_pokemon` (the "Most common meta Pokemon" board) instead of deriving board share from the curated shells. The UI then labels each entry "% usage" (rather than "% board share"), stamps the panel as **Live usage data** with the sampled team count, and shows the existing stale badge once the feed ages past `META_STALE_AFTER_DAYS` (14). With no feed configured it transparently falls back to curated board share.
 
 Expected JSON feed shape:
 
