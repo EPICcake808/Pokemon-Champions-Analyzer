@@ -70,6 +70,49 @@ Ability: Mold Breaker
 - Thunder Wave
 """
 
+LEGAL_BARE_BASCULEGION_TEAM = """Incineroar @ Sitrus Berry
+Ability: Intimidate
+- Fake Out
+- Flare Blitz
+- Knock Off
+- Parting Shot
+
+Garchomp @ Focus Sash
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Swords Dance
+
+Rotom-Wash @ Leftovers
+Ability: Levitate
+- Thunderbolt
+- Hydro Pump
+- Will-O-Wisp
+- Protect
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+
+Basculegion @ Mystic Water
+Ability: Adaptability
+- Wave Crash
+- Last Respects
+- Aqua Jet
+- Protect
+"""
+
 ILLEGAL_SPECIES_TEAM = """Raging Bolt @ Leftovers
 Ability: Protosynthesis
 - Thunderclap
@@ -867,6 +910,17 @@ Ability: Mold Breaker
         legality = validate_team_legality_text(LEGAL_MA_TEAM)
 
         self.assertTrue(legality.is_legal)
+        self.assertEqual(legality.issues, ())
+
+    def test_regulation_species_resolution_defaults_bare_gender_forms_to_male(self) -> None:
+        self.assertEqual(resolve_regulation_species_name("Basculegion"), "Basculegion (Male)")
+        self.assertEqual(resolve_regulation_species_name("Meowstic"), "Meowstic (Male)")
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
+    def test_validate_team_legality_accepts_bare_basculegion(self, _mock_get_allowed_moves: object) -> None:
+        legality = validate_team_legality_text(LEGAL_BARE_BASCULEGION_TEAM)
+
+        self.assertTrue(legality.is_legal, msg=[issue.message for issue in legality.issues])
         self.assertEqual(legality.issues, ())
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)

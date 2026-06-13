@@ -26,8 +26,53 @@ BUILT_IN_META_SNAPSHOT_NOTES = (
 )
 
 
+RUNTIME_USAGE_METHODOLOGY = (
+    "Live overall usage from real tournament team lists: each Pokemon's share is the "
+    "percentage of sampled Regulation M-A teams running it, cross-checked across sources."
+)
+
+
 def clear_runtime_meta_snapshot_cache() -> None:
     _SNAPSHOT_CACHE.clear()
+
+
+def _normalize_runtime_common_meta_pokemon(raw_common_meta: Any) -> tuple[dict[str, object], ...]:
+    """Normalize a feed's ``commonMetaPokemon`` (real usage) into analyzer row shape.
+
+    The feed uses camelCase keys (``metaShare``/``whyUsed``/...); the analyzer's
+    ``meta_analysis.common_pokemon`` rows use snake_case. Returns an empty tuple when
+    the feed carries no usable usage rows, so callers fall back to board-share derivation.
+    """
+
+    if not isinstance(raw_common_meta, list):
+        return ()
+
+    rows: list[dict[str, object]] = []
+    for item in raw_common_meta:
+        if not isinstance(item, dict):
+            continue
+        species = item.get("species")
+        meta_share = item.get("metaShare")
+        if not isinstance(species, str) or not species.strip():
+            continue
+        if not isinstance(meta_share, (int, float)) or isinstance(meta_share, bool):
+            continue
+        featured_teams = [
+            team.strip()
+            for team in item.get("featuredTeams", [])
+            if isinstance(team, str) and team.strip()
+        ]
+        rows.append(
+            {
+                "species": species.strip(),
+                "meta_share": round(float(meta_share), 1),
+                "why_used": str(item.get("whyUsed") or "").strip(),
+                "what_it_does": str(item.get("whatItDoes") or "").strip(),
+                "featured_teams": featured_teams,
+            }
+        )
+
+    return tuple(rows)
 
 
 def _built_in_meta_provenance() -> dict[str, object]:
@@ -37,6 +82,9 @@ def _built_in_meta_provenance() -> dict[str, object]:
         "sources": [dict(source) for source in BUILT_IN_TOURNAMENT_META_SOURCES],
         "methodology": BUILT_IN_TOURNAMENT_META_METHODOLOGY,
         "is_live": False,
+        # The built-in board ranks Pokemon by curated board share, not measured usage.
+        "usage_based": False,
+        "sample_size": None,
     }
 
 
@@ -199,10 +247,58 @@ def _normalize_runtime_snapshot(raw_snapshot: dict[str, Any]) -> dict[str, objec
     }
 
 
+def _runtime_provenance_sources(payload: dict[str, Any]) -> list[dict[str, object]]:
+    """Surface the feed's own provenance sources (Limitless/Pikalytics/...) when present.
+
+    The automated feed writes a ``provenance.sources`` list of ``{name, url, available}``;
+    map those to the ``{label, url}`` shape the UI renders. Falls back to the built-in
+    curated sources when the feed does not carry its own.
+    """
+
+    feed_provenance = payload.get("provenance") if isinstance(payload.get("provenance"), dict) else {}
+    mapped: list[dict[str, object]] = []
+
+    # The authoritative source (Limitless) is recorded separately from the secondary
+    # cross-checks; surface it first so the UI never omits the source the data came from.
+    authoritative = feed_provenance.get("authoritativeSource")
+    if isinstance(authoritative, dict):
+        label = authoritative.get("name") or authoritative.get("label")
+        url = authoritative.get("url")
+        if isinstance(label, str) and isinstance(url, str) and label.strip() and url.strip():
+            mapped.append({"label": label.strip(), "url": url.strip()})
+
+    raw_sources = feed_provenance.get("sources")
+    if isinstance(raw_sources, list):
+        for source in raw_sources:
+            if not isinstance(source, dict):
+                continue
+            label = source.get("name") or source.get("label")
+            url = source.get("url")
+            if isinstance(label, str) and isinstance(url, str) and label.strip() and url.strip():
+                available = source.get("available")
+                mapped.append(
+                    {
+                        "label": label.strip() if available is not False else f"{label.strip()} (unavailable)",
+                        "url": url.strip(),
+                    }
+                )
+
+    return mapped or [dict(source) for source in BUILT_IN_TOURNAMENT_META_SOURCES]
+
+
+def _runtime_sample_size(payload: dict[str, Any]) -> int | None:
+    feed_provenance = payload.get("provenance")
+    if isinstance(feed_provenance, dict):
+        sample_size = feed_provenance.get("sampleSize")
+        if isinstance(sample_size, int) and not isinstance(sample_size, bool):
+            return sample_size
+    return None
+
+
 def _fetch_runtime_tournament_team_snapshots(
     base_url: str,
     regulation_id: str,
-) -> tuple[tuple[dict[str, object], ...], dict[str, object]]:
+) -> tuple[tuple[dict[str, object], ...], dict[str, object], tuple[dict[str, object], ...]]:
     request = Request(
         _build_meta_snapshot_url(base_url, regulation_id),
         headers={
@@ -227,17 +323,23 @@ def _fetch_runtime_tournament_team_snapshots(
             raise ValueError("The runtime meta snapshot contains an invalid team snapshot entry.")
         normalized_snapshots.append(_normalize_runtime_snapshot(cast(dict[str, Any], raw_snapshot)))
 
+    common_meta = _normalize_runtime_common_meta_pokemon(payload.get("commonMetaPokemon"))
+    usage_based = bool(common_meta)
+    sample_size = _runtime_sample_size(payload)
+
     updated_at = payload.get("updatedAt")
     source_label = payload.get("sourceLabel")
     provenance: dict[str, object] = {
         "as_of": str(updated_at) if isinstance(updated_at, str) and updated_at else BUILT_IN_TOURNAMENT_META_AS_OF,
         "source_label": str(source_label) if isinstance(source_label, str) and source_label else "Live published meta snapshot",
-        "sources": [dict(source) for source in BUILT_IN_TOURNAMENT_META_SOURCES],
-        "methodology": BUILT_IN_TOURNAMENT_META_METHODOLOGY,
+        "sources": _runtime_provenance_sources(payload),
+        "methodology": RUNTIME_USAGE_METHODOLOGY if usage_based else BUILT_IN_TOURNAMENT_META_METHODOLOGY,
         "is_live": True,
+        "usage_based": usage_based,
+        "sample_size": sample_size,
     }
 
-    return tuple(normalized_snapshots), provenance
+    return tuple(normalized_snapshots), provenance, common_meta
 
 
 def get_tournament_team_snapshots(
@@ -258,7 +360,9 @@ def get_tournament_team_snapshots(
         return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
 
     try:
-        runtime_snapshots, runtime_provenance = _fetch_runtime_tournament_team_snapshots(base_url, resolved_regulation_id)
+        runtime_snapshots, runtime_provenance, runtime_common_meta = _fetch_runtime_tournament_team_snapshots(
+            base_url, resolved_regulation_id
+        )
     except Exception:
         if cached_entry:
             return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
@@ -268,5 +372,33 @@ def get_tournament_team_snapshots(
         "expires_at": now + _runtime_meta_snapshot_ttl_seconds(),
         "snapshots": runtime_snapshots,
         "provenance": runtime_provenance,
+        "common_meta": runtime_common_meta,
     }
     return runtime_snapshots
+
+
+def get_runtime_common_meta_pokemon(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> tuple[dict[str, object], ...]:
+    """Return the live feed's real-usage common-meta rows, or an empty tuple.
+
+    When a configured runtime feed carries ``commonMetaPokemon`` (overall usage),
+    those rows are returned in ``meta_analysis.common_pokemon`` shape so the analyzer
+    can surface measured usage instead of deriving board share. An empty tuple means
+    no live usage is available and the caller should fall back to board-share derivation.
+    """
+
+    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
+    if resolved_regulation_id != DEFAULT_REGULATION_ID:
+        return ()
+
+    base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
+    if not base_url:
+        return ()
+
+    # Ensure the runtime feed is fetched/cached (shared fetch populates common_meta too).
+    get_tournament_team_snapshots(resolved_regulation_id)
+    cached_entry = _SNAPSHOT_CACHE.get(f"{resolved_regulation_id}:{base_url}")
+    if not cached_entry:
+        return ()
+    return cast(tuple[dict[str, object], ...], cached_entry.get("common_meta", ()))

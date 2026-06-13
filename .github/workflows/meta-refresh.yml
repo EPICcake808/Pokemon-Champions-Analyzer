@@ -1,0 +1,79 @@
+name: Refresh meta board
+
+# Inverted ingestion pipeline (replaces the in-request Vercel cron path):
+# a full Python runtime scrapes/ingests real tournament data, computes usage,
+# discovers shells, validates, then (1) commits the artifact to the repo and
+# (2) POSTs it to the secured /api/meta-snapshot/publish route. Vercel just serves.
+on:
+  schedule:
+    # Daily at 09:00 UTC. Kept off the old Vercel cron times to avoid races.
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+    inputs:
+      since_days:
+        description: "Lookback window in days"
+        default: "30"
+      min_players:
+        description: "Skip tournaments smaller than this"
+        default: "16"
+      max_tournaments:
+        description: "Cap on tournaments sampled"
+        default: "60"
+
+# Never let two refreshes race on the commit/push.
+concurrency:
+  group: meta-refresh
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install package
+        run: pip install -e .
+
+      - name: Build (and optionally publish) the meta board
+        env:
+          LIMITLESS_API_KEY: ${{ secrets.LIMITLESS_API_KEY }}
+          META_SNAPSHOT_REFRESH_SECRET: ${{ secrets.META_SNAPSHOT_REFRESH_SECRET }}
+          PUBLISH_URL: ${{ secrets.META_SNAPSHOT_PUBLISH_URL }}
+          SINCE: ${{ github.event.inputs.since_days || '30' }}
+          MIN_PLAYERS: ${{ github.event.inputs.min_players || '16' }}
+          MAX_TOURNAMENTS: ${{ github.event.inputs.max_tournaments || '60' }}
+        run: |
+          set -euo pipefail
+          ARGS=(--since "$SINCE" --min-players "$MIN_PLAYERS" --max-tournaments "$MAX_TOURNAMENTS" --write --report)
+          if [ -n "${PUBLISH_URL}" ] && [ -n "${META_SNAPSHOT_REFRESH_SECRET}" ]; then
+            echo "DB publish ENABLED -> ${PUBLISH_URL}"
+            ARGS+=(--publish-url "${PUBLISH_URL}")
+          else
+            echo "DB publish skipped (META_SNAPSHOT_PUBLISH_URL / META_SNAPSHOT_REFRESH_SECRET not set); repo commit still runs."
+          fi
+          python -m pokemon_team_analyzer.meta_ingest "${ARGS[@]}"
+
+      - name: Commit refreshed board
+        # Run even if publish failed, so the freshly built artifact is still committed.
+        if: always()
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- web/public/meta-snapshots.json; then
+            echo "No board changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add web/public/meta-snapshots.json
+          git commit -m "chore(meta): refresh Regulation M-A usage board [skip ci]"
+          git push

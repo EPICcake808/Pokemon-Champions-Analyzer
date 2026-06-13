@@ -1580,7 +1580,10 @@ export function AnalyzerWorkspace({
               heading="Meta notes"
               values={analysis.meta_analysis.notes.length ? analysis.meta_analysis.notes : ["No additional meta notes for this roster."]}
             />
-            <MetaCommonPokemonBoard rows={analysis.meta_analysis.common_pokemon ?? []} />
+            <MetaCommonPokemonBoard
+              rows={analysis.meta_analysis.common_pokemon ?? []}
+              usageBased={analysis.meta_analysis.provenance?.usage_based ?? false}
+            />
           </div>
 
           <div className="space-y-6">
@@ -2626,10 +2629,18 @@ function PlainList({ heading, values }: { heading: string; values: string[] }) {
   );
 }
 
-function MetaCommonPokemonBoard({ rows }: { rows: MetaCommonPokemonRowData[] }) {
+function MetaCommonPokemonBoard({
+  rows,
+  usageBased,
+}: {
+  rows: MetaCommonPokemonRowData[];
+  usageBased: boolean;
+}) {
   if (!rows.length) {
     return null;
   }
+
+  const shareLabel = usageBased ? "usage" : "board share";
 
   return (
     <div>
@@ -2642,7 +2653,7 @@ function MetaCommonPokemonBoard({ rows }: { rows: MetaCommonPokemonRowData[] }) 
             <div className="flex items-start justify-between gap-4">
               <p className="text-sm leading-6 text-white/82">{row.species}</p>
               <span className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--accent)]">
-                {row.meta_share.toFixed(1)}% board share
+                {row.meta_share.toFixed(1)}% {shareLabel}
               </span>
             </div>
             <p className="mt-3 text-sm leading-6 text-white/60">
@@ -2825,14 +2836,24 @@ function MetaProvenanceStamp({ provenance }: { provenance: MetaProvenanceData })
   const ageDays = metaAgeInDays(provenance.as_of);
   const isStale = ageDays !== null && ageDays > META_STALE_AFTER_DAYS;
   const asOfLabel = formatMetaAsOfDate(provenance.as_of);
+  const sourceTypeLabel = provenance.usage_based
+    ? "Live usage data"
+    : provenance.is_live
+      ? "Live snapshot"
+      : "Deterministic board";
+  const sampleLabel =
+    provenance.usage_based && typeof provenance.sample_size === "number"
+      ? `${provenance.sample_size.toLocaleString()} teams sampled`
+      : null;
 
   return (
     <div className="border border-[var(--line)] bg-white/[0.02] px-4 py-3 text-sm leading-6">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="[font-family:var(--font-display)] text-[0.58rem] uppercase tracking-[0.28em] text-white/40">
-          {provenance.is_live ? "Live snapshot" : "Deterministic board"}
+          {sourceTypeLabel}
         </span>
         <span className="text-white/72">As of {asOfLabel}</span>
+        {sampleLabel ? <span className="text-white/52">· {sampleLabel}</span> : null}
         {isStale ? (
           <span className="border border-[var(--negative)]/60 px-2 py-0.5 [font-family:var(--font-display)] text-[0.55rem] uppercase tracking-[0.22em] text-[var(--negative)]">
             Stale · {ageDays}d old
