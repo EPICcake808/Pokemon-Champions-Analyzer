@@ -2,3 +2,12 @@ __pycache__/
 *.py[cod]
 .vercel
 .env*.local
+
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Local analysis scratch dumps
+output.json
+result.json

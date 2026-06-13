@@ -1,22 +1,29 @@
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 import unittest
 
 from pokemon_team_analyzer.champions_m_a_meta import MODE_LABEL_ORDER
 from pokemon_team_analyzer.analyzer import (
+    ContextualMatchupProfile,
     _build_snapshot_interaction_summary,
     _build_snapshot_target_matchup_summary,
-    _normalized_hp_stat,
-    _normalized_non_hp_stat,
+    _fast_offense_counter_tools,
     _render_mode_label,
     _resolve_members,
+    _screen_counter_tool_labels,
+    _score_broad_contextual_matchup,
+    _setup_counter_tool_labels,
+    _trick_room_counter_tool_labels,
     analyze_team,
     analyze_team_text,
     classify_utility_roles,
 )
 from pokemon_team_analyzer.meta_snapshots import get_tournament_team_snapshots
 from pokemon_team_analyzer.cli import render_text_report
+from pokemon_team_analyzer.speed_benchmarks import get_speed_benchmark_catalog
+from pokemon_team_analyzer.stats import compute_stat
 from pokemon_team_analyzer.models import (
     BROAD_TEAM_ARCHETYPE_ORDER,
     MODE_PACKAGE_ORDER,
@@ -32,6 +39,63 @@ from pokemon_team_analyzer.showdown import parse_showdown_team
 
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
+
+
+def _make_contextual_profile(**overrides: object) -> ContextualMatchupProfile:
+    """Build a neutral ContextualMatchupProfile for reason-gating tests."""
+
+    defaults: dict[str, object] = dict(
+        species_tokens=set(),
+        move_counts=Counter(),
+        attack_type_counts=Counter(),
+        ability_counts=Counter(),
+        team_mode_packages=(),
+        team_win_condition_labels=(),
+        fast_members=0,
+        slow_members=0,
+        bulky_members=0,
+        frail_members=0,
+        strong_attackers=0,
+        weather_setters=0,
+        terrain_setters=0,
+        redirection=0,
+        screens=0,
+        protective_turns=0,
+        recovery_loop=0,
+        hazard_control=0,
+        priority_attacks=0,
+        sleep_pressure=0,
+        setup_pressure=0.0,
+        immediate_pressure=0.0,
+        water_resistance=0,
+        fire_resistance=0,
+        electric_resistance=0,
+        intimidate_support=0,
+        priority_block_bypass=0,
+        fire_exposure=0.0,
+        water_exposure=0.0,
+        rock_exposure=0.0,
+        ground_exposure=0.0,
+        flying_exposure=0.0,
+        poison_exposure=0.0,
+        grass_bias=0.0,
+        fighting_bias=0.0,
+        psychic_bias=0.0,
+        weather_punish_rain=0.0,
+        weather_punish_sun=0.0,
+        weather_punish_sand=0.0,
+        weather_punish_snow=0.0,
+        tailwind_counter_tools=0.0,
+        trick_room_counter_tools=0.0,
+        screen_counter_tools=0.0,
+        setup_counter_tools=0.0,
+        progress_pressure=0.0,
+        disruption_pressure=0.0,
+        mindgame_pressure=0.0,
+        coverage_gaps=(),
+    )
+    defaults.update(overrides)
+    return ContextualMatchupProfile(**defaults)  # type: ignore[arg-type]
 
 
 def load_example_team(file_name: str) -> str:
@@ -1119,12 +1183,42 @@ class FakeMetadataProvider:
 
 
 class AnalyzerTests(unittest.TestCase):
-    def test_champions_stat_normalizers_add_one_per_sp(self) -> None:
-        self.assertEqual(_normalized_hp_stat(70, 0, level=50), 145)
-        self.assertEqual(_normalized_hp_stat(70, 1, level=50), 146)
-        self.assertEqual(_normalized_non_hp_stat(112, 0, level=50, nature_multiplier=1.0), 132)
-        self.assertEqual(_normalized_non_hp_stat(112, 2, level=50, nature_multiplier=1.0), 134)
-        self.assertEqual(_normalized_non_hp_stat(88, 32, level=50, nature_multiplier=1.1), 150)
+    def test_compute_stat_applies_nature_after_stat_points(self) -> None:
+        # HP and neutral non-HP stats add a flat +1 per Stat Point.
+        self.assertEqual(compute_stat(70, 0, is_hp=True), 145)
+        self.assertEqual(compute_stat(70, 1, is_hp=True), 146)
+        self.assertEqual(compute_stat(112, 0), 132)
+        self.assertEqual(compute_stat(112, 2), 134)
+
+        # The nature multiplier is applied AFTER the Stat Points are added (the game's
+        # order), not before. With the old (incorrect) order Aerodactyl came out at 197.
+        self.assertEqual(compute_stat(88, 32, nature=1), 154)
+
+        # Golden maxima cross-checked against Serebii's Champions dex / worked examples.
+        self.assertEqual(compute_stat(130, 32, nature=1), 200)  # Jolly Aerodactyl max Speed
+        self.assertEqual(compute_stat(142, 32, nature=1), 213)  # Timid Dragapult max Speed
+        self.assertEqual(compute_stat(116, 32, nature=1), 184)  # Timid Whimsicott max Speed
+        self.assertEqual(compute_stat(120, 32, nature=1), 189)  # Jolly Sneasler max Speed
+        self.assertEqual(compute_stat(102, 32, nature=1), 169)  # Jolly Garchomp max Speed
+        self.assertEqual(compute_stat(142, 16, nature=1), 195)  # Timid Dragapult, 16 SP
+
+    def test_speed_benchmarks_are_generated_from_compute_stat(self) -> None:
+        catalog = get_speed_benchmark_catalog("champions_regulation_m_a")
+        assert catalog is not None
+        targets = {
+            benchmark.slug: benchmark.target_speed
+            for group in catalog.groups
+            for benchmark in group.benchmarks
+        }
+        # Each benchmark must equal compute_stat() run on its declared set, so the
+        # benchmark layer can never drift from the analyzer's own speed math.
+        self.assertEqual(targets["jolly_garchomp"], compute_stat(102, 32, nature=1))
+        self.assertEqual(targets["jolly_garchomp"], 169)
+        self.assertEqual(targets["timid_whimsicott"], 184)
+        self.assertEqual(targets["jolly_sneasler"], 189)
+        self.assertEqual(targets["timid_dragapult"], 213)
+        self.assertEqual(targets["choice_scarf_basculegion"], 214)
+        self.assertEqual(targets["tailwind_garchomp"], compute_stat(102, 32, nature=1) * 2)
 
     def test_parser_reads_six_sets(self) -> None:
         team = parse_showdown_team(SAMPLE_TEAM)
@@ -1188,13 +1282,13 @@ Ability: Illusion
         self.assertEqual(analysis.offensive_coverage["water"], 2)
         self.assertEqual(analysis.offensive_coverage["fighting"], 1)
         self.assertEqual(analysis.average_base_speed, 87.5)
-        self.assertAlmostEqual(analysis.average_battle_speed, 120.33, places=2)
+        self.assertAlmostEqual(analysis.average_battle_speed, 121.5, places=2)
         self.assertAlmostEqual(analysis.median_battle_speed, 121.0, places=2)
-        self.assertAlmostEqual(analysis.speed_standard_deviation, 43.59, places=2)
+        self.assertAlmostEqual(analysis.speed_standard_deviation, 44.77, places=2)
         self.assertEqual(analysis.team_speed_tier, "mixed")
         self.assertEqual(analysis.fastest_pokemon, ("Aerodactyl", 130))
         self.assertEqual(analysis.slowest_pokemon, ("Sableye", 50))
-        self.assertEqual(analysis.fastest_battle_speed_pokemon, ("Aerodactyl", 197))
+        self.assertEqual(analysis.fastest_battle_speed_pokemon, ("Aerodactyl", 200))
         self.assertEqual(analysis.slowest_battle_speed_pokemon, ("Sableye", 63))
         self.assertEqual(analysis.member_battle_speeds["Lucario-Mega"], 134)
         self.assertEqual(analysis.member_battle_speeds["Sinistcha"], 81)
@@ -1207,8 +1301,9 @@ Ability: Illusion
                 "regulation_id": "champions_regulation_m_a",
                 "display_name": "Pokemon Champions Regulation M-A Speed Benchmarks",
                 "notes": (
-                    "Curated from repeated Regulation M-A tournament fast-mode shells and common max-Speed "
-                    "reference points. These are qualitative benchmark tiers, not exhaustive usage stats."
+                    "Computed from declared Regulation M-A reference sets (perfect IVs, 32 Stat Points "
+                    "in the relevant stat, level 50) using the shared Champions stat formula. These are "
+                    "exact max/min speed lines for common shells, not exhaustive usage stats."
                 ),
             },
         )
@@ -1228,20 +1323,33 @@ Ability: Illusion
             benchmark["slug"]: benchmark["status"]
             for benchmark in analysis.speed_benchmark_groups["trick_room"]["benchmarks"]
         }
-        self.assertEqual(natural_statuses["jolly_garchomp"], "miss")
-        self.assertEqual(natural_statuses["timid_whimsicott"], "miss")
-        self.assertEqual(tailwind_statuses["tailwind_garchomp"], "miss")
-        self.assertEqual(tailwind_statuses["tailwind_sneasler"], "miss")
-        self.assertEqual(choice_scarf_statuses["choice_scarf_basculegion"], "miss")
+        # With the corrected formula, max-invested Aerodactyl (200) now correctly outruns
+        # base-102 Garchomp (169), base-116 Whimsicott (184), and base-120 Sneasler (189).
+        self.assertEqual(natural_statuses["jolly_garchomp"], "outspeed")
+        self.assertEqual(natural_statuses["timid_whimsicott"], "outspeed")
+        self.assertEqual(natural_statuses["jolly_sneasler"], "outspeed")
+        self.assertEqual(natural_statuses["timid_dragapult"], "miss")
+        self.assertEqual(tailwind_statuses["tailwind_garchomp"], "outspeed")
+        self.assertEqual(tailwind_statuses["tailwind_sneasler"], "outspeed")
+        self.assertEqual(choice_scarf_statuses["choice_scarf_basculegion"], "tie")
         self.assertEqual(trick_room_statuses["min_speed_torkoal"], "miss")
-        self.assertEqual([tag["benchmark_slug"] for tag in analysis.member_speed_benchmark_tags["Aerodactyl"]], [])
-        self.assertEqual(analysis.member_speed_benchmark_tags["Basculegion (M)"], [])
+        self.assertEqual(
+            [tag["benchmark_slug"] for tag in analysis.member_speed_benchmark_tags["Aerodactyl"]],
+            ["jolly_garchomp", "timid_whimsicott", "jolly_sneasler", "tailwind_garchomp", "tailwind_sneasler"],
+        )
+        self.assertEqual(
+            [
+                (tag["benchmark_slug"], tag["status"])
+                for tag in analysis.member_speed_benchmark_tags["Basculegion (M)"]
+            ],
+            [("choice_scarf_basculegion", "tie")],
+        )
         self.assertGreaterEqual(len(analysis.speed_benchmark_notes), 6)
         self.assertTrue(any(note.startswith("Team speed shape:") for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("fastest unboosted line at 197" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("below Max-Speed Jolly Garchomp (200)" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("Tailwind line at 394" in note for note in analysis.speed_benchmark_notes))
-        self.assertTrue(any("below Max-Speed Choice Scarf Jolly Basculegion (259)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("fastest unboosted line at 200" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("outruns Max-Speed Jolly Sneasler (189)" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("Tailwind line at 400" in note for note in analysis.speed_benchmark_notes))
+        self.assertTrue(any("ties Max-Speed Choice Scarf Jolly Basculegion (214)" in note for note in analysis.speed_benchmark_notes))
         self.assertIn(
             "Trick Room underspeed: the team has no Trick Room setter, so it cannot create its own slower-first mode.",
             analysis.speed_benchmark_notes,
@@ -1281,8 +1389,8 @@ Ability: Illusion
         self.assertEqual(set(analysis.team_win_condition_scores), set(WIN_CONDITION_PACKAGE_ORDER))
         self.assertTrue(analysis.team_mode_labels)
         self.assertTrue(analysis.team_mode_packages)
-        self.assertEqual(analysis.member_stats["Lucario-Mega"]["defense"], 150)
-        self.assertEqual(analysis.member_stats["Basculegion (M)"]["speed"], 139)
+        self.assertEqual(analysis.member_stats["Lucario-Mega"]["defense"], 154)
+        self.assertEqual(analysis.member_stats["Basculegion (M)"]["speed"], 143)
         self.assertEqual(
             {context["slug"] for context in analysis.member_speed_contexts["Basculegion (M)"]},
             {"choice_scarf", "tailwind", "tailwind_choice_scarf"},
@@ -2257,12 +2365,12 @@ Ability: Illusion
         )
         self.assertGreater(
             tournament_rows["Rain Archaludon"]["matchup_score"],
-            tournament_rows["Whimsicott Glimmora"]["matchup_score"],
+            tournament_rows["Mega Venusaur Kommo-o"]["matchup_score"],
         )
         self.assertLess(tournament_rows["Venusaur Charizard Sun"]["matchup_score"], 0.15)
-        self.assertLess(tournament_rows["Whimsicott Glimmora"]["matchup_score"], 0.15)
+        self.assertLess(tournament_rows["Mega Venusaur Kommo-o"]["matchup_score"], 0.15)
         self.assertTrue(tournament_rows["Venusaur Charizard Sun"]["context_reasons"])
-        self.assertTrue(tournament_rows["Whimsicott Glimmora"]["context_reasons"])
+        self.assertTrue(tournament_rows["Mega Venusaur Kommo-o"]["context_reasons"])
         self.assertTrue(
             any(
                 label in {"Venusaur Charizard Sun", "Whimsicott Glimmora", "Mega Venusaur Kommo-o"}
@@ -2407,6 +2515,73 @@ Ability: Illusion
         self.assertIn("Recommended into:", report)
         self.assertIn("Into Rain", report)
         self.assertIn("Pressures common rain pieces with direct coverage.", report)
+
+
+class MatchupReasonGatingTests(unittest.TestCase):
+    """The phrase-bank bug: matchup reasons must not cite tools the team lacks."""
+
+    NAMED_MOVE_TOOLS = ("Encore", "Fake Out", "Taunt", "Wide Guard", "Imprison")
+
+    def test_fast_offense_tools_do_not_invent_encore_or_fake_out(self) -> None:
+        # A Tailwind/anti-offense bonus driven only by priority must NOT name Encore/Fake Out.
+        priority_only = _make_contextual_profile(priority_attacks=2)
+        tools = _fast_offense_counter_tools(priority_only, include_protect=False)
+        self.assertEqual(tools, ["priority"])
+        self.assertNotIn("Encore", tools)
+        self.assertNotIn("Fake Out", tools)
+        # When the moves are actually on the team, they are named.
+        with_moves = _make_contextual_profile(move_counts=Counter({"encore": 1, "fake-out": 1}))
+        self.assertEqual(_fast_offense_counter_tools(with_moves, include_protect=False), ["Encore", "Fake Out"])
+
+    def test_screen_tools_only_claim_item_control_when_present(self) -> None:
+        no_item_control = _make_contextual_profile(strong_attackers=3)
+        self.assertNotIn("item control", _screen_counter_tool_labels(no_item_control))
+        with_knock_off = _make_contextual_profile(move_counts=Counter({"knock-off": 1}))
+        self.assertIn("item control", _screen_counter_tool_labels(with_knock_off))
+
+    def test_trick_room_and_setup_tools_gate_on_real_moves(self) -> None:
+        intimidate_only = _make_contextual_profile(intimidate_support=1)
+        tr_tools = _trick_room_counter_tool_labels(intimidate_only)
+        self.assertEqual(tr_tools, ["Intimidate"])
+        self.assertNotIn("Encore", tr_tools)
+        self.assertNotIn("Taunt", tr_tools)
+
+        priority_only = _make_contextual_profile(priority_attacks=1)
+        setup_tools = _setup_counter_tool_labels(priority_only)
+        self.assertEqual(setup_tools, ["priority"])
+        self.assertNotIn("Encore", setup_tools)
+
+    def test_broad_matchup_reasons_never_name_absent_moves(self) -> None:
+        # Every counter bonus is maxed, but the bonuses come from priority alone and the
+        # team runs NONE of the named disruption moves. No reason may invent them.
+        profile = _make_contextual_profile(
+            move_counts=Counter(),
+            tailwind_counter_tools=3.0,
+            trick_room_counter_tools=3.0,
+            screen_counter_tools=3.0,
+            setup_counter_tools=3.0,
+            priority_attacks=2,
+            bulky_members=2,
+            slow_members=2,
+            recovery_loop=2,
+        )
+        for archetype in ("hyper_offense", "bulky_offense", "balance", "semi_stall", "stall", "trick_room"):
+            _, reasons = _score_broad_contextual_matchup(archetype, profile)
+            for reason in reasons:
+                for tool in self.NAMED_MOVE_TOOLS:
+                    self.assertNotIn(
+                        tool,
+                        reason,
+                        msg=f"{archetype} reason invented absent tool {tool!r}: {reason!r}",
+                    )
+
+        # Sanity: when the team actually runs Encore, the Trick Room reason names it.
+        with_encore = _make_contextual_profile(
+            move_counts=Counter({"encore": 1}),
+            trick_room_counter_tools=3.0,
+        )
+        _, reasons = _score_broad_contextual_matchup("trick_room", with_encore)
+        self.assertTrue(any("Encore" in reason for reason in reasons))
 
 
 if __name__ == "__main__":

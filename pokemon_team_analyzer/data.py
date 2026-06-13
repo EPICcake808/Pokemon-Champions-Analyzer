@@ -12,6 +12,7 @@ from urllib.request import Request, urlopen
 import certifi
 
 from .cache_paths import resolve_cache_path
+from .champions_m_a_stats import champions_stat_overrides
 from .models import MoveData, MoveStatChange, SpeciesData
 from .version import USER_AGENT
 
@@ -319,16 +320,27 @@ def _deserialize_move_data(payload: dict[str, Any]) -> MoveData:
 
 
 def _deserialize_species_data(payload: dict[str, Any]) -> SpeciesData:
+    api_name = str(payload["api_name"])
+    base_stats = {
+        "hp": _as_int(payload.get("base_hp"), default=0),
+        "attack": _as_int(payload.get("base_attack"), default=0),
+        "defense": _as_int(payload.get("base_defense"), default=0),
+        "special_attack": _as_int(payload.get("base_special_attack"), default=0),
+        "special_defense": _as_int(payload.get("base_special_defense"), default=0),
+        "speed": _as_int(payload.get("base_speed"), default=0),
+    }
+    # PokeAPI serves mainline stats; apply Champions rebalances before building the model.
+    base_stats.update(champions_stat_overrides(api_name))
     return SpeciesData(
         name=str(payload["name"]),
-        api_name=str(payload["api_name"]),
+        api_name=api_name,
         types=tuple(str(type_name) for type_name in payload.get("types", [])),
-        base_hp=_as_int(payload.get("base_hp"), default=0),
-        base_attack=_as_int(payload.get("base_attack"), default=0),
-        base_defense=_as_int(payload.get("base_defense"), default=0),
-        base_special_attack=_as_int(payload.get("base_special_attack"), default=0),
-        base_special_defense=_as_int(payload.get("base_special_defense"), default=0),
-        base_speed=_as_int(payload.get("base_speed"), default=0),
+        base_hp=base_stats["hp"],
+        base_attack=base_stats["attack"],
+        base_defense=base_stats["defense"],
+        base_special_attack=base_stats["special_attack"],
+        base_special_defense=base_stats["special_defense"],
+        base_speed=base_stats["speed"],
     )
 
 

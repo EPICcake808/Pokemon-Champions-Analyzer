@@ -1,6 +1,29 @@
 from __future__ import annotations
 
 
+# The honest "as of" date for the curated board below. This is the last time the
+# deterministic Regulation M-A tournament shells were calibrated from event tracking.
+# The UI stamps this date and shows a "stale" badge once it ages past a threshold, so
+# the deterministic branding stays credible. Update this whenever the shells change.
+TOURNAMENT_META_AS_OF = "2026-05-31"
+
+# Provenance for the curated board. These are the public result/usage sources the shells
+# are calibrated against; every meta panel renders them so the data is never unsourced.
+TOURNAMENT_META_SOURCES = (
+    {"label": "Pikalytics — Champions usage & speed tiers", "url": "https://www.pikalytics.com/"},
+    {"label": "Victory Road — Champions event results", "url": "https://victoryroad.pro/"},
+    {"label": "Limitless — tournament results", "url": "https://limitlesstcg.com/"},
+)
+
+# How the board is produced, surfaced to users so the "deterministic" branding is explicit:
+# this is a hand-calibrated, reproducible board from tournament-result tracking, NOT a live
+# usage scrape. Percentages are relative field weightings, not measured ladder usage.
+TOURNAMENT_META_METHODOLOGY = (
+    "Deterministic board hand-calibrated from Regulation M-A tournament-result tracking. "
+    "Shares are relative field weightings, not live ladder usage statistics."
+)
+
+
 # These snapshots are the concrete team shells the current M-A field keeps
 # returning to in May 2026 event recaps, tournament reports, and late-season
 # high-ladder tracking. They intentionally sit one layer below the broader mode

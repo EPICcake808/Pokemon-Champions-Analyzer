@@ -259,6 +259,19 @@ export interface MatchupDetail {
   reasons: string[];
 }
 
+export interface MetaProvenanceSource {
+  label: string;
+  url: string;
+}
+
+export interface MetaProvenance {
+  as_of: string;
+  source_label: string;
+  sources: MetaProvenanceSource[];
+  methodology: string;
+  is_live: boolean;
+}
+
 export interface MetaAnalysis {
   label: string;
   overall_score: number;
@@ -278,6 +291,7 @@ export interface MetaAnalysis {
     featured_teams: string[];
   }>;
   notes: string[];
+  provenance?: MetaProvenance;
 }
 
 export interface PokemonTeamAnalysis {

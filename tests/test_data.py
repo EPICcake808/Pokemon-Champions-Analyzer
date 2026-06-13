@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pokemon_team_analyzer.data import CachedPokeApiClient
+from pokemon_team_analyzer.data import CachedPokeApiClient, _deserialize_species_data
 
 
 class StubbedPokeApiClient(CachedPokeApiClient):
@@ -282,6 +282,45 @@ class CachedMoveRefreshTests(unittest.TestCase):
                 refreshed_cache["move"]["electro-shot"]["short_effect"],
                 "Charges on the first turn and fires immediately in rain.",
             )
+
+
+class ChampionsStatOverrideTests(unittest.TestCase):
+    def test_rebalanced_species_use_champions_stats_not_mainline(self) -> None:
+        # PokeAPI serves mainline stats; the analyzer must serve Champions values.
+        mainline_alakazam = {
+            "name": "Alakazam",
+            "api_name": "alakazam",
+            "types": ("psychic",),
+            "base_hp": 55,
+            "base_attack": 50,
+            "base_defense": 45,
+            "base_special_attack": 135,
+            "base_special_defense": 95,
+            "base_speed": 120,
+        }
+        species = _deserialize_species_data(mainline_alakazam)
+        # Champions: 175 Special Attack, 150 Speed (Serebii Champions dex).
+        self.assertEqual(species.base_special_attack, 175)
+        self.assertEqual(species.base_speed, 150)
+        # Untouched stats keep their PokeAPI values.
+        self.assertEqual(species.base_hp, 55)
+        self.assertEqual(species.base_defense, 45)
+
+    def test_non_rebalanced_species_keep_pokeapi_stats(self) -> None:
+        mainline_garchomp = {
+            "name": "Garchomp",
+            "api_name": "garchomp",
+            "types": ("dragon", "ground"),
+            "base_hp": 108,
+            "base_attack": 130,
+            "base_defense": 95,
+            "base_special_attack": 80,
+            "base_special_defense": 85,
+            "base_speed": 102,
+        }
+        species = _deserialize_species_data(mainline_garchomp)
+        self.assertEqual(species.base_speed, 102)
+        self.assertEqual(species.base_attack, 130)
 
 
 if __name__ == "__main__":

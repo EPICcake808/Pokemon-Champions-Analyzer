@@ -136,6 +136,7 @@ type RosterEntry = ParsedTeamMember & {
 type TeamPreviewPlanCardData = PokemonTeamAnalysis["team_preview"]["bring_plans"][number];
 type MetaMatchupRowData = PokemonTeamAnalysis["meta_analysis"]["tournament_rows"][number];
 type MetaCommonPokemonRowData = NonNullable<PokemonTeamAnalysis["meta_analysis"]["common_pokemon"]>[number];
+type MetaProvenanceData = NonNullable<PokemonTeamAnalysis["meta_analysis"]["provenance"]>;
 
 const MEMBER_STAT_ORDER: Array<{ key: keyof MemberStatBlock; label: string }> = [
   { key: "hp", label: "HP" },
@@ -216,6 +217,28 @@ function formatSavedTeamTimestamp(value: string) {
   } catch {
     return value;
   }
+}
+
+const META_STALE_AFTER_DAYS = 14;
+
+function formatMetaAsOfDate(value: string) {
+  try {
+    return new Intl.DateTimeFormat("en", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
+function metaAgeInDays(value: string): number | null {
+  const parsed = new Date(value).getTime();
+  if (Number.isNaN(parsed)) {
+    return null;
+  }
+  return Math.floor((Date.now() - parsed) / (1000 * 60 * 60 * 24));
 }
 
 function buildSuggestedTeamName(teamText: string, fallback = "New saved team") {
@@ -347,8 +370,8 @@ export function AnalyzerWorkspace({
   const authConfigurationMessage = authCapabilities.nativeAuthEnabled
     ? authCapabilities.googleAuthEnabled
       ? null
-      : "Native username/password auth is enabled. Add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET to enable Google sign-in on Vercel."
-    : "Set DATABASE_URL and AUTH_SECRET to enable account-backed saved teams. Add AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET for Google sign-in.";
+      : "Username and password sign-in is available here. Google sign-in is not enabled for this deployment."
+    : "Sign-in is not available here, so saved teams are disabled.";
   const builderSpeciesChoices = buildSelectOptions(
     selectedBuilderMember?.species,
     [...(activeRegulation?.eligible_species ?? []), ...(activeRegulation?.allowed_mega_evolutions ?? [])],
@@ -373,7 +396,7 @@ export function AnalyzerWorkspace({
       label: "Play Guide",
       eyebrow: "Complete beginner guide",
       title: "How a VGC match actually works",
-      description: "A literal beginner walkthrough of what happens before a match, what you click each turn, and how you win a doubles game.",
+      description: "A quick guide to team preview, turn order, and win conditions in VGC doubles.",
       content: playGuideContent,
     },
     {
@@ -381,7 +404,7 @@ export function AnalyzerWorkspace({
       label: "Changelog",
       eyebrow: "Release history",
       title: "What changed in the analyzer",
-      description: "Recent releases across the analyzer, API, and live web experience.",
+      description: "Release notes for the analyzer, API, and web app.",
       content: changelogContent,
     },
   ];
@@ -903,8 +926,8 @@ export function AnalyzerWorkspace({
   const currentBuildNote = selectedSavedTeam
     ? `Loaded from your saved teams. Last updated ${formatSavedTeamTimestamp(selectedSavedTeam.updatedAt)}.`
     : parsedTeam.length
-      ? "This is your active builder roster. Run the analyzer after major edits to refresh the scoring panels."
-      : "Start from scratch or paste a Showdown export to populate the builder.";
+      ? "This roster is currently loaded in the builder. Re-run the analyzer after major changes."
+      : "Start with a blank roster or paste a Showdown export.";
   const previewPlans = analysis.team_preview.bring_plans;
   const activePreviewPlan = previewPlans.find((plan) => plan.label === selectedPreviewPlanLabel) ?? previewPlans[0] ?? null;
   const teamStyleLabel = formatLabel(analysis.team_package_profile.style.label);
@@ -943,15 +966,10 @@ export function AnalyzerWorkspace({
                 Pokemon Champions Analyzer
               </h1>
               <p className="mt-4 max-w-3xl text-[0.98rem] leading-7 text-[var(--fg-muted)] sm:text-[1.04rem]">
-                Build your Champions roster visually, then run the same regulation-aware Python analyzer that powers the
-                CLI for legality, speed, matchup, mode, and role reads.
+                Build a Pokemon Champions roster, run the analyzer, and review legality, speed, matchups, and role
+                coverage in one place.
               </p>
             </div>
-
-            <p className="max-w-md text-sm leading-6 text-white/42 lg:text-right">
-              Builder-first workflow up top, dense analysis below it. Edit slots, import raw Showdown text if you want,
-              and rerun once the shell is where you want it.
-            </p>
           </div>
         </section>
 
@@ -963,8 +981,8 @@ export function AnalyzerWorkspace({
                   <SectionHeading eyebrow="Saved teams" title="Account-linked builder" />
                   <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
                     Signed in as @{sessionUser.username ?? "trainer"}
-                    {sessionUser.email ? ` · ${sessionUser.email}` : ""}. Load a saved roster directly into the
-                    builder or save the current draft back to your Neon-backed account.
+                    {sessionUser.email ? ` · ${sessionUser.email}` : ""}. Load a saved roster into the builder or save
+                    the draft you are working on.
                   </p>
 
                   <div className="mt-6 grid gap-4 md:grid-cols-[minmax(0,1fr)_240px]">
@@ -1047,8 +1065,8 @@ export function AnalyzerWorkspace({
                 <>
                   <SectionHeading eyebrow="Account access" title="Sign in to sync teams" />
                   <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
-                    Every account gets a unique username. Native sign-up stores a securely hashed password, and Google
-                    sign-in can attach to the same verified-email account so your saved teams stay under one identity.
+                    Create an account to save teams and open them again later. Username and password sign-in is
+                    available here, and Google sign-in can be enabled separately.
                   </p>
 
                   <div className="mt-5 flex flex-wrap gap-3">
@@ -1184,18 +1202,16 @@ export function AnalyzerWorkspace({
                       </button>
                     ) : (
                       <p className="mt-3 text-sm leading-6 text-white/42">
-                        Google sign-in is already wired into the app. Set AUTH_GOOGLE_ID and AUTH_GOOGLE_SECRET in
-                        Vercel and locally to enable the button.
+                        Google sign-in is not enabled for this deployment.
                       </p>
                     )}
                   </div>
                 </>
               ) : (
                 <>
-                  <SectionHeading eyebrow="Account access" title="Configure auth to unlock saved teams" />
+                  <SectionHeading eyebrow="Account access" title="Saved teams are unavailable here" />
                   <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
-                    Native auth, Google OAuth, and account-linked saved teams are all wired into this app now. The
-                    controls stay disabled until your environment variables are present.
+                    This deployment does not include sign-in, so saved teams are disabled.
                   </p>
                   <p className="mt-4 text-sm leading-6 text-white/42">{authConfigurationMessage}</p>
                 </>
@@ -1209,16 +1225,16 @@ export function AnalyzerWorkspace({
 
             <aside className="border-y border-[var(--line)] py-6">
               <p className="[font-family:var(--font-display)] text-[0.64rem] uppercase tracking-[0.32em] text-white/35">
-                Deployment shape
+                Account features
               </p>
               <ul className="mt-5 space-y-3 text-sm leading-6 text-[var(--fg-muted)]">
-                <li>Native sign-up stores bcrypt-hashed passwords. Raw passwords never get written to Neon.</li>
-                <li>Google OAuth and username/password accounts can converge on one user record through verified email.</li>
-                <li>Every saved roster is scoped to the signed-in user id, so the selector only surfaces that account&apos;s teams.</li>
-                <li>Neon&apos;s serverless Postgres driver and Auth.js route handlers are compatible with Vercel&apos;s Node runtime.</li>
+                <li>Save teams to your account.</li>
+                <li>Open saved drafts on any device where you sign in.</li>
+                <li>Load a saved team into the builder and analyze it again.</li>
+                <li>Keep working from imports when you do not want to save a draft.</li>
               </ul>
               <p className="mt-5 text-sm leading-6 text-white/42">
-                {authConfigurationMessage ?? "The account layer is fully available for this environment."}
+                {authConfigurationMessage ?? "Account saving and sign-in are available in this deployment."}
               </p>
             </aside>
           </div>
@@ -1229,8 +1245,7 @@ export function AnalyzerWorkspace({
             <div>
               <SectionHeading eyebrow="Team builder" title="Build your six" />
               <p className="mt-4 text-sm leading-6 text-[var(--fg-muted)]">
-                Pick a slot, edit the set on the right, and keep the synced Showdown export handy for imports or quick
-                copy-out.
+                Choose a slot and edit the set. The Showdown export stays in sync below.
               </p>
               <TeamBuilderSlotRail
                 members={builderMembers}
@@ -1282,8 +1297,8 @@ export function AnalyzerWorkspace({
                 Import or export Showdown text
               </summary>
               <p className="mt-4 max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
-                Paste a full Showdown export to populate the builder, or copy the synced text back out after editing.
-                The analyzer still consumes this exact text when you submit.
+                Paste a Showdown export to load a team, or copy the synced text after editing. The analyzer uses this
+                same import text when you submit.
               </p>
               <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
                 <label htmlFor="team-import" className="[font-family:var(--font-display)] text-[0.68rem] uppercase tracking-[0.3em] text-white/40">
@@ -1462,8 +1477,8 @@ export function AnalyzerWorkspace({
           <div className="space-y-6 border-t border-[var(--line)] pt-6 lg:border-t-0 lg:border-l lg:border-[var(--line)] lg:pl-8 lg:pt-0">
             <SectionHeading eyebrow="Score lanes" title="Broad pressure and package reads" />
             <p className="max-w-2xl text-sm leading-6 text-[var(--fg-muted)]">
-              These quick score rails split the roster into its broad pressure profile, package identity, and endgame
-              plan so the shell reads cleanly before you dig into the deeper charts below.
+              These score rails summarize broad pressure, package identity, and endgame plans before the detailed
+              charts below.
             </p>
             <div className="space-y-6">
               <CompactScoreList heading="Broad pressure" rows={matchupRows.slice(0, 4)} />
@@ -1473,8 +1488,7 @@ export function AnalyzerWorkspace({
           </div>
 
           <div className="text-xs leading-6 text-white/38 lg:col-span-2">
-            Builder edits reshape the roster immediately. Graphs, scores, and benchmark notes refresh when you rerun
-            the analyzer.
+            Builder edits update the roster immediately. Re-run the analyzer to refresh the panels below.
           </div>
         </section>
 
@@ -1483,8 +1497,8 @@ export function AnalyzerWorkspace({
         <section id="roster" className="border-t border-[var(--line)] py-10">
           <SectionHeading eyebrow="Roster breakdown" title="Members, items, and benchmark hits" />
           <p className="mt-4 max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
-            Builder edits update the parsed roster immediately. Analyzer-driven roles, normalized stats, speed
-            contexts, and benchmark hits refresh from the last analysis run.
+            This section follows the current builder roster. Roles, stat lines, speed contexts, and benchmark results
+            come from the latest analysis.
           </p>
           <div className="mt-8">
             {roster.map((member) => (
@@ -1532,9 +1546,12 @@ export function AnalyzerWorkspace({
           <div className="space-y-6">
             <SectionHeading eyebrow="Meta analysis" title="Current Regulation M-A field" />
             <p className="max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
-              This layer reweights the team&apos;s mode matchups against the current Regulation M-A tournament shell mix, so the dashboard
-              can show where the roster is actually well positioned and where the live field still pushes back.
+              These results compare your team against the current Regulation M-A field so you can spot likely edges and
+              pressure points.
             </p>
+            {analysis.meta_analysis.provenance ? (
+              <MetaProvenanceStamp provenance={analysis.meta_analysis.provenance} />
+            ) : null}
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
               <CompactMetric label="Standing" value={formatLabel(analysis.meta_analysis.label)} />
               <CompactMetric label="Weighted score" value={analysis.meta_analysis.overall_score.toFixed(2)} />
@@ -1561,7 +1578,7 @@ export function AnalyzerWorkspace({
             </div>
             <PlainList
               heading="Meta notes"
-              values={analysis.meta_analysis.notes.length ? analysis.meta_analysis.notes : ["No extra meta notes were generated."]}
+              values={analysis.meta_analysis.notes.length ? analysis.meta_analysis.notes : ["No additional meta notes for this roster."]}
             />
             <MetaCommonPokemonBoard rows={analysis.meta_analysis.common_pokemon ?? []} />
           </div>
@@ -1573,10 +1590,9 @@ export function AnalyzerWorkspace({
 
         <section id="preview" className="grid gap-10 border-t border-[var(--line)] py-10 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
           <div className="space-y-6">
-            <SectionHeading eyebrow="Team preview" title="Pick-4 plan browser" />
+            <SectionHeading eyebrow="Team preview" title="Preview plans" />
             <p className="max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
-              Browse every generated preview line here, including the default bring. The selector keeps the exhaustive
-              plan list compact without hiding the baseline line.
+              Compare the default bring with alternate plans for different matchups.
             </p>
             {activePreviewPlan ? (
               <div className="space-y-6">
@@ -1615,7 +1631,7 @@ export function AnalyzerWorkspace({
               </div>
             ) : (
               <p className="border-t border-[var(--line)] pt-4 text-sm leading-6 text-white/52">
-                No preview defaults were generated for this roster.
+                No team preview plan is available for this roster yet.
               </p>
             )}
           </div>
@@ -1625,7 +1641,7 @@ export function AnalyzerWorkspace({
             <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-1">
               <PlainList
                 heading="Watch teams"
-                values={analysis.team_preview.watch_teams.length ? analysis.team_preview.watch_teams : ["No standout mode shells flagged."]}
+                values={analysis.team_preview.watch_teams.length ? analysis.team_preview.watch_teams : ["No priority matchup shells highlighted."]}
               />
               <PlainList
                 heading="Watch Pokemon"
@@ -1634,11 +1650,11 @@ export function AnalyzerWorkspace({
             </div>
             <PlainList
               heading="Positioning plan"
-              values={analysis.team_preview.strategy_notes.length ? analysis.team_preview.strategy_notes : ["No extra positioning notes were generated."]}
+              values={analysis.team_preview.strategy_notes.length ? analysis.team_preview.strategy_notes : ["No additional positioning notes for this roster."]}
             />
             <PlainList
               heading="Counterplay plan"
-              values={analysis.team_preview.counterplay_notes.length ? analysis.team_preview.counterplay_notes : ["No extra counterplay notes were generated."]}
+              values={analysis.team_preview.counterplay_notes.length ? analysis.team_preview.counterplay_notes : ["No additional counterplay notes for this roster."]}
             />
           </div>
         </section>
@@ -1705,7 +1721,7 @@ function DashboardErrorState({
   return (
     <section id="overview" className="border-t border-[var(--line)] py-10">
       <div className="max-w-4xl border-y border-[var(--line)] py-8">
-        <SectionHeading eyebrow="Dashboard paused" title="Complete the roster to unlock live analysis" />
+        <SectionHeading eyebrow="Dashboard paused" title="Complete the roster to continue live analysis" />
         <p className="mt-5 text-base leading-7 text-[var(--negative)]">{message}</p>
         {details.length ? (
           <ul className="mt-4 space-y-2 text-sm leading-6 text-white/58">
@@ -1716,7 +1732,7 @@ function DashboardErrorState({
         ) : null}
         <p className="mt-5 text-sm leading-6 text-white/46">
           Fill all six builder slots or paste a full Showdown import above. Once the roster is complete, the overview,
-          preview, meta board, and all downstream charts will resume updating live.
+          preview, meta board, and supporting charts will start updating again.
         </p>
         {isLoading ? <p className="mt-4 text-sm leading-6 text-white/38">A live analysis request is still finishing.</p> : null}
       </div>
@@ -2805,6 +2821,51 @@ function PreviewReasonList({
   );
 }
 
+function MetaProvenanceStamp({ provenance }: { provenance: MetaProvenanceData }) {
+  const ageDays = metaAgeInDays(provenance.as_of);
+  const isStale = ageDays !== null && ageDays > META_STALE_AFTER_DAYS;
+  const asOfLabel = formatMetaAsOfDate(provenance.as_of);
+
+  return (
+    <div className="border border-[var(--line)] bg-white/[0.02] px-4 py-3 text-sm leading-6">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <span className="[font-family:var(--font-display)] text-[0.58rem] uppercase tracking-[0.28em] text-white/40">
+          {provenance.is_live ? "Live snapshot" : "Deterministic board"}
+        </span>
+        <span className="text-white/72">As of {asOfLabel}</span>
+        {isStale ? (
+          <span className="border border-[var(--negative)]/60 px-2 py-0.5 [font-family:var(--font-display)] text-[0.55rem] uppercase tracking-[0.22em] text-[var(--negative)]">
+            Stale · {ageDays}d old
+          </span>
+        ) : (
+          <span className="border border-[var(--positive)]/45 px-2 py-0.5 [font-family:var(--font-display)] text-[0.55rem] uppercase tracking-[0.22em] text-[var(--positive)]">
+            Current
+          </span>
+        )}
+      </div>
+      <p className="mt-2 text-white/52">{provenance.methodology}</p>
+      {provenance.sources.length ? (
+        <p className="mt-2 text-white/52">
+          Sources:{" "}
+          {provenance.sources.map((source, index) => (
+            <span key={source.url}>
+              {index > 0 ? ", " : ""}
+              <a
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/72 underline decoration-white/25 underline-offset-2 transition hover:text-white"
+              >
+                {source.label}
+              </a>
+            </span>
+          ))}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 function MetaImpactBoard({ rows }: { rows: MetaMatchupRowData[] }) {
   const visibleRows = rows.slice(0, 8);
   const maxImpact = Math.max(...visibleRows.map((row) => Math.abs(row.impact_score)), 1);
@@ -3053,7 +3114,7 @@ function MemberRow({ member }: { member: RosterEntry }) {
           <p className="mt-2">
             {member.speed
               ? `${member.speed.battle_speed} raw speed · ${formatLabel(member.speed.tier)}`
-              : "Speed unlocks after the first analysis run."}
+              : "Run the analyzer once to populate speed data."}
           </p>
           {member.speed ? <p className="mt-1 text-[13px] leading-6 text-white/42">{speedContextSummary}</p> : null}
         </div>
@@ -3837,7 +3898,9 @@ function normalizedHpStat(baseStat: number, effortValue: number) {
 
 function normalizedNonHpStat(baseStat: number, effortValue: number, appliedNatureMultiplier: number) {
   const baseComponent = ((2 * baseStat + CHAMPIONS_FIXED_IV) * CHAMPIONS_LEVEL) / 100;
-  return Math.floor((Math.floor(baseComponent) + 5) * appliedNatureMultiplier) + effortValue;
+  // Champions applies the nature multiplier AFTER the Stat Points are added, matching the
+  // in-game stat screen (e.g. Jolly Aerodactyl with 32 Speed SP = floor((150 + 32) * 1.1) = 200).
+  return Math.floor((Math.floor(baseComponent) + 5 + effortValue) * appliedNatureMultiplier);
 }
 
 function natureMultiplier(nature: string | null, stat: BattleStatKey) {

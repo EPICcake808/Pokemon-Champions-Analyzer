@@ -144,7 +144,7 @@ export async function runPokemonAnalyzer(
       return {
         ok: false,
         message:
-          "The Next.js app could not reach the analyzer API. Set POKEMON_ANALYZER_API_BASE_URL to the deployed Python analyzer service URL.",
+          "The analyzer service is temporarily unavailable. Please try again in a moment.",
       };
     }
   }
@@ -171,7 +171,7 @@ export async function runPokemonAnalyzer(
     return {
       ok: false,
       message:
-        "The Next.js app could not reach the local Python analyzer. Make sure the repo root is available, `python3` exists, or set POKEMON_ANALYZER_REPO_ROOT and POKEMON_ANALYZER_PYTHON explicitly.",
+        "The analyzer service is temporarily unavailable. Please try again in a moment.",
     };
   } finally {
     await rm(tempDir, { recursive: true, force: true });
@@ -196,7 +196,7 @@ export async function getRegulationCatalog(): Promise<RegulationCatalogPayload> 
 export async function getHostedChangelog(): Promise<string | null> {
   if (!ANALYZER_API_BASE_URL) {
     if (process.env.NODE_ENV === "production") {
-      return "# Changelog\n\nThe hosted web app is missing POKEMON_ANALYZER_API_BASE_URL, so it cannot load the live changelog from the analyzer service.";
+      return "# Changelog\n\nThe release notes are temporarily unavailable. Please check back later.";
     }
 
     return null;
