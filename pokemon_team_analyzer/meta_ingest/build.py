@@ -16,7 +16,7 @@ from .discover import DiscoveryResult, discover_shells
 from .reconcile import ReconcileReport, reconcile
 from .schema import validate_feed
 from .sources import SourceUsage
-from .sources import limitless, pikalytics, pokemon_zone
+from .sources import limitless, limitlessvgc, pikalytics, pokemon_zone
 from .usage import UsageReport, compute_usage
 
 SOURCE_LABEL = "Pokemon Champions Analyzer automated multi-source Regulation M-A meta board"
@@ -60,7 +60,8 @@ def _build_common_meta_pokemon(
         if context is None:
             featured_text = _render_series(featured[:2]) if featured else "the current board"
             why_used = (
-                f"{species} appears on {entry.usage_pct:.1f}% of sampled Regulation M-A teams, "
+                f"{species} appears on {entry.raw_usage_pct:.1f}% of sampled Regulation M-A teams "
+                f"(and ranks higher once the biggest official events and deepest runs are weighted in), "
                 f"showing up across shells like {featured_text} without forcing the rest of the team to contort around it."
             )
             what_it_does = (
@@ -74,13 +75,14 @@ def _build_common_meta_pokemon(
         common.append(
             {
                 "species": species,
-                "metaShare": entry.usage_pct,  # real overall usage %, not board share
+                # Headline ranking metric: weighted by tournament prestige + top-cut runs.
+                "metaShare": entry.weighted_usage_pct,
                 "whyUsed": why_used[:400],
                 "whatItDoes": what_it_does[:400],
                 "featuredTeams": featured,
                 # Extra provenance (tolerated by the web schema; surfaced in a later pass).
-                "usagePercent": entry.usage_pct,
                 "weightedUsagePercent": entry.weighted_usage_pct,
+                "usagePercent": entry.raw_usage_pct,
                 "teamCount": entry.team_count,
                 "sampleSize": usage.sample_size,
             }
@@ -91,29 +93,47 @@ def _build_common_meta_pokemon(
 def build_feed(
     *,
     since_days: int = 30,
+    officials_since_days: int = 60,
     format_code: str = DEFAULT_FORMAT_CODE,
     min_players: int = 8,
     max_tournaments: int = 60,
     max_teams_analyzed: int = 150,
     regulation_id: str = DEFAULT_REGULATION_ID,
     include_secondary: bool = True,
+    include_officials: bool = True,
     on_progress=None,
 ) -> IngestResult:
-    rosters, tournaments, warnings = limitless.collect_rosters(
+    # Grassroots platform rosters: full decklists -> used for BOTH usage and shell discovery.
+    platform_rosters, tournaments, warnings = limitless.collect_rosters(
         since_days=since_days,
         format_code=format_code,
         min_players=min_players,
         max_tournaments=max_tournaments,
         on_progress=on_progress,
     )
-    if not rosters:
+    if not platform_rosters:
         raise RuntimeError(
             "No rosters were collected from Limitless (the authoritative source). "
             "Widen --since, lower --min-players, or check connectivity."
         )
 
-    usage = compute_usage(rosters, tournament_count=len(tournaments), since_days=since_days)
-    discovery = discover_shells(rosters, regulation_id=regulation_id, max_teams_analyzed=max_teams_analyzed)
+    # Official-event rosters (Regionals/Internationals/Specials/Worlds): species only,
+    # so they feed the weighted usage ranking but not shell discovery.
+    official_rosters: list = []
+    official_tournaments: list = []
+    if include_officials:
+        official_rosters, official_tournaments, official_warnings = limitlessvgc.collect_official_rosters(
+            since_days=officials_since_days
+        )
+        warnings.extend(official_warnings)
+
+    all_rosters = platform_rosters + official_rosters
+    usage = compute_usage(
+        all_rosters,
+        tournament_count=len(tournaments) + len(official_tournaments),
+        since_days=since_days,
+    )
+    discovery = discover_shells(platform_rosters, regulation_id=regulation_id, max_teams_analyzed=max_teams_analyzed)
     warnings.extend(discovery.warnings)
     if not discovery.snapshots:
         raise RuntimeError("Discovery produced no team shells; cannot build a valid board.")
@@ -126,15 +146,22 @@ def build_feed(
     generated_at = _iso_now()
     common_meta = _build_common_meta_pokemon(usage, discovery.snapshots)
 
+    official_summary = (
+        ", ".join(f"{t.name} ({t.tier.replace('_', ' ')}, {t.players})" for t in official_tournaments[:4])
+        or "none in window"
+    )
     notes = [
         f"Automated multi-source ingest: {usage.sample_size} teams across {usage.tournament_count} "
-        f"Limitless Regulation M-A tournaments in the last {since_days} days.",
-        "Usage percentages are real overall usage (share of sampled teams running each species), "
-        "not curated board share.",
+        f"tournaments (grassroots last {since_days}d + officials last {officials_since_days}d).",
+        "The meta list is ranked by USAGE WEIGHTED toward the biggest, most official events "
+        "(Regionals/Internationals/Special Events/Worlds) and the deepest top-cut runs; raw share-of-teams "
+        "is retained for transparency.",
+        f"Official events weighted in: {official_summary}.",
         f"Discovered {len(discovery.snapshots)} representative shells from {discovery.teams_analyzed} "
-        f"analyzed unique teams ({discovery.clusters_formed} clusters).",
+        f"analyzed grassroots teams ({discovery.clusters_formed} clusters).",
         *reconcile_report.to_notes(),
-        "Provenance: Limitless tournament API (authoritative) cross-checked against Pikalytics and Pokémon Zone.",
+        "Provenance: limitlessvgc.com (official results) + Limitless tournament API (grassroots), "
+        "cross-checked against Pikalytics and Pokémon Zone.",
     ]
 
     document = {
@@ -148,12 +175,19 @@ def build_feed(
         "provenance": {
             "generatedAt": generated_at,
             "windowDays": since_days,
+            "officialsWindowDays": officials_since_days,
             "sampleSize": usage.sample_size,
             "tournamentCount": usage.tournament_count,
+            "officialEventCount": usage.official_count,
+            "tierBreakdown": usage.tier_breakdown,
+            "officialEvents": [
+                {"name": t.name, "tier": t.tier, "players": t.players, "url": t.url}
+                for t in official_tournaments
+            ],
             "sources": reconcile_report.sources,
             "authoritativeSource": {
-                "name": "Limitless",
-                "url": "https://play.limitlesstcg.com/tournaments/completed?game=VGC",
+                "name": "limitlessvgc.com (official results)",
+                "url": "https://limitlessvgc.com/tournaments",
             },
         },
     }
@@ -179,13 +213,18 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         prog="python -m pokemon_team_analyzer.meta_ingest",
         description="Build the Champions Regulation M-A meta-snapshot feed from real tournament data.",
     )
-    parser.add_argument("--since", type=int, default=30, help="Lookback window in days (default 30).")
+    parser.add_argument("--since", type=int, default=30, help="Grassroots lookback window in days (default 30).")
+    parser.add_argument(
+        "--officials-since", type=int, default=60,
+        help="Official-event (limitlessvgc) lookback window in days (default 60; officials are sparser).",
+    )
     parser.add_argument(
         "--format-code", default=DEFAULT_FORMAT_CODE, help="Limitless format code to match (default 'M-A')."
     )
-    parser.add_argument("--min-players", type=int, default=8, help="Skip tournaments below this size.")
-    parser.add_argument("--max-tournaments", type=int, default=60, help="Cap on tournaments sampled.")
+    parser.add_argument("--min-players", type=int, default=8, help="Skip grassroots tournaments below this size.")
+    parser.add_argument("--max-tournaments", type=int, default=60, help="Cap on grassroots tournaments sampled.")
     parser.add_argument("--max-teams", type=int, default=150, help="Cap on unique teams analyzed for discovery.")
+    parser.add_argument("--no-officials", action="store_true", help="Skip the limitlessvgc official-events source.")
     parser.add_argument("--no-secondary", action="store_true", help="Skip Pikalytics/Pokémon Zone cross-checks.")
     parser.add_argument("--out", type=Path, default=None, help="Output path (default build/meta-snapshots.json).")
     parser.add_argument(
@@ -218,11 +257,13 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = build_feed(
             since_days=args.since,
+            officials_since_days=args.officials_since,
             format_code=args.format_code,
             min_players=args.min_players,
             max_tournaments=args.max_tournaments,
             max_teams_analyzed=args.max_teams,
             include_secondary=not args.no_secondary,
+            include_officials=not args.no_officials,
             on_progress=progress,
         )
     except Exception as error:  # noqa: BLE001 - CLI boundary: report and exit nonzero
@@ -230,10 +271,18 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     usage = result.usage
-    print(f"\nSampled {usage.sample_size} teams across {usage.tournament_count} tournaments.", file=sys.stderr)
-    print("Top usage:", file=sys.stderr)
+    print(
+        f"\nSampled {usage.sample_size} teams across {usage.tournament_count} tournaments "
+        f"({usage.official_count} official); tiers: {usage.tier_breakdown}.",
+        file=sys.stderr,
+    )
+    print("Top meta (weighted by tournament prestige + top-cut runs | raw share):", file=sys.stderr)
     for entry in usage.top(10):
-        print(f"  {_render_species_token(entry.token):24s} {entry.usage_pct:5.1f}%  ({entry.team_count} teams)", file=sys.stderr)
+        print(
+            f"  {_render_species_token(entry.token):24s} {entry.weighted_usage_pct:5.1f}%  "
+            f"(raw {entry.raw_usage_pct:4.1f}%, {entry.team_count} teams)",
+            file=sys.stderr,
+        )
     print(f"\nDiscovered {len(result.discovery.snapshots)} shells.", file=sys.stderr)
     for snapshot in result.discovery.snapshots[:8]:
         print(f"  {str(snapshot['label'])[:46]:46s} fr={snapshot['field_relevance']}", file=sys.stderr)

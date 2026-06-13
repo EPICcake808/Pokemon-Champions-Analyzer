@@ -8,13 +8,15 @@ from unittest.mock import patch
 
 from pokemon_team_analyzer.meta_ingest import build, discover, reconcile, schema, usage
 from pokemon_team_analyzer.meta_ingest.sources import SourceUsage
-from pokemon_team_analyzer.meta_ingest.sources import limitless, pikalytics, pokemon_zone
+from pokemon_team_analyzer.meta_ingest.sources import limitless, limitlessvgc, pikalytics, pokemon_zone
 from pokemon_team_analyzer.meta_ingest.sources.limitless import Roster, Tournament
 
 _FIXTURES = Path(__file__).parent / "fixtures"
 _TOURNAMENTS = json.loads((_FIXTURES / "limitless_tournaments.json").read_text())
 _STANDINGS = json.loads((_FIXTURES / "limitless_standings.json").read_text())
 _PIKALYTICS_HTML = (_FIXTURES / "pikalytics_leaderboard.html").read_text()
+_LVGC_LISTING_HTML = (_FIXTURES / "limitlessvgc_listing.html").read_text()
+_LVGC_STANDINGS_HTML = (_FIXTURES / "limitlessvgc_standings.html").read_text()
 
 # A fixed "now" so the date-window filter in list_tournaments is deterministic.
 _NOW = datetime(2026, 6, 13, tzinfo=UTC)
@@ -95,7 +97,7 @@ class LimitlessListingTests(unittest.TestCase):
 
 
 class UsageTests(unittest.TestCase):
-    def test_usage_is_share_of_teams(self):
+    def test_raw_usage_is_share_of_teams(self):
         rosters = [
             _make_roster(["incineroar", "basculegion", "kingambit", "sinistcha"], placing=1),
             _make_roster(["incineroar", "garchomp", "whimsicott", "sneasler"], placing=8),
@@ -105,11 +107,49 @@ class UsageTests(unittest.TestCase):
         by_token = {entry.token: entry for entry in report.entries}
         self.assertEqual(report.sample_size, 3)
         self.assertEqual(by_token["incineroar"].team_count, 3)
-        self.assertEqual(by_token["incineroar"].usage_pct, 100.0)
-        self.assertAlmostEqual(by_token["basculegion"].usage_pct, 66.7, places=1)
-        # Placement weighting lifts the winner-correlated species above raw usage.
-        self.assertGreater(by_token["incineroar"].weighted_usage_pct, 0)
-        self.assertEqual(report.entries[0].token, "incineroar")  # sorted by usage desc
+        self.assertEqual(by_token["incineroar"].raw_usage_pct, 100.0)
+        self.assertAlmostEqual(by_token["basculegion"].raw_usage_pct, 66.7, places=1)
+        self.assertEqual(report.entries[0].token, "incineroar")  # sorted by weighted desc
+
+    def test_base_species_collapse_unifies_mega_and_floette(self):
+        self.assertEqual(usage.base_species_token("charizard-mega-y"), "charizard")
+        self.assertEqual(usage.base_species_token("gengar-mega"), "gengar")
+        # platform floette-mega and official floette-eternal must collapse to one token
+        self.assertEqual(usage.base_species_token("floette-mega"), "floette-eternal")
+        self.assertEqual(usage.base_species_token("floette-eternal"), "floette-eternal")
+        # a mega-token roster and a base-token roster count as the same species
+        report = usage.compute_usage(
+            [
+                _make_roster(["charizard-mega-y", "garchomp", "whimsicott", "sneasler"], 1),
+                _make_roster(["charizard", "incineroar", "kingambit", "sinistcha"], 2),
+            ],
+            tournament_count=1,
+            since_days=30,
+        )
+        by_token = {e.token: e for e in report.entries}
+        self.assertEqual(by_token["charizard"].team_count, 2)
+        self.assertNotIn("charizard-mega-y", by_token)
+
+    def test_official_tier_outweighs_larger_online_event(self):
+        official = Tournament(id="o1", name="Regional X", date="2026-06-01T00:00:00Z",
+                              format="M-A", players=300, tier="regional", source="limitlessvgc")
+        online_big = Tournament(id="g1", name="Big Online", date="2026-06-10T00:00:00Z",
+                                format="M-A", players=6000, tier="online", source="limitless")
+        self.assertGreater(usage.tier_weight(official), usage.tier_weight(online_big))
+        # A species seen only at the regional outranks one seen only at the bigger online event.
+        report = usage.compute_usage(
+            [
+                _make_roster(["kingambit", "garchomp", "incineroar", "sinistcha"], 1, tournament=official),
+                _make_roster(["whimsicott", "torkoal", "venusaur", "aerodactyl"], 1, tournament=online_big),
+            ],
+            tournament_count=2,
+            since_days=30,
+        )
+        by_token = {e.token: e for e in report.entries}
+        self.assertGreater(by_token["kingambit"].weighted_usage_pct, by_token["whimsicott"].weighted_usage_pct)
+        self.assertEqual(report.official_count, 1)
+        # The top entry is a species from the heavily-weighted regional team.
+        self.assertIn(report.entries[0].token, {"kingambit", "garchomp", "incineroar", "sinistcha"})
 
 
 class DiscoverModeInferenceTests(unittest.TestCase):
@@ -167,11 +207,22 @@ class ReconcileTests(unittest.TestCase):
         zone = SourceUsage("Pokémon Zone", "z", False, note="HTTP 403")
         result = reconcile.reconcile(report_usage, [pika, zone])
         self.assertGreater(result.top10_overlap, 0.5)
-        # froslass-mega is in our top-10 but absent from Pikalytics -> flagged.
+        # froslass-mega collapses to base "froslass", which is in our top-10 but absent
+        # from Pikalytics -> flagged.
         flagged = {c.token for c in result.comparisons if c.flags}
-        self.assertIn("froslass-mega", flagged)
+        self.assertIn("froslass", flagged)
         # Unavailable source recorded, run still proceeds.
         self.assertTrue(any(not s["available"] for s in result.sources))
+
+    def test_secondary_mega_tokens_base_normalized_for_comparison(self):
+        report_usage = self._usage_report()
+        # Pikalytics reports charizard-mega-y; our usage would carry base "charizard".
+        # The comparison must base-normalize so they line up (not double-flag).
+        pika = SourceUsage("Pikalytics", "u", True, {"basculegion": 51.5, "charizard-mega-y": 31.8})
+        result = reconcile.reconcile(report_usage, [pika])
+        base_map = reconcile._base_normalized_token_pct(pika)
+        self.assertIn("charizard", base_map)
+        self.assertNotIn("charizard-mega-y", base_map)
 
     def test_no_secondary_sources_is_handled(self):
         result = reconcile.reconcile(self._usage_report(), [])
@@ -255,10 +306,20 @@ class BuildFeedTests(unittest.TestCase):
         def fake_collect(**_kwargs):
             return rosters, [tournament], []
 
+        # One official event so the weighted path + official_count are exercised offline.
+        official_tour = Tournament(id="999", name="Regional Z", date="2026-06-01T00:00:00Z",
+                                   format="m-a", players=400, tier="regional", source="limitlessvgc")
+        official_rosters = [
+            Roster(official_tour, "champ", 1, "", ("kingambit", "garchomp", "incineroar", "sinistcha"), "", []),
+            Roster(official_tour, "second", 2, "", ("basculegion", "garchomp", "whimsicott", "sneasler"), "", []),
+        ]
+
         pika = SourceUsage("Pikalytics", "u", True, {"basculegion": 51.5, "incineroar": 25.9})
         zone = SourceUsage("Pokémon Zone", "z", False, note="HTTP 403")
 
         with patch.object(build.limitless, "collect_rosters", fake_collect), \
+             patch.object(build.limitlessvgc, "collect_official_rosters",
+                          lambda **_k: (official_rosters, [official_tour], [])), \
              patch.object(build.pikalytics, "fetch_usage", lambda **_k: pika), \
              patch.object(build.pokemon_zone, "fetch_usage", lambda **_k: zone):
             result = build.build_feed(since_days=30, min_players=8)
@@ -268,10 +329,56 @@ class BuildFeedTests(unittest.TestCase):
         document = result.feed["regulations"][0]
         self.assertTrue(document["tournamentTeamSnapshots"])
         self.assertTrue(document["commonMetaPokemon"])
-        # metaShare is real usage (== usagePercent), not curated board share.
+        # Headline metaShare is the weighted usage; raw share is retained separately.
         top = document["commonMetaPokemon"][0]
-        self.assertEqual(top["metaShare"], top["usagePercent"])
+        self.assertEqual(top["metaShare"], top["weightedUsagePercent"])
         self.assertEqual(top["sampleSize"], result.usage.sample_size)
+        # The official event was counted and recorded in provenance.
+        self.assertEqual(result.usage.official_count, 1)
+        self.assertEqual(document["provenance"]["officialEventCount"], 1)
+        self.assertTrue(document["provenance"]["officialEvents"])
+
+
+class LimitlessVgcOfficialSourceTests(unittest.TestCase):
+    def test_classify_tier(self):
+        self.assertEqual(limitlessvgc.classify_tier("Regional Indianapolis, IN"), "regional")
+        self.assertEqual(limitlessvgc.classify_tier("Special Event Turin"), "special_event")
+        self.assertEqual(limitlessvgc.classify_tier("EUIC 2026, London"), "international")
+        self.assertEqual(limitlessvgc.classify_tier("World Championships 2026"), "worlds")
+        self.assertEqual(limitlessvgc.classify_tier("Players Cup IV"), "players_cup")
+
+    def test_parse_listing_filters_format_and_window(self):
+        tournaments = limitlessvgc.parse_listing(_LVGC_LISTING_HTML, since_days=60, now=_NOW)
+        ids = sorted(t.id for t in tournaments)
+        # Only the two in-window M-A events; the 'l'-format and out-of-window rows drop.
+        self.assertEqual(ids, ["434", "435"])
+        by_id = {t.id: t for t in tournaments}
+        self.assertEqual(by_id["434"].tier, "regional")
+        self.assertEqual(by_id["434"].players, 1013)
+        self.assertEqual(by_id["435"].tier, "special_event")
+        self.assertEqual(by_id["435"].source, "limitlessvgc")
+        self.assertEqual(by_id["435"].url, "https://limitlessvgc.com/tournaments/435")
+
+    def test_parse_standings_extracts_placement_and_base_species(self):
+        tour = Tournament(id="435", name="Special Event Turin", date="2026-06-06",
+                          format="m-a", players=940, tier="special_event", source="limitlessvgc")
+        rosters = limitlessvgc.parse_standings(tour, _LVGC_STANDINGS_HTML)
+        self.assertEqual(len(rosters), 2)
+        self.assertEqual(rosters[0].placing, 1)
+        self.assertIn("floette-eternal", rosters[0].species_tokens)
+        self.assertIn("gengar", rosters[0].species_tokens)  # base species (no mega in official data)
+        self.assertEqual(rosters[0].showdown_text, "")  # usage-only, no decklist for discovery
+
+    def test_collect_official_rosters_degrades_when_listing_unavailable(self):
+        from pokemon_team_analyzer.meta_ingest.http import HttpError
+
+        def boom(*_a, **_k):
+            raise HttpError("u", 503, "down")
+
+        with patch.object(limitlessvgc, "get_text", boom):
+            rosters, tournaments, warnings = limitlessvgc.collect_official_rosters(since_days=60)
+        self.assertEqual(rosters, [])
+        self.assertTrue(warnings)
 
 
 class PublishTests(unittest.TestCase):

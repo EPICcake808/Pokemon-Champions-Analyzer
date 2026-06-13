@@ -55,9 +55,16 @@ class Tournament:
     date: str
     format: str
     players: int
+    # Prestige tier used for usage weighting. Grassroots platform events are "online";
+    # official events (from limitlessvgc) carry "regional"/"international"/"worlds"/etc.
+    tier: str = "online"
+    # Which source the tournament came from ("limitless" platform vs "limitlessvgc").
+    source: str = "limitless"
 
     @property
     def url(self) -> str:
+        if self.source == "limitlessvgc":
+            return f"https://limitlessvgc.com/tournaments/{self.id}"
         return f"{WEB_BASE}/tournament/{self.id}/standings"
 
 

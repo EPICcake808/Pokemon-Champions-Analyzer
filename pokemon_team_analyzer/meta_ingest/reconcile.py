@@ -13,7 +13,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .sources import SourceUsage
-from .usage import UsageReport
+from .usage import UsageReport, base_species_token
 
 # A top-of-meta token is "missing" from a secondary source if it doesn't appear in
 # the source's leaderboard at all — worth surfacing as a possible sampling gap.
@@ -86,7 +86,22 @@ class ReconcileReport:
         return "\n".join(lines)
 
 
+def _base_normalized_token_pct(source: SourceUsage) -> dict[str, float]:
+    """Collapse a secondary source's mega/variant tokens to base species (summing).
+
+    Lets us compare apples-to-apples against our base-normalized raw usage.
+    """
+
+    base_pct: dict[str, float] = {}
+    for token, pct in source.token_pct.items():
+        base = base_species_token(token)
+        base_pct[base] = round(base_pct.get(base, 0.0) + pct, 2)
+    return base_pct
+
+
 def reconcile(usage: UsageReport, secondary_sources: list[SourceUsage]) -> ReconcileReport:
+    # Reconcile against RAW usage (not the weighted headline): Pikalytics reports a
+    # raw share of teams, so weighted usage would diverge by design.
     limitless_top = usage.top(_TOP_N)
     limitless_top10_tokens = {entry.token for entry in usage.top(10)}
 
@@ -102,12 +117,13 @@ def reconcile(usage: UsageReport, secondary_sources: list[SourceUsage]) -> Recon
     ]
 
     available_sources = [source for source in secondary_sources if source.available]
+    base_maps = {source.name: _base_normalized_token_pct(source) for source in available_sources}
 
     comparisons: list[TokenComparison] = []
     for entry in limitless_top:
-        comparison = TokenComparison(token=entry.token, limitless_pct=entry.usage_pct)
+        comparison = TokenComparison(token=entry.token, limitless_pct=entry.raw_usage_pct)
         for source in available_sources:
-            value = source.token_pct.get(entry.token)
+            value = base_maps[source.name].get(entry.token)
             if value is not None:
                 comparison.secondary_pct[source.name] = value
             elif entry.token in limitless_top10_tokens:
@@ -117,7 +133,7 @@ def reconcile(usage: UsageReport, secondary_sources: list[SourceUsage]) -> Recon
     # Directional agreement: of our top-10, how many also appear in each cross-check?
     overlaps: list[float] = []
     for source in available_sources:
-        source_tokens = set(source.token_pct)
+        source_tokens = set(base_maps[source.name])
         if limitless_top10_tokens:
             overlaps.append(len(limitless_top10_tokens & source_tokens) / len(limitless_top10_tokens))
     top10_overlap = sum(overlaps) / len(overlaps) if overlaps else 0.0
