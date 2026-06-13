@@ -55,16 +55,9 @@ class Tournament:
     date: str
     format: str
     players: int
-    # Prestige tier used for usage weighting. Grassroots platform events are "online";
-    # official events (from limitlessvgc) carry "regional"/"international"/"worlds"/etc.
-    tier: str = "online"
-    # Which source the tournament came from ("limitless" platform vs "limitlessvgc").
-    source: str = "limitless"
 
     @property
     def url(self) -> str:
-        if self.source == "limitlessvgc":
-            return f"https://limitlessvgc.com/tournaments/{self.id}"
         return f"{WEB_BASE}/tournament/{self.id}/standings"
 
 
@@ -79,8 +72,6 @@ class Roster:
     species_tokens: tuple[str, ...]
     showdown_text: str
     decklist: list[dict[str, Any]] = field(default_factory=list)
-    # Official-source team-detail id (limitlessvgc /teams/{id}), when known.
-    team_id: str | None = None
 
     @property
     def species_key(self) -> str:

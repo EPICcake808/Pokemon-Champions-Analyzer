@@ -24,7 +24,6 @@ from dataclasses import dataclass, field
 from ..analyzer import _render_mode_label, _render_species_token
 from . import DEFAULT_REGULATION_ID
 from .sources.limitless import Roster
-from .usage import team_weight
 
 # Mirrors BROAD_MIX_KEYS in web/src/lib/live-meta-ingestion.ts.
 BROAD_MIX_KEYS = ("hyper_offense", "bulky_offense", "balance", "semi_stall", "stall", "trick_room")
@@ -57,12 +56,9 @@ class _Candidate:
     mode_labels: list[str]
     broad_mix: dict[str, float]
     team_count: int
-    weight: float
     best_placing: int | None
-    best_official_placing: int | None
-    official_tier: str | None
-    # (name, url, is_official) per distinct event this team appeared at.
-    events: list[tuple[str, str, bool]]
+    tournaments: list[str]
+    tournament_urls: list[str]
 
 
 @dataclass
@@ -70,11 +66,9 @@ class _UniqueTeam:
     species_tokens: tuple[str, ...]
     decklist: list[dict]
     count: int = 0
-    weight: float = 0.0
     best_placing: int | None = None
-    best_official_placing: int | None = None
-    official_tier: str | None = None
-    events: list[tuple[str, str, bool]] = field(default_factory=list)
+    tournaments: list[str] = field(default_factory=list)
+    tournament_urls: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -186,20 +180,15 @@ def _dedupe_teams(rosters: list[Roster]) -> list[_UniqueTeam]:
             team = _UniqueTeam(species_tokens=roster.species_tokens, decklist=roster.decklist)
             teams[key] = team
         team.count += 1
-        team.weight += team_weight(roster)
         if roster.placing is not None and (team.best_placing is None or roster.placing < team.best_placing):
             team.best_placing = roster.placing
-        if roster.tournament.source == "limitlessvgc":
-            if roster.placing is not None and (
-                team.best_official_placing is None or roster.placing < team.best_official_placing
-            ):
-                team.best_official_placing = roster.placing
-                team.official_tier = roster.tournament.tier
-        is_official = roster.tournament.source == "limitlessvgc"
-        if roster.tournament.name not in {name for name, _, _ in team.events}:
-            team.events.append((roster.tournament.name, roster.tournament.url, is_official))
-    # Heaviest (official top-cut) teams first — those most worth analyzing.
-    return sorted(teams.values(), key=lambda team: -team.weight)
+        if roster.tournament.name not in team.tournaments:
+            team.tournaments.append(roster.tournament.name)
+            team.tournament_urls.append(roster.tournament.url)
+    return sorted(
+        teams.values(),
+        key=lambda team: (-team.count, team.best_placing if team.best_placing is not None else 9_999),
+    )
 
 
 def _build_candidate(unique_team: _UniqueTeam) -> _Candidate:
@@ -211,11 +200,9 @@ def _build_candidate(unique_team: _UniqueTeam) -> _Candidate:
         mode_labels=mode_labels,
         broad_mix=broad_mix,
         team_count=unique_team.count,
-        weight=unique_team.weight,
         best_placing=unique_team.best_placing,
-        best_official_placing=unique_team.best_official_placing,
-        official_tier=unique_team.official_tier,
-        events=unique_team.events,
+        tournaments=unique_team.tournaments,
+        tournament_urls=unique_team.tournament_urls,
     )
 
 
@@ -226,7 +213,7 @@ def _candidates_related(left: _Candidate, right: _Candidate) -> bool:
 
 
 def _cluster(candidates: list[_Candidate]) -> list[list[_Candidate]]:
-    ordered = sorted(candidates, key=lambda c: -c.weight)
+    ordered = sorted(candidates, key=lambda c: (-c.team_count, c.best_placing or 9_999))
     clusters: list[list[_Candidate]] = []
     for candidate in ordered:
         target = next(
@@ -247,85 +234,42 @@ def _normalize_top(scores: dict[str, float], *, limit: int) -> dict[str, float]:
     return {key: round(value / total, 2) for key, value in ranked}
 
 
-_TIER_LABELS = {
-    "worlds": "Worlds",
-    "international": "International",
-    "players_cup": "Players Cup",
-    "regional": "Regional",
-    "special_event": "Special Event",
-    "other_official": "official event",
-}
-
-
-def _placement_phrase(placing: int | None) -> tuple[str, float]:
-    if placing is None:
+def _result_signal(best_placing: int | None) -> tuple[str, float]:
+    if best_placing is None:
         return "tournament-tracked finish", 0.4
-    if placing <= 1:
-        return "winner", 1.0
-    if placing <= 4:
+    if best_placing <= 1:
+        return "tournament winner", 1.0
+    if best_placing <= 4:
         return "top-4 finish", 0.85
-    if placing <= 8:
+    if best_placing <= 8:
         return "top-8 finish", 0.7
-    if placing <= 16:
+    if best_placing <= 16:
         return "top-16 finish", 0.55
-    if placing <= 32:
-        return "top-32 finish", 0.45
     return "tournament-tracked finish", 0.4
-
-
-def _result_signal(
-    best_placing: int | None, best_official_placing: int | None, official_tier: str | None
-) -> tuple[str, float, bool]:
-    """Return (result_label, signal, is_official). Official deep runs are highlighted."""
-
-    if best_official_placing is not None and official_tier:
-        phrase, signal = _placement_phrase(best_official_placing)
-        tier_label = _TIER_LABELS.get(official_tier, "official event")
-        # Official results carry more signal than grassroots ones.
-        return f"{tier_label} {phrase}", min(1.0, signal + 0.1), True
-    phrase, signal = _placement_phrase(best_placing)
-    return phrase, signal, False
 
 
 def _clamp(value: float, low: float = 0.0, high: float = 2.0) -> float:
     return round(min(high, max(low, value)), 2)
 
 
-def _cluster_events(cluster: list[_Candidate]) -> list[tuple[str, str, bool]]:
-    """Distinct (name, url, is_official) across the cluster, official events first."""
-
-    seen: set[str] = set()
-    official: list[tuple[str, str, bool]] = []
-    grassroots: list[tuple[str, str, bool]] = []
-    for candidate in cluster:
-        for name, url, is_official in candidate.events:
-            if name in seen:
-                continue
-            seen.add(name)
-            (official if is_official else grassroots).append((name, url, is_official))
-    return official + grassroots
-
-
 def cluster_urls(cluster: list[_Candidate]) -> list[str]:
-    return [url for _, url, _ in _cluster_events(cluster)]
+    urls: list[str] = []
+    for candidate in cluster:
+        for url in candidate.tournament_urls:
+            if url not in urls:
+                urls.append(url)
+    return urls
 
 
-def _build_snapshot(cluster: list[_Candidate], max_weight: float) -> dict[str, object]:
+def _build_snapshot(cluster: list[_Candidate], max_team_count: int) -> dict[str, object]:
     team_count = sum(candidate.team_count for candidate in cluster)
-    cluster_weight = sum(candidate.weight for candidate in cluster)
     best_placing = min((c.best_placing for c in cluster if c.best_placing is not None), default=None)
-    best_official_placing = min(
-        (c.best_official_placing for c in cluster if c.best_official_placing is not None), default=None
-    )
-    official_tier = next((c.official_tier for c in cluster if c.official_tier), None)
 
     species_score: dict[str, float] = defaultdict(float)
     mode_score: dict[str, float] = defaultdict(float)
     broad_mix_score: dict[str, float] = defaultdict(float)
     for candidate in cluster:
-        # Weight species/mode/archetype aggregation by tournament prestige + placement,
-        # so official top-cut teams shape the representative shell.
-        weight = max(candidate.weight, 0.01)
+        weight = float(candidate.team_count)
         for token in candidate.species_tokens:
             species_score[token] += weight
         for mode, score in candidate.mode_scores.items():
@@ -342,10 +286,8 @@ def _build_snapshot(cluster: list[_Candidate], max_weight: float) -> dict[str, o
     label_species = " ".join(_render_species_token(token) for token in key_pokemon[:2])
     label = f"{label_species} {_render_mode_label(primary_mode)}".strip()
 
-    result_label, result_signal, is_official = _result_signal(best_placing, best_official_placing, official_tier)
-    popularity_share = cluster_weight / max_weight if max_weight else 0.0
-    # Shells anchored by a deep official run are board-defining; lift their relevance.
-    official_bonus = 0.25 if (is_official and (best_official_placing or 99) <= 16) else 0.0
+    result_label, result_signal = _result_signal(best_placing)
+    popularity_share = team_count / max_team_count if max_team_count else 0.0
 
     key_cores = []
     if len(key_pokemon) >= 2:
@@ -355,17 +297,19 @@ def _build_snapshot(cluster: list[_Candidate], max_weight: float) -> dict[str, o
     if not key_cores:
         key_cores.append(_render_species_token(key_pokemon[0]))
 
-    events = _cluster_events(cluster)
-    tournaments = [name for name, _, _ in events]
-    source_label = "official + grassroots results" if is_official else "Limitless grassroots results"
-    source = f"{source_label} ({team_count} teams): {', '.join(tournaments[:2])}".strip()
+    tournaments: list[str] = []
+    for candidate in cluster:
+        for name in candidate.tournaments:
+            if name not in tournaments:
+                tournaments.append(name)
+    source = f"Limitless tournament results ({team_count} teams): {', '.join(tournaments[:2])}".strip()
 
     return {
         "slug": f"live-{_slugify(label) or 'shell'}",
         "label": label or "Unnamed shell",
         "source": source[:240],
         "result_label": result_label,
-        "field_relevance": _clamp(0.45 + 0.45 * popularity_share + 0.15 * result_signal + official_bonus),
+        "field_relevance": _clamp(0.45 + 0.5 * popularity_share + 0.15 * result_signal),
         "popularity_weight": _clamp(0.3 + 0.7 * popularity_share),
         "result_weight": _clamp(0.4 + 0.6 * result_signal),
         "modes": modes,
@@ -376,7 +320,6 @@ def _build_snapshot(cluster: list[_Candidate], max_weight: float) -> dict[str, o
         # Extra provenance (tolerated by the web schema; surfaced in a later pass).
         "provenance_urls": cluster_urls(cluster)[:3],
         "team_count": team_count,
-        "is_official": is_official,
     }
 
 
@@ -396,8 +339,8 @@ def discover_shells(
     unique_teams = _dedupe_teams(rosters)
     candidates = [_build_candidate(team) for team in unique_teams[:max_teams_analyzed]]
     clusters = _cluster(candidates)
-    max_weight = max((sum(c.weight for c in cluster) for cluster in clusters), default=0.0)
-    snapshots = [_build_snapshot(cluster, max_weight) for cluster in clusters]
+    max_team_count = max((sum(c.team_count for c in cluster) for cluster in clusters), default=0)
+    snapshots = [_build_snapshot(cluster, max_team_count) for cluster in clusters]
     snapshots.sort(key=lambda snapshot: (-_snapshot_rank(snapshot), str(snapshot["label"])))
 
     return DiscoveryResult(
