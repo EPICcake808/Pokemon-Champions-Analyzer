@@ -1,23 +1,24 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-13T15:04:25.062524Z",
+  "generatedAt": "2026-06-13T15:32:31.603552Z",
   "regulations": [
     {
       "regulationId": "champions_regulation_m_a",
-      "updatedAt": "2026-06-13T15:04:25.062524Z",
+      "updatedAt": "2026-06-13T15:32:31.603552Z",
       "sourceLabel": "Pokemon Champions Analyzer automated multi-source Regulation M-A meta board",
       "notes": [
-        "Automated multi-source ingest: 2342 teams across 59 Limitless Regulation M-A tournaments in the last 30 days.",
-        "Usage percentages are real overall usage (share of sampled teams running each species), not curated board share.",
-        "Discovered 24 representative shells from 150 analyzed unique teams (61 clusters).",
+        "Automated multi-source ingest: 2622 teams across 61 tournaments (grassroots last 30d + officials last 60d).",
+        "The meta list is ranked by USAGE WEIGHTED toward the biggest, most official events (Regionals/Internationals/Special Events/Worlds) and the deepest top-cut runs; raw share-of-teams is retained for transparency.",
+        "Official events weighted in: Special Event Turin (special event, 940), Regional Indianapolis, IN (regional, 1013).",
+        "Discovered 24 representative shells from 150 analyzed grassroots teams (61 clusters).",
         "Reconciliation: Pikalytics (20 rows); unavailable: Pokémon Zone — unavailable (HTTP 403 Forbidden)",
         "Top-10 usage agreement with cross-checks: 100%.",
-        "Provenance: Limitless tournament API (authoritative) cross-checked against Pikalytics and Pokémon Zone."
+        "Provenance: limitlessvgc.com (official results) + Limitless tournament API (grassroots), cross-checked against Pikalytics and Pokémon Zone."
       ],
       "commonMetaPokemon": [
         {
           "species": "Garchomp",
-          "metaShare": 38.9,
+          "metaShare": 48.5,
           "whyUsed": "It fits into several current shells because it threatens offense immediately while still scaling well with Tailwind, sun, or bulky positioning support.",
           "whatItDoes": "It applies broad physical pressure with strong Ground coverage and spread damage, forcing awkward switches and punishing teams that fall behind on speed control.",
           "featuredTeams": [
@@ -25,44 +26,14 @@
             "Mega Floette Incineroar Trick Room",
             "Hisuian Arcanine Corviknight Sand Tailwind"
           ],
-          "usagePercent": 38.9,
-          "weightedUsagePercent": 39.3,
-          "teamCount": 911,
-          "sampleSize": 2342
-        },
-        {
-          "species": "Incineroar",
-          "metaShare": 36.8,
-          "whyUsed": "It remains one of the safest glue pieces because Intimidate and positioning utility patch physical pressure without forcing teams to give up tempo.",
-          "whatItDoes": "It slows openings with Fake Out and pivot pressure, softens setup attempts, and buys cleaner entry turns for the field's main sweepers and weather payoffs.",
-          "featuredTeams": [
-            "Mega Floette Incineroar Trick Room",
-            "Mega Gengar Politoed Rain",
-            "Mega Floette Incineroar Dual Mode"
-          ],
-          "usagePercent": 36.8,
-          "weightedUsagePercent": 36.8,
-          "teamCount": 863,
-          "sampleSize": 2342
-        },
-        {
-          "species": "Basculegion",
-          "metaShare": 36.8,
-          "whyUsed": "Rain and fast-offense shells keep it around because it converts speed control into immediate KOs better than most physical cleaners in the format.",
-          "whatItDoes": "It acts as the rain-enabled cleaner that cashes in on chipped boards and forces endgames once Pelipper, Tailwind, or support positioning has opened the field.",
-          "featuredTeams": [
-            "Garchomp Basculegion Tailwind",
-            "Archaludon Pelipper Rain Tailwind",
-            "Mega Froslass Kingambit Dual Mode"
-          ],
-          "usagePercent": 36.8,
-          "weightedUsagePercent": 37.8,
-          "teamCount": 862,
-          "sampleSize": 2342
+          "weightedUsagePercent": 48.5,
+          "usagePercent": 43.5,
+          "teamCount": 1141,
+          "sampleSize": 2622
         },
         {
           "species": "Kingambit",
-          "metaShare": 35.6,
+          "metaShare": 48.4,
           "whyUsed": "Balance and offense teams both value it because it keeps priority endgames honest and punishes passive or overly defensive lines.",
           "whatItDoes": "It acts as a cleaner and trade punisher, usually closing games with strong Dark or Steel pressure and priority once its partners have chipped the field.",
           "featuredTeams": [
@@ -70,29 +41,81 @@
             "Mega Floette Incineroar Trick Room",
             "Mega Froslass Kingambit Dual Mode"
           ],
-          "usagePercent": 35.6,
-          "weightedUsagePercent": 36.5,
-          "teamCount": 833,
-          "sampleSize": 2342
+          "weightedUsagePercent": 48.4,
+          "usagePercent": 38.3,
+          "teamCount": 1005,
+          "sampleSize": 2622
+        },
+        {
+          "species": "Basculegion",
+          "metaShare": 47.0,
+          "whyUsed": "Rain and fast-offense shells keep it around because it converts speed control into immediate KOs better than most physical cleaners in the format.",
+          "whatItDoes": "It acts as the rain-enabled cleaner that cashes in on chipped boards and forces endgames once Pelipper, Tailwind, or support positioning has opened the field.",
+          "featuredTeams": [
+            "Garchomp Basculegion Tailwind",
+            "Archaludon Pelipper Rain Tailwind",
+            "Mega Froslass Kingambit Dual Mode"
+          ],
+          "weightedUsagePercent": 47.0,
+          "usagePercent": 39.0,
+          "teamCount": 1022,
+          "sampleSize": 2622
+        },
+        {
+          "species": "Incineroar",
+          "metaShare": 37.7,
+          "whyUsed": "It remains one of the safest glue pieces because Intimidate and positioning utility patch physical pressure without forcing teams to give up tempo.",
+          "whatItDoes": "It slows openings with Fake Out and pivot pressure, softens setup attempts, and buys cleaner entry turns for the field's main sweepers and weather payoffs.",
+          "featuredTeams": [
+            "Mega Floette Incineroar Trick Room",
+            "Mega Gengar Politoed Rain",
+            "Mega Floette Incineroar Dual Mode"
+          ],
+          "weightedUsagePercent": 37.7,
+          "usagePercent": 36.9,
+          "teamCount": 968,
+          "sampleSize": 2622
+        },
+        {
+          "species": "Charizard",
+          "metaShare": 36.2,
+          "whyUsed": "Charizard appears on 31.2% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like the current board without forcing the rest of the team to contort around it.",
+          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "featuredTeams": [],
+          "weightedUsagePercent": 36.2,
+          "usagePercent": 31.2,
+          "teamCount": 817,
+          "sampleSize": 2622
         },
         {
           "species": "Sneasler",
-          "metaShare": 34.8,
-          "whyUsed": "Sneasler appears on 34.8% of sampled Regulation M-A teams, showing up across shells like Garchomp Basculegion Tailwind and Mega Floette Incineroar Trick Room without forcing the rest of the team to contort around it.",
+          "metaShare": 33.5,
+          "whyUsed": "Sneasler appears on 34.4% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like Garchomp Basculegion Tailwind and Mega Floette Incineroar Trick Room without forcing the rest of the team to contort around it.",
           "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
           "featuredTeams": [
             "Garchomp Basculegion Tailwind",
             "Mega Floette Incineroar Trick Room",
             "Archaludon Pelipper Rain Tailwind"
           ],
-          "usagePercent": 34.8,
-          "weightedUsagePercent": 35.0,
-          "teamCount": 815,
-          "sampleSize": 2342
+          "weightedUsagePercent": 33.5,
+          "usagePercent": 34.4,
+          "teamCount": 901,
+          "sampleSize": 2622
+        },
+        {
+          "species": "Floette Eternal",
+          "metaShare": 33.3,
+          "whyUsed": "Floette Eternal appears on 26.9% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like the current board without forcing the rest of the team to contort around it.",
+          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "featuredTeams": [],
+          "weightedUsagePercent": 33.3,
+          "usagePercent": 26.9,
+          "teamCount": 705,
+          "sampleSize": 2622
         },
         {
           "species": "Sinistcha",
-          "metaShare": 29.2,
+          "metaShare": 28.5,
           "whyUsed": "It compresses redirection, healing, and slower-mode insurance into one slot, so balance, room, and hybrid shells can stay consistent without losing support density.",
           "whatItDoes": "It keeps partners healthy with Hospitality or healing support, redirects key turns with Rage Powder, and still threatens real board progress with Matcha Gotcha or Trick Room positioning.",
           "featuredTeams": [
@@ -100,68 +123,36 @@
             "Mega Gengar Politoed Rain",
             "Incineroar Rotom Wash Sand"
           ],
-          "usagePercent": 29.2,
-          "weightedUsagePercent": 28.9,
-          "teamCount": 685,
-          "sampleSize": 2342
-        },
-        {
-          "species": "Mega Charizard Y",
-          "metaShare": 25.4,
-          "whyUsed": "Sun structures still lean on it because it gives them a self-contained weather engine and one of the format's best special nukes in a single slot.",
-          "whatItDoes": "It turns the board hostile immediately with harsh sunlight and high-output Fire pressure, especially once Tailwind or support positioning has already stabilized the turn order.",
-          "featuredTeams": [
-            "Garchomp Basculegion Tailwind",
-            "Mega Floette Incineroar Trick Room",
-            "Mega Charizard Y Garchomp Dual Mode"
-          ],
-          "usagePercent": 25.4,
-          "weightedUsagePercent": 25.8,
-          "teamCount": 594,
-          "sampleSize": 2342
-        },
-        {
-          "species": "Mega Floette",
-          "metaShare": 25.2,
-          "whyUsed": "Mega Floette appears on 25.2% of sampled Regulation M-A teams, showing up across shells like Mega Floette Incineroar Trick Room and Mega Floette Incineroar Dual Mode without forcing the rest of the team to contort around it.",
-          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
-          "featuredTeams": [
-            "Mega Floette Incineroar Trick Room",
-            "Mega Floette Incineroar Dual Mode",
-            "Incineroar Rotom Wash Sand"
-          ],
-          "usagePercent": 25.2,
-          "weightedUsagePercent": 25.7,
-          "teamCount": 591,
-          "sampleSize": 2342
+          "weightedUsagePercent": 28.5,
+          "usagePercent": 29.1,
+          "teamCount": 762,
+          "sampleSize": 2622
         },
         {
           "species": "Whimsicott",
-          "metaShare": 19.4,
+          "metaShare": 22.7,
           "whyUsed": "Prankster speed control and disruption are still premium, so fast offenses keep reaching for it when they want immediate tempo without spending their mega slot on support.",
           "whatItDoes": "It gets Tailwind online quickly, threatens Encore-style disruption, and creates fast openings for attackers like Garchomp, Mega Charizard Y, and Kingambit.",
           "featuredTeams": [
             "Garchomp Basculegion Tailwind"
           ],
-          "usagePercent": 19.4,
-          "weightedUsagePercent": 19.6,
-          "teamCount": 455,
-          "sampleSize": 2342
+          "weightedUsagePercent": 22.7,
+          "usagePercent": 20.2,
+          "teamCount": 529,
+          "sampleSize": 2622
         },
         {
-          "species": "Farigiraf",
-          "metaShare": 15.3,
-          "whyUsed": "Farigiraf appears on 15.3% of sampled Regulation M-A teams, showing up across shells like Basculegion Mega Blastoise Sun Room and Mega Camerupt Mega Crabominable Trick Room without forcing the rest of the team to contort around it.",
-          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "species": "Aerodactyl",
+          "metaShare": 14.9,
+          "whyUsed": "Fast offense still likes it because it gives reliable speed control and immediate utility without demanding much support around it.",
+          "whatItDoes": "It threatens Tailwind leads, fast chip, and disruptive positioning turns that let stronger backline attackers start the game ahead on tempo.",
           "featuredTeams": [
-            "Basculegion Mega Blastoise Sun Room",
-            "Mega Camerupt Mega Crabominable Trick Room",
             "Aerodactyl Mega Charizard Y Tailroom"
           ],
-          "usagePercent": 15.3,
-          "weightedUsagePercent": 15.1,
-          "teamCount": 359,
-          "sampleSize": 2342
+          "weightedUsagePercent": 14.9,
+          "usagePercent": 14.1,
+          "teamCount": 369,
+          "sampleSize": 2622
         }
       ],
       "tournamentTeamSnapshots": [
@@ -1138,10 +1129,31 @@
         }
       ],
       "provenance": {
-        "generatedAt": "2026-06-13T15:04:25.062524Z",
+        "generatedAt": "2026-06-13T15:32:31.603552Z",
         "windowDays": 30,
-        "sampleSize": 2342,
-        "tournamentCount": 59,
+        "officialsWindowDays": 60,
+        "sampleSize": 2622,
+        "tournamentCount": 61,
+        "officialEventCount": 2,
+        "tierBreakdown": {
+          "online": 2342,
+          "special_event": 135,
+          "regional": 145
+        },
+        "officialEvents": [
+          {
+            "name": "Special Event Turin",
+            "tier": "special_event",
+            "players": 940,
+            "url": "https://limitlessvgc.com/tournaments/435"
+          },
+          {
+            "name": "Regional Indianapolis, IN",
+            "tier": "regional",
+            "players": 1013,
+            "url": "https://limitlessvgc.com/tournaments/434"
+          }
+        ],
         "sources": [
           {
             "name": "Pikalytics",
@@ -1159,8 +1171,8 @@
           }
         ],
         "authoritativeSource": {
-          "name": "Limitless",
-          "url": "https://play.limitlesstcg.com/tournaments/completed?game=VGC"
+          "name": "limitlessvgc.com (official results)",
+          "url": "https://limitlessvgc.com/tournaments"
         }
       }
     }
