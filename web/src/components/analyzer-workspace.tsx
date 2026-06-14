@@ -13,6 +13,7 @@ import {
 import { DamageCalculator } from "@/components/damage-calculator";
 import { PreviewTrainer } from "@/components/preview-trainer";
 import { SlotDoctor } from "@/components/slot-doctor";
+import { SpeciesCombobox } from "@/components/species-combobox";
 import { SpeedCoveragePanel } from "@/components/speed-coverage";
 import { buildPokemonSpriteUrl, formatLabel, parseShowdownTeam, serializeShowdownTeam } from "@/lib/showdown";
 import type {
@@ -23,6 +24,7 @@ import type {
   BuilderMoveDetails,
   BuilderSpeciesOptions,
   EffortValueStat,
+  ExampleTeam,
   MemberStatBlock,
   ParsedTeamMember,
   PokemonTeamAnalysis,
@@ -105,6 +107,7 @@ type AnalyzerWorkspaceProps = {
   initialAnalysis: PokemonTeamAnalysis;
   initialAnalysisError?: string | null;
   initialTeamText: string;
+  exampleTeams: ExampleTeam[];
   initialSessionUser: AuthSessionUser | null;
   initialSavedTeams: SavedTeamRecord[];
   regulationOptions: RegulationCatalogEntry[];
@@ -301,6 +304,7 @@ export function AnalyzerWorkspace({
   initialAnalysis,
   initialAnalysisError,
   initialTeamText,
+  exampleTeams,
   initialSessionUser,
   initialSavedTeams,
   regulationOptions,
@@ -489,6 +493,21 @@ export function AnalyzerWorkspace({
   function handleRegulationChange(nextRegulationId: string) {
     setSelectedRegulationId(nextRegulationId);
     void runAnalysis(teamText, nextRegulationId);
+  }
+
+  function loadStarterTemplate(slug: string) {
+    const template = exampleTeams.find((example) => example.slug === slug);
+    if (!template) {
+      return;
+    }
+    setSelectedBuilderSlot(0);
+    setSelectedSavedTeamId("");
+    setSavedTeamName("");
+    setSelectedRegulationId(template.regulationId);
+    setTeamText(template.teamText);
+    setErrorMessage(null);
+    setLegalityIssues([]);
+    void runAnalysis(template.teamText, template.regulationId);
   }
 
   function handleBlankTeam() {
@@ -1275,6 +1294,33 @@ export function AnalyzerWorkspace({
                 <p>{currentBuildNote}</p>
               </div>
             </div>
+
+            {exampleTeams.length ? (
+              <div className="border-t border-[var(--line)] pt-6">
+                <p className="[font-family:var(--font-display)] text-[0.7rem] uppercase tracking-[0.24em] text-white/82">
+                  Starter templates
+                </p>
+                <p className="mt-2 text-xs leading-5 text-white/46">
+                  Load a ready-made Regulation M-A team to study or remix.
+                </p>
+                <select
+                  value=""
+                  onChange={(event) => {
+                    if (event.target.value) {
+                      loadStarterTemplate(event.target.value);
+                    }
+                  }}
+                  className="mt-3 w-full border border-[var(--line)] bg-black/20 px-3 py-2.5 text-sm text-white/88 outline-none transition focus:border-white/45"
+                >
+                  <option value="" className="bg-[#090b10]">Load a starter…</option>
+                  {exampleTeams.map((example) => (
+                    <option key={example.slug} value={example.slug} className="bg-[#090b10]">
+                      {example.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
           </aside>
 
           <div className="min-w-0 xl:border-x xl:border-[var(--line)] xl:px-8">
@@ -2272,18 +2318,11 @@ function TeamBuilderEditor({
           <span className="[font-family:var(--font-display)] text-[0.58rem] uppercase tracking-[0.28em] text-white/34">
             Species
           </span>
-          <select
+          <SpeciesCombobox
             value={member.species}
-            onChange={(event) => onFieldChange(slotIndex, "species", event.target.value)}
-            className="w-full border border-[var(--line)] bg-black/20 px-3 py-3 text-sm text-white/88 outline-none transition focus:border-white/45"
-          >
-            <option value="" className="bg-[#090b10] text-white">Select species</option>
-            {speciesChoices.map((option) => (
-              <option key={option} value={option} className="bg-[#090b10] text-white">
-                {option}
-              </option>
-            ))}
-          </select>
+            options={speciesChoices}
+            onChange={(nextSpecies) => onFieldChange(slotIndex, "species", nextSpecies)}
+          />
         </label>
 
         <label className="space-y-2">
