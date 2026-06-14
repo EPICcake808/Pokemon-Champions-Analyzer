@@ -2571,10 +2571,11 @@ function MetricRail({ analysis }: { analysis: PokemonTeamAnalysis }) {
 function InfoTip({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <span className="relative inline-block align-middle">
+    <span className="inline align-middle">
       <button
         type="button"
         aria-label="What's this?"
+        aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
@@ -2584,7 +2585,7 @@ function InfoTip({ text }: { text: string }) {
         i
       </button>
       {open ? (
-        <span className="absolute left-0 top-5 z-30 w-56 rounded border border-[var(--line)] bg-[#0b0d13] p-2.5 text-[0.72rem] font-normal normal-case leading-4 tracking-normal text-white/82 shadow-lg">
+        <span className="mt-1.5 block max-w-prose rounded border border-[var(--line)] bg-[#0b0d13] p-2.5 text-[0.72rem] font-normal normal-case leading-4 tracking-normal text-white/82">
           {text}
         </span>
       ) : null}

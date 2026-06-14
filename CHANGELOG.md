@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-14
+
+### Added
+
+- Damage calculator: a standard Generation 9 damage engine (`pokemon_team_analyzer/damage.py`) fed Champions stat values, modeling STAB/Adaptability, full type effectiveness, defender type-immunity abilities, sun/rain weather, doubles spread, critical hits, stat stages, burn, screens, and the common power items/abilities (with anything unmodeled reported back rather than silently ignored). A curated OHKO/2HKO grid (`pokemon_team_analyzer/damage_benchmarks.py`) ships in every analysis as `damage_matchups` with the assumed build disclosed per row, and an interactive calculator is available via `POST /api/damage` and the web "Damage calc" section.
+- Preview-trainer mode: paste an opponent's six to get a recommended bring-four and lead, justified with real speed and KO math against your roster (`pokemon_team_analyzer/preview.py`, `POST /api/preview`, and the web "Preview trainer" section).
+- Usage-weighted speed coverage: for each member, the usage-weighted share of the most-used meta Pokemon it moves before at +0, under your Tailwind, and under your Trick Room (`speed_profile.coverage` and the web "Meta speed coverage" panel).
+- Slot doctor: diagnoses Trick Room, Tailwind, setup, and defensive-type gaps and suggests Regulation M-A-legal move swaps and replacements, every suggestion legality-checked (`pokemon_team_analyzer/slot_doctor.py`, `POST /api/slot-doctor`, and the web "Slot doctor" section).
+- Plain-language onboarding: a shared glossary and templated team summary (`pokemon_team_analyzer/glossary.py`) embedded in the analysis as `glossary` and `plain_summary`; the web adds inline term tooltips, an "In plain terms" summary, and a score-anchoring legend so unanchored numbers read clearly.
+- A searchable species picker that replaces the long flat dropdown, plus one-click archetype starter templates in the team builder.
+- New CLI commands `--damage-json`, `--preview-json`, and `--slot-doctor-json` mirroring the new API endpoints.
+
+### Changed
+
+- Extracted the type-effectiveness chart into `pokemon_team_analyzer/typechart.py`, shared by the analyzer and the damage engine so the two can never drift.
+- Responsive pass across the web workspace so the new panels render cleanly on phones: wide tables scroll instead of overflowing, term tooltips reveal in-flow rather than as clipped popovers, and charts scale fluidly.
+- Bumped the package version to 0.4.0.
+
 ## [0.3.1] - 2026-06-13
 
 ### Added
