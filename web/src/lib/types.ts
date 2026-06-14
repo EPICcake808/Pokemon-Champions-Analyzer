@@ -160,6 +160,24 @@ export interface SpeedBenchmarkGroup {
   benchmarks: SpeedBenchmarkRow[];
 }
 
+export interface SpeedCoverageMember {
+  pokemon: string;
+  battle_speed: number;
+  natural_pct: number;
+  tailwind_pct: number;
+  trick_room_pct: number;
+}
+
+export interface SpeedCoverage {
+  available: boolean;
+  weighted?: boolean;
+  sample_species: number;
+  sampled_pokemon?: string[];
+  contexts?: string[];
+  members: SpeedCoverageMember[];
+  note: string;
+}
+
 export interface SpeedProfile {
   average_base_speed: number;
   average_battle_speed: number;
@@ -198,6 +216,7 @@ export interface SpeedProfile {
     notes: string[];
     groups: Record<string, SpeedBenchmarkGroup>;
   };
+  coverage?: SpeedCoverage;
   members: SpeedMember[];
 }
 
@@ -298,6 +317,167 @@ export interface MetaAnalysis {
   provenance?: MetaProvenance;
 }
 
+export interface DamageMatchupRow {
+  attacker: string;
+  defender: string;
+  move: string;
+  move_type: string;
+  category: string;
+  min_percent: number;
+  max_percent: number;
+  type_multiplier: number;
+  summary: string;
+  guaranteed_ohko: boolean;
+  possible_ohko: boolean;
+  guaranteed_2hko: boolean;
+  unmodeled: string[];
+  // The build assumed for the curated (benchmark) side of this row.
+  benchmark_set: string;
+}
+
+export interface DamageMatchups {
+  outgoing: DamageMatchupRow[];
+  incoming: DamageMatchupRow[];
+  benchmark_walls: string[];
+  benchmark_attackers: string[];
+  notes: string[];
+}
+
+export interface DamageRollResult {
+  move: string;
+  move_type: string;
+  category: string;
+  base_power: number;
+  type_multiplier: number;
+  stab: number;
+  rolls: number[];
+  min_damage: number;
+  max_damage: number;
+  defender_hp: number;
+  min_percent: number;
+  max_percent: number;
+  guaranteed_ohko: boolean;
+  possible_ohko: boolean;
+  guaranteed_2hko: boolean;
+  possible_2hko: boolean;
+  guaranteed_ko_hits: number | null;
+  summary: string;
+  unmodeled: string[];
+}
+
+export interface DamageCalcSide {
+  species: string;
+  move?: string | null;
+  ability?: string | null;
+  item?: string | null;
+  nature?: string | null;
+  evs?: Partial<Record<string, number>>;
+}
+
+export interface DamageCalcField {
+  weather?: string | null;
+  spread?: boolean | null;
+  crit?: boolean;
+  attackerAtkStage?: number;
+  defenderDefStage?: number;
+  attackerBurned?: boolean;
+  reflect?: boolean;
+  lightScreen?: boolean;
+}
+
+export interface DamageCalcRequest {
+  attacker: DamageCalcSide;
+  defender: DamageCalcSide;
+  field?: DamageCalcField;
+  regulationId?: string;
+}
+
+export interface DamageCalcResponse {
+  ok: true;
+  attacker: { species: string; types: string[]; stats: MemberStatBlock };
+  defender: { species: string; types: string[]; stats: MemberStatBlock };
+  move: { name: string; type: string; category: string; power: number | null };
+  result: DamageRollResult | null;
+}
+
+export interface PreviewDamageLine {
+  move: string;
+  min_percent: number;
+  max_percent: number;
+  summary: string;
+  guaranteed_ohko: boolean;
+  guaranteed_2hko: boolean;
+}
+
+export interface PreviewMatchupRecord {
+  member: string;
+  speed: number;
+  outspeeds: number;
+  opponent_count: number;
+  ko_targets: string[];
+  ohko_targets: string[];
+  threatened_by: string[];
+  ohko_threats: string[];
+  support: string[];
+  lines: Record<string, { out: PreviewDamageLine | null; in: PreviewDamageLine | null }>;
+}
+
+export interface PreviewBring {
+  members: string[];
+  lead: string[];
+  score: number;
+  covers: number;
+  opponent_count: number;
+  reasons: string[];
+}
+
+export interface PreviewResponse {
+  ok: true;
+  opponent: string[];
+  opponent_has_trick_room: boolean;
+  recommended_bring: PreviewBring;
+  alternatives: Array<{ members: string[]; lead: string[] }>;
+  matchups: PreviewMatchupRecord[];
+}
+
+export interface PreviewRequest {
+  myTeamText: string;
+  opponentTeamText: string;
+  regulationId?: string;
+}
+
+export interface SlotDoctorSwap {
+  member: string;
+  move: string;
+  note: string;
+}
+
+export interface SlotDoctorReplacement {
+  species: string | null;
+  note: string;
+}
+
+export interface SlotDoctorGap {
+  id: string;
+  label: string;
+  problem: string;
+  move_swaps: SlotDoctorSwap[];
+  replacements: SlotDoctorReplacement[];
+}
+
+export interface SlotDoctorResponse {
+  ok: true;
+  team: string[];
+  gaps: SlotDoctorGap[];
+  all_clear: boolean;
+  note: string;
+}
+
+export interface SlotDoctorRequest {
+  teamText: string;
+  regulationId?: string;
+}
+
 export interface PokemonTeamAnalysis {
   regulation_id: string;
   team_size: number;
@@ -328,6 +508,7 @@ export interface PokemonTeamAnalysis {
     physical: number;
     special: number;
   };
+  damage_matchups: DamageMatchups;
   utility_moves: number;
   utility_breakdown: Record<string, BreakdownEntry>;
   pokemon_role_breakdown: Record<string, BreakdownEntry>;
@@ -369,6 +550,8 @@ export interface PokemonTeamAnalysis {
     counterplay_notes: string[];
   };
   top_defensive_weaknesses: string[];
+  plain_summary: string[];
+  glossary: Record<string, { term: string; definition: string }>;
 }
 
 export type AnalyzeRoutePayload =

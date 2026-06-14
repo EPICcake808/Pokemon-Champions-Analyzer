@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from .champions_m_a_meta import MODE_LABEL_ORDER
+from .glossary import GLOSSARY
 
 
 TYPE_ORDER = (
@@ -257,6 +258,9 @@ class TeamAnalysis:
     member_speed_benchmark_tags: dict[str, list[dict[str, object]]]
     member_speed_contexts: dict[str, list[dict[str, object]]]
     damage_split: dict[str, int]
+    damage_matchups: dict[str, object]
+    speed_coverage: dict[str, object]
+    plain_summary: list[str]
     utility_moves: int
     utility_role_counts: dict[str, int]
     utility_role_moves: dict[str, list[str]]
@@ -354,6 +358,7 @@ class TeamAnalysis:
                     "notes": self.speed_benchmark_notes,
                     "groups": self.speed_benchmark_groups,
                 },
+                "coverage": self.speed_coverage,
                 "members": [
                     {
                         "pokemon": member_name,
@@ -372,6 +377,7 @@ class TeamAnalysis:
                 ],
             },
             "damage_split": self.damage_split,
+            "damage_matchups": self.damage_matchups,
             "utility_moves": self.utility_moves,
             "utility_breakdown": {
                 role: {
@@ -448,6 +454,8 @@ class TeamAnalysis:
                 "counterplay_notes": self.team_preview_counterplay_notes,
             },
             "meta_analysis": self.meta_analysis,
+            "plain_summary": self.plain_summary,
+            "glossary": GLOSSARY,
             "vector_labels": self.vector_labels,
             "vector": self.vector,
         }

@@ -31,7 +31,10 @@ from .regulations import (
     resolve_regulation_species_name,
 )
 from .service import (
+    build_damage_payload,
+    build_preview_payload,
     build_regulation_catalog_payload,
+    build_slot_doctor_payload,
 )
 
 
@@ -67,8 +70,55 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         return 0
 
+    if args.damage_json:
+        try:
+            payload = json.loads(args.damage_json)
+            print(json.dumps(build_damage_payload(payload), indent=2))
+        except (KeyError, LookupError, ValueError) as error:
+            print(json.dumps({"error": str(error)}, indent=2))
+            return 2
+        return 0
+
+    if args.preview_json:
+        try:
+            payload = json.loads(args.preview_json)
+            print(
+                json.dumps(
+                    build_preview_payload(
+                        payload.get("myTeamText", ""),
+                        payload.get("opponentTeamText", ""),
+                        regulation_id=payload.get("regulationId", DEFAULT_REGULATION_ID),
+                    ),
+                    indent=2,
+                )
+            )
+        except (KeyError, LookupError, ValueError) as error:
+            print(json.dumps({"error": str(error)}, indent=2))
+            return 2
+        return 0
+
+    if args.slot_doctor_json:
+        try:
+            payload = json.loads(args.slot_doctor_json)
+            print(
+                json.dumps(
+                    build_slot_doctor_payload(
+                        payload.get("teamText", ""),
+                        regulation_id=payload.get("regulationId", DEFAULT_REGULATION_ID),
+                    ),
+                    indent=2,
+                )
+            )
+        except (KeyError, LookupError, ValueError) as error:
+            print(json.dumps({"error": str(error)}, indent=2))
+            return 2
+        return 0
+
     if args.team_file is None:
-        parser.error("team_file is required unless --catalog-json, --builder-species-json, or --builder-move-json is used")
+        parser.error(
+            "team_file is required unless --catalog-json, --builder-species-json, "
+            "--builder-move-json, --damage-json, --preview-json, or --slot-doctor-json is used"
+        )
 
     team_text = Path(args.team_file).read_text(encoding="utf-8")
 
@@ -124,6 +174,21 @@ def build_parser() -> argparse.ArgumentParser:
         "--builder-move-json",
         metavar="MOVE",
         help="Emit JSON builder details for a single move and exit.",
+    )
+    parser.add_argument(
+        "--damage-json",
+        metavar="PAYLOAD",
+        help="Compute a single damage roll from a JSON payload (attacker/defender/field) and exit.",
+    )
+    parser.add_argument(
+        "--preview-json",
+        metavar="PAYLOAD",
+        help="Recommend a bring-four and lead from a JSON payload (myTeamText/opponentTeamText) and exit.",
+    )
+    parser.add_argument(
+        "--slot-doctor-json",
+        metavar="PAYLOAD",
+        help="Diagnose gaps and suggest M-A-legal fixes from a JSON payload (teamText) and exit.",
     )
     return parser
 

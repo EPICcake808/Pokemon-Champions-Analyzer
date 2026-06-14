@@ -10,6 +10,10 @@ import {
   useState,
 } from "react";
 
+import { DamageCalculator } from "@/components/damage-calculator";
+import { PreviewTrainer } from "@/components/preview-trainer";
+import { SlotDoctor } from "@/components/slot-doctor";
+import { SpeedCoveragePanel } from "@/components/speed-coverage";
 import { buildPokemonSpriteUrl, formatLabel, parseShowdownTeam, serializeShowdownTeam } from "@/lib/showdown";
 import type {
   AnalyzeRoutePayload,
@@ -322,6 +326,7 @@ export function AnalyzerWorkspace({
   const [isAuthSubmitting, setIsAuthSubmitting] = useState(false);
   const [isSavedTeamSubmitting, setIsSavedTeamSubmitting] = useState(false);
   const [selectedBuilderSlot, setSelectedBuilderSlot] = useState(0);
+  const [showPlainSummary, setShowPlainSummary] = useState(true);
   const [selectedPreviewPlanLabel, setSelectedPreviewPlanLabel] = useState("");
   const [selectedBuilderSpeciesOptions, setSelectedBuilderSpeciesOptions] = useState<BuilderSpeciesOptions | null>(null);
   const [builderSpeciesResponseKey, setBuilderSpeciesResponseKey] = useState("");
@@ -1435,18 +1440,44 @@ export function AnalyzerWorkspace({
               {formatLabel(analysis.team_difficulty.label)} pilot load.
             </p>
 
+            {analysis.plain_summary?.length ? (
+              <div className="mt-6 rounded-lg border border-[var(--line)] bg-white/[0.02] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="[font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.3em] text-white/40">
+                    In plain terms
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setShowPlainSummary((value) => !value)}
+                    className="text-[0.68rem] uppercase tracking-wide text-white/45 transition hover:text-white/75"
+                  >
+                    {showPlainSummary ? "Hide" : "Show"}
+                  </button>
+                </div>
+                {showPlainSummary ? (
+                  <ul className="mt-3 space-y-1.5 text-sm leading-6 text-white/78">
+                    {analysis.plain_summary.map((sentence) => (
+                      <li key={sentence}>{sentence}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              <CompactMetric label="Style shell" value={teamStyleLabel} />
+              <CompactMetric label="Style shell" value={teamStyleLabel} tip={analysis.glossary?.style_shell?.definition} />
               <CompactMetric
                 label="Mode shell"
                 value={modePackageLabel}
+                tip={analysis.glossary?.mode_shell?.definition}
               />
-              <CompactMetric label="Endgame plan" value={winConditionLabel} />
-              <CompactMetric label="Utility load" value={`${analysis.utility_moves} actions`} />
-              <CompactMetric label="Speed shape" value={formatLabel(analysis.speed_profile.team_tier)} />
+              <CompactMetric label="Endgame plan" value={winConditionLabel} tip={analysis.glossary?.endgame_plan?.definition} />
+              <CompactMetric label="Utility load" value={`${analysis.utility_moves} actions`} tip={analysis.glossary?.utility_load?.definition} />
+              <CompactMetric label="Speed shape" value={formatLabel(analysis.speed_profile.team_tier)} tip={analysis.glossary?.speed_tier?.definition} />
               <CompactMetric
                 label="Pilot load"
                 value={`${formatLabel(analysis.team_difficulty.label)} · ${analysis.team_difficulty.score.toFixed(1)}/10`}
+                tip={analysis.glossary?.pilot_load?.definition}
               />
             </div>
 
@@ -1481,10 +1512,14 @@ export function AnalyzerWorkspace({
               charts below.
             </p>
             <div className="space-y-6">
-              <CompactScoreList heading="Broad pressure" rows={matchupRows.slice(0, 4)} />
-              <CompactScoreList heading="Package identity" rows={packageModeRows} />
-              <CompactScoreList heading="Endgame plan" rows={winConditionRows} />
+              <CompactScoreList heading="Broad pressure" rows={matchupRows.slice(0, 4)} tip={analysis.glossary?.broad_pressure?.definition} />
+              <CompactScoreList heading="Package identity" rows={packageModeRows} tip={analysis.glossary?.package_identity?.definition} />
+              <CompactScoreList heading="Endgame plan" rows={winConditionRows} tip={analysis.glossary?.endgame_plan?.definition} />
             </div>
+            <p className="text-xs leading-5 text-white/40">
+              Scores are relative edges: positive favors you, negative favors the opponent, and a larger magnitude means
+              a clearer read.
+            </p>
           </div>
 
           <div className="text-xs leading-6 text-white/38 lg:col-span-2">
@@ -1512,6 +1547,7 @@ export function AnalyzerWorkspace({
             <SectionHeading eyebrow="Speed architecture" title="Battle speed map" />
             <SpeedTrack analysis={analysis} />
             <DistributionChart distribution={analysis.speed_profile.distribution} />
+            <SpeedCoveragePanel coverage={analysis.speed_profile.coverage} />
             <PlainList heading="Benchmark notes" values={analysis.speed_profile.benchmarks.notes} />
             <div className="border-t border-[var(--line)] pt-6">
               <SectionHeading eyebrow="Team notes" title="Difficulty and builder guidance" />
@@ -1542,6 +1578,39 @@ export function AnalyzerWorkspace({
           </div>
         </section>
 
+        <section id="damage" className="border-t border-[var(--line)] py-10">
+          <SectionHeading eyebrow="Damage calc" title="OHKO/2HKO evidence" />
+          <p className="mt-4 max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
+            Concrete damage rolls against the format&apos;s defining threats and walls, plus an interactive calculator
+            for any matchup. Numbers use the standard Gen 9 formula on Champions stats.
+          </p>
+          <div className="mt-8">
+            <DamageCalculator analysis={analysis} members={builderMembers} regulationId={selectedRegulationId} />
+          </div>
+        </section>
+
+        <section id="preview" className="border-t border-[var(--line)] py-10">
+          <SectionHeading eyebrow="Preview trainer" title="Scout an opponent's six" />
+          <p className="mt-4 max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
+            Paste an opponent&apos;s team to get a recommended bring-four and lead, justified with real speed and KO
+            math against your current builder roster.
+          </p>
+          <div className="mt-8">
+            <PreviewTrainer myTeamText={teamText} regulationId={selectedRegulationId} />
+          </div>
+        </section>
+
+        <section id="slot-doctor" className="border-t border-[var(--line)] py-10">
+          <SectionHeading eyebrow="Slot doctor" title="Patch your gaps" />
+          <p className="mt-4 max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
+            Diagnoses the team&apos;s biggest liabilities — Trick Room, speed control, setup, and type holes — and
+            suggests concrete Regulation M-A-legal move swaps and replacements to fix them.
+          </p>
+          <div className="mt-8">
+            <SlotDoctor teamText={teamText} regulationId={selectedRegulationId} />
+          </div>
+        </section>
+
         <section id="meta" className="grid gap-10 border-t border-[var(--line)] py-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div className="space-y-6">
             <SectionHeading eyebrow="Meta analysis" title="Current Regulation M-A field" />
@@ -1553,8 +1622,16 @@ export function AnalyzerWorkspace({
               <MetaProvenanceStamp provenance={analysis.meta_analysis.provenance} />
             ) : null}
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-              <CompactMetric label="Standing" value={formatLabel(analysis.meta_analysis.label)} />
-              <CompactMetric label="Weighted score" value={analysis.meta_analysis.overall_score.toFixed(2)} />
+              <CompactMetric
+                label="Standing"
+                value={formatLabel(analysis.meta_analysis.label)}
+                tip="A plain-language read of how your team fares against the current tournament field."
+              />
+              <CompactMetric
+                label="Weighted score"
+                value={analysis.meta_analysis.overall_score.toFixed(2)}
+                tip="Your overall edge into the field, weighting each matchup by how common it is. Positive is favorable; the Standing label summarizes it."
+              />
               <CompactMetric
                 label="Favored field share"
                 value={`${analysis.meta_analysis.positive_weight_share.toFixed(1)}%`}
@@ -2452,11 +2529,36 @@ function MetricRail({ analysis }: { analysis: PokemonTeamAnalysis }) {
   );
 }
 
-function CompactMetric({ label, value }: { label: string; value: string }) {
+function InfoTip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="relative inline-block align-middle">
+      <button
+        type="button"
+        aria-label="What's this?"
+        onClick={() => setOpen((value) => !value)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onBlur={() => setOpen(false)}
+        className="ml-1 inline-flex h-3.5 w-3.5 items-center justify-center rounded-full border border-white/30 text-[0.58rem] leading-none text-white/55 transition hover:border-white/60 hover:text-white/80"
+      >
+        i
+      </button>
+      {open ? (
+        <span className="absolute left-0 top-5 z-30 w-56 rounded border border-[var(--line)] bg-[#0b0d13] p-2.5 text-[0.72rem] font-normal normal-case leading-4 tracking-normal text-white/82 shadow-lg">
+          {text}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
+function CompactMetric({ label, value, tip }: { label: string; value: string; tip?: string }) {
   return (
     <div className="border-t border-[var(--line)] pt-3">
       <p className="[font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.3em] text-white/34">
         {label}
+        {tip ? <InfoTip text={tip} /> : null}
       </p>
       <p className="mt-2 text-sm leading-6 text-white/88">{value}</p>
     </div>
@@ -2487,11 +2589,12 @@ function SummaryList({ heading, values, fallback }: { heading: string; values: s
   );
 }
 
-function CompactScoreList({ heading, rows }: { heading: string; rows: Array<{ label: string; value: number; note?: string }> }) {
+function CompactScoreList({ heading, rows, tip }: { heading: string; rows: Array<{ label: string; value: number; note?: string }>; tip?: string }) {
   return (
     <div>
       <p className="[font-family:var(--font-display)] text-[0.62rem] uppercase tracking-[0.28em] text-white/34">
         {heading}
+        {tip ? <InfoTip text={tip} /> : null}
       </p>
       <div className="mt-3 space-y-2.5">
         {rows.map((row) => {
