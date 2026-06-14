@@ -2164,7 +2164,7 @@ Ability: Illusion
     def test_meta_analysis_reports_weighted_field_position(self) -> None:
         analysis = analyze_team_text(TRICK_ROOM_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
 
-        self.assertIn(analysis.meta_analysis["label"], {"dominant", "strong", "solid", "fragile"})
+        self.assertIn(analysis.meta_analysis["label"], {"strong", "solid", "even", "shaky", "pressured"})
         self.assertTrue(analysis.meta_analysis["strongest_modes"])
         self.assertTrue(analysis.meta_analysis["pressured_modes"])
         self.assertTrue(analysis.meta_analysis["strongest_targets"])

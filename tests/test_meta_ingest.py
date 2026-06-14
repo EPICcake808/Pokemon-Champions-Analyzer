@@ -171,6 +171,20 @@ class DiscoverModeInferenceTests(unittest.TestCase):
         modes, _ = discover.infer_modes([{"ability": "", "attacks": ["Tackle"]}])
         self.assertEqual(modes, ["dual_mode"])
 
+    def test_two_megas_flag_dual_mode_without_displacing_primary(self):
+        # Reg M-A allows one mega per battle, so two mega stones = a functional dual-mode
+        # team; dual_mode rides along as a secondary while the real primary mode stays.
+        decklist = [
+            {"ability": "", "attacks": ["Tailwind", "Protect"]},
+            {"ability": "", "attacks": ["Earthquake"]},
+        ]
+        modes, scores = discover.infer_modes(decklist, mega_count=2)
+        self.assertEqual(modes[0], "tailwind")
+        self.assertIn("dual_mode", scores)
+        # A single mega is not a dual-mode tell.
+        _, single = discover.infer_modes(decklist, mega_count=1)
+        self.assertNotIn("dual_mode", single)
+
 
 class DiscoverClusteringTests(unittest.TestCase):
     def test_similar_teams_cluster_into_valid_snapshot(self):
@@ -192,6 +206,23 @@ class DiscoverClusteringTests(unittest.TestCase):
         self.assertIn("basculegion", snapshot["key_pokemon"])
         self.assertEqual(snapshot["result_label"], "winner")  # grassroots winner
         self.assertFalse(snapshot["is_official"])
+
+    def test_dual_mega_team_anchors_each_mega_in_its_own_core(self):
+        tour = Tournament(id="dm1", name="CROWN", date="2026-06-12T16:20:00Z", format="M-A", players=47)
+        species = ("charizard-mega-y", "floette-mega", "garchomp", "basculegion", "kingambit", "whimsicott")
+        decklist = (
+            [{"ability": "", "item": "Charizardite Y", "attacks": ["Heat Wave"]},
+             {"ability": "", "item": "Floettite", "attacks": ["Moonblast"]}]
+            + [{"ability": "", "attacks": ["Tailwind"]}]
+            + [{"ability": "", "attacks": ["Surf"]}] * 3
+        )
+        rosters = [Roster(tour, "a", 1, "8-0-0", species, "", decklist)]
+        snapshot = discover.discover_shells(rosters).snapshots[0]
+        # The two-mega team is surfaced as dual_mode (tailwind stays the primary label).
+        self.assertIn("dual_mode", snapshot["modes"])
+        # Each mega anchors its own core instead of one mega being buried behind supports.
+        mega_anchored = [core for core in snapshot["key_cores"] if core.split(" + ")[0].startswith("Mega ")]
+        self.assertGreaterEqual(len(mega_anchored), 2)
 
     def test_official_top_cut_team_outranks_grassroots_and_is_labeled(self):
         regional = Tournament(id="r1", name="Regional Indianapolis, IN", date="2026-05-30T00:00:00Z",

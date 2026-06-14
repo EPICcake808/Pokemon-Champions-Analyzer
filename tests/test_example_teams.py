@@ -40,6 +40,27 @@ class ExampleTeamTests(unittest.TestCase):
                     issues = [issue.message for issue in error.legality.issues]
                     self.fail(f"{path.name} is illegal: {issues}")
 
+    def test_mono_type_team_is_graded_down_for_stacked_weakness(self) -> None:
+        # A mono-grass team shares its weaknesses across the whole roster (one well-picked
+        # attacker pressures everything), so the absolute soundness penalty should pull it
+        # into the negative band rather than letting mean-centered matchup scores grade it
+        # favorably.
+        grass = analyze_team_text(
+            (ROOT / "examples" / "realistic_grassy_terrain_team.txt").read_text(encoding="utf-8"),
+            regulation_id=DEFAULT_REGULATION_ID,
+        )
+        meta = grass.meta_analysis
+        self.assertLess(meta["overall_score"], 0.0)
+        self.assertIn(meta["label"], {"shaky", "pressured"})
+        self.assertGreater(meta["negative_weight_share"], meta["positive_weight_share"])
+
+        # A structurally sound meta team keeps a healthy grade (penalty ~0).
+        sand = analyze_team_text(
+            (ROOT / "examples" / "realistic_sand_team.txt").read_text(encoding="utf-8"),
+            regulation_id=DEFAULT_REGULATION_ID,
+        )
+        self.assertIn(sand.meta_analysis["label"], {"solid", "strong"})
+
     def test_niche_example_teams_hit_their_intended_archetypes(self) -> None:
         expected_archetypes = {
             "realistic_grassy_terrain_team.txt": "grassy_terrain",

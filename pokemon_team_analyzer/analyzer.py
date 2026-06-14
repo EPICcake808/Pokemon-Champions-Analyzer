@@ -462,6 +462,23 @@ M_A_TRICK_ROOM_PRESSURE_TYPES = {
     "dark": 0.7,
     "water": 0.7,
 }
+# Absolute weighting of the broad Regulation M-A *attacking* field, used to measure how
+# exposed a team is to the offense it will actually face (independent of any one mode).
+# Unlike the mode-specific pressure dicts above, this is a field-wide threat profile that
+# anchors the absolute team-soundness penalty in ``_score_team_field_soundness``.
+M_A_FIELD_THREAT_TYPES = {
+    "fire": 1.2,
+    "fairy": 1.0,
+    "ground": 1.0,
+    "ice": 1.0,
+    "flying": 0.9,
+    "water": 0.8,
+    "fighting": 0.8,
+    "rock": 0.7,
+    "ghost": 0.7,
+    "dragon": 0.6,
+    "dark": 0.6,
+}
 SLEEP_INDUCING_MOVES = {
     "dark-void",
     "grasswhistle",
@@ -790,6 +807,14 @@ def analyze_team(
         team_archetype_scores,
         matchup_scores,
     )
+    field_soundness, field_soundness_reasons = _score_team_field_soundness(
+        defensive_profile,
+        top_defensive_weaknesses,
+        offensive_coverage,
+        pokemon_role_counts,
+        utility_role_counts,
+        contextual_matchup_profile,
+    )
     meta_analysis = infer_meta_analysis(
         members,
         team_mode_scores,
@@ -801,6 +826,8 @@ def analyze_team(
         contextual_matchup_profile,
         provider,
         regulation_id=regulation_id,
+        field_soundness=field_soundness,
+        field_soundness_reasons=field_soundness_reasons,
     )
     team_difficulty_label, team_difficulty_score, team_difficulty_factors = infer_team_difficulty(
         members,
@@ -3873,6 +3900,8 @@ def infer_meta_analysis(
     contextual_matchup_profile: ContextualMatchupProfile,
     metadata_provider: MetadataProvider,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
+    field_soundness: float = 0.0,
+    field_soundness_reasons: list[str] | None = None,
 ) -> dict[str, object]:
     total_mode_weight = sum(TOURNAMENT_MODE_SNAPSHOTS[mode]["tournament_weight"] for mode in MODE_LABEL_ORDER)
     weighted_entries: list[dict[str, object]] = []
@@ -3922,6 +3951,7 @@ def infer_meta_analysis(
         contextual_matchup_profile,
         metadata_provider,
         regulation_id=regulation_id,
+        field_soundness=field_soundness,
     )
     high_presence_team_modes = [
         mode_name
@@ -4042,6 +4072,12 @@ def infer_meta_analysis(
             f"scoring favorable and {negative_weight_share}% scoring pressured."
         )
     ]
+    if field_soundness < 0 and field_soundness_reasons:
+        soundness_points = _render_series(field_soundness_reasons)
+        notes.append(
+            f"That grade already reflects an absolute soundness penalty of {field_soundness:.2f} applied across the "
+            f"whole board, because {soundness_points}."
+        )
     if strongest_targets:
         strong_weight = round(
             sum(cast(float, row["meta_weight"]) for row in tournament_rows if cast(str, row["label"]) in strongest_targets)
@@ -4140,6 +4176,7 @@ def _build_tournament_meta_rows(
     contextual_matchup_profile: ContextualMatchupProfile,
     metadata_provider: MetadataProvider,
     regulation_id: str | None = DEFAULT_REGULATION_ID,
+    field_soundness: float = 0.0,
 ) -> list[dict[str, object]]:
     eligible_snapshots = [
         snapshot
@@ -4160,7 +4197,12 @@ def _build_tournament_meta_rows(
             metadata_provider,
             regulation_id=regulation_id,
         )
-        matchup_score = round(0.34 * mode_score + 0.1 * broad_score + 0.56 * contextual_score, 2)
+        # ``field_soundness`` is an absolute, team-level offset (≤ 0 for structurally weak
+        # teams) added uniformly to every shell, so relative shell ranking is preserved
+        # while the overall grade reflects how field-viable the team actually is.
+        matchup_score = round(
+            0.34 * mode_score + 0.1 * broad_score + 0.56 * contextual_score + field_soundness, 2
+        )
         rows.append(
             {
                 "slug": snapshot["slug"],
@@ -5185,13 +5227,16 @@ def _classify_meta_matchup_standing(matchup_score: float) -> str:
 
 
 def _label_team_meta_standing(overall_score: float) -> str:
-    if overall_score >= 0.6:
+    # Bands retuned alongside the absolute soundness penalty so "solid"/"strong" mean
+    # genuine field positioning rather than the default, and structurally weak teams land
+    # clearly in the shaky/pressured range.
+    if overall_score >= 0.55:
         return "strong"
-    if overall_score >= 0.2:
+    if overall_score >= 0.3:
         return "solid"
-    if overall_score > -0.2:
+    if overall_score > -0.15:
         return "even"
-    if overall_score > -0.6:
+    if overall_score > -0.5:
         return "shaky"
     return "pressured"
 
@@ -7902,6 +7947,79 @@ def _weighted_defensive_exposure(
         if type_name in top_defensive_weaknesses:
             exposure += 0.18 * weight
     return exposure
+
+
+def _score_team_field_soundness(
+    defensive_profile: dict[str, dict[str, float | int]],
+    top_defensive_weaknesses: list[str],
+    offensive_coverage: dict[str, int],
+    pokemon_role_counts: dict[str, int],
+    utility_role_counts: dict[str, int],
+    contextual_matchup_profile: ContextualMatchupProfile,
+) -> tuple[float, list[str]]:
+    """Absolute, mode-independent measure of how field-viable a team actually is.
+
+    The weighted mode/broad matchup scores are *mean-centered* (they describe which
+    matchups are relatively best/worst for this team, summing to ~0), so on their own
+    they make every team look favorable into half the field regardless of quality.
+    This term restores an absolute baseline: it returns a signed offset (≈0 for a sound
+    meta team, strongly negative for a structurally broken one) plus human-readable
+    reasons. The offset is added uniformly to every board matchup, so the relative shell
+    ranking is preserved while the overall grade reflects real soundness.
+
+    The dominant signal is *shared* (stacked) weakness — a type that threatens most of
+    the team at once, so there is no healthy member to pivot to (the hallmark of a
+    mono-type build). It is reinforced by raw exposure to the common attacking field and
+    one-dimensional offense, and a small floor for teams with no disruption at all.
+    """
+
+    # Shared weakness: members a type hits super-effectively beyond a 3-member "pivot"
+    # floor, weighted by how common that attacking type is. A mono-type team stacks this.
+    stacked_weakness = 0.0
+    for type_name, threat_weight in M_A_FIELD_THREAT_TYPES.items():
+        weak_members = int(defensive_profile[type_name]["weak_members"])
+        stacked_weakness += threat_weight * max(0, weak_members - 3)
+
+    # Raw exposure to the broad attacking field, penalized only above an average baseline.
+    field_exposure = _weighted_defensive_exposure(
+        defensive_profile, top_defensive_weaknesses, M_A_FIELD_THREAT_TYPES
+    )
+    exposure_excess = max(0.0, field_exposure - 2.6)
+
+    # One-dimensional offense: few distinct attacking types is easy to wall.
+    distinct_attack_types = sum(1 for count in offensive_coverage.values() if count > 0)
+    narrow_offense = max(0, 7 - distinct_attack_types)
+
+    # Floor: a team with no speed control, redirection, or priority has nothing to bend a
+    # bad matchup with.
+    speed_control = pokemon_role_counts["speed_control"] + utility_role_counts["speed_control"]
+    disruption_tools = speed_control + pokemon_role_counts["redirector"] + contextual_matchup_profile.priority_attacks
+    no_disruption = 1.0 if disruption_tools == 0 else 0.0
+
+    penalty = (
+        0.08 * stacked_weakness
+        + 0.06 * exposure_excess
+        + 0.035 * narrow_offense
+        + 0.25 * no_disruption
+    )
+    penalty = min(penalty, 1.0)
+    soundness = -round(penalty, 2)
+
+    # Clauses are fragments (no trailing period) so they read cleanly when joined into a
+    # series by the caller's note.
+    reasons: list[str] = []
+    if stacked_weakness >= 1.5:
+        reasons.append(
+            "multiple common attacking types hit most of the team at once, so a single well-picked "
+            "attacker pressures the whole board with no healthy member to pivot into"
+        )
+    if exposure_excess >= 0.75:
+        reasons.append("it is broadly exposed to the most common offense in the format")
+    if narrow_offense >= 2:
+        reasons.append("its offense is one-dimensional, so bulky answers can wall it without much risk")
+    if no_disruption:
+        reasons.append("it has no speed control, redirection, or priority to bend a losing matchup")
+    return soundness, reasons
 
 
 def _normalized_ability_name(ability: str | None) -> str:

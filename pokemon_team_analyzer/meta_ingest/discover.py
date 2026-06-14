@@ -49,6 +49,14 @@ _SPECIES_OVERLAP_FOR_CLUSTER = 4
 _MAX_SNAPSHOTS = 24
 _MAX_TEAMS = 400
 
+# Mega species arrive as catalog tokens like ``charizard-mega-y`` / ``garchomp-mega``
+# / ``floette-mega`` (resolved from the held stone in ``sources/limitless.py``).
+_MEGA_TOKEN_RE = re.compile(r"-mega(?:-[xy])?$")
+
+
+def _is_mega_token(token: str) -> bool:
+    return bool(_MEGA_TOKEN_RE.search(token))
+
 
 @dataclass
 class _Candidate:
@@ -98,12 +106,18 @@ def _team_signals(decklist: list[dict]) -> tuple[list[str], list[str]]:
     return [a for a in abilities if a], [mv for mv in moves if mv]
 
 
-def infer_modes(decklist: list[dict]) -> tuple[list[str], dict[str, float]]:
+def infer_modes(decklist: list[dict], *, mega_count: int = 0) -> tuple[list[str], dict[str, float]]:
     """Infer team modes from structured decklist signals.
 
     Produces catalog-aligned mode tokens (``rain_tailwind``, ``trick_room``,
     ``sun_room``, ``tailwind`` …) plus per-mode scores used when aggregating a
     cluster. Always returns at least one mode.
+
+    ``mega_count`` is the number of mega species on the team. Because Reg M-A only
+    allows one mega per battle, a team carrying two or more mega stones is
+    functionally a *dual-mode* team (you choose which mega to bring per matchup), so
+    ``dual_mode`` is added as a prominent secondary signal without displacing the
+    team's real speed-control / weather primary.
     """
 
     abilities, moves = _team_signals(decklist)
@@ -143,6 +157,10 @@ def infer_modes(decklist: list[dict]) -> tuple[list[str], dict[str, float]]:
         primary = "dual_mode"
 
     scores[primary] += 1.0
+    if mega_count >= 2:
+        # Two+ mega stones = a functional dual-mode team (only one mega per battle),
+        # so surface dual_mode prominently without displacing the speed-control primary.
+        scores["dual_mode"] += 0.8
     labels = [primary] + [mode for mode in scores if mode != primary]
     return labels, dict(scores)
 
@@ -203,7 +221,8 @@ def _dedupe_teams(rosters: list[Roster]) -> list[_UniqueTeam]:
 
 
 def _build_candidate(unique_team: _UniqueTeam) -> _Candidate:
-    mode_labels, mode_scores = infer_modes(unique_team.decklist)
+    mega_count = sum(1 for token in unique_team.species_tokens if _is_mega_token(token))
+    mode_labels, mode_scores = infer_modes(unique_team.decklist, mega_count=mega_count)
     broad_mix = infer_broad_mix(unique_team.decklist, mode_labels)
     return _Candidate(
         species_tokens=unique_team.species_tokens,
@@ -347,11 +366,30 @@ def _build_snapshot(cluster: list[_Candidate], max_weight: float) -> dict[str, o
     # Shells anchored by a deep official run are board-defining; lift their relevance.
     official_bonus = 0.25 if (is_official and (best_official_placing or 99) <= 16) else 0.0
 
-    key_cores = []
-    if len(key_pokemon) >= 2:
-        key_cores.append(" + ".join(_render_species_token(token) for token in key_pokemon[:2]))
-    if len(key_pokemon) >= 4:
-        key_cores.append(" + ".join(_render_species_token(token) for token in key_pokemon[2:4]))
+    def _join_core(tokens: list[str]) -> str:
+        return " + ".join(_render_species_token(token) for token in tokens)
+
+    megas = [token for token in key_pokemon if _is_mega_token(token)]
+    key_cores: list[str] = []
+    if len(megas) >= 2:
+        # Dual-mega teams pick one mega per battle, so players read them as each mega
+        # anchoring its own core with its best support — not one mega plus filler.
+        used: set[str] = set()
+        non_mega = [token for token in key_pokemon if not _is_mega_token(token)]
+        for mega in megas[:2]:
+            used.add(mega)
+            partner = next((token for token in non_mega if token not in used), None)
+            if partner is not None:
+                used.add(partner)
+            key_cores.append(_join_core([mega, partner] if partner is not None else [mega]))
+        rest = [token for token in key_pokemon if token not in used]
+        if len(rest) >= 2:
+            key_cores.append(_join_core(rest[:2]))
+    else:
+        if len(key_pokemon) >= 2:
+            key_cores.append(_join_core(key_pokemon[:2]))
+        if len(key_pokemon) >= 4:
+            key_cores.append(_join_core(key_pokemon[2:4]))
     if not key_cores:
         key_cores.append(_render_species_token(key_pokemon[0]))
 
