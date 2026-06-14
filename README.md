@@ -6,12 +6,28 @@ It is scoped to Pokemon Champions and ships with an official, data-first regulat
 
 ## Release Status
 
-- Current release: `0.2.2`
+- Current release: `0.3.1`
 - Release history now lives in [`CHANGELOG.md`](CHANGELOG.md)
 - `0.1.0` established the split Vercel deployment shape for the Python API and the Next.js frontend.
 - `0.2.0` added account support, reweighted matchup scoring, deeper context-based matchup scoring with reason output, hosted meta snapshot refreshes for teams and common meta Pokemon, legality and sprite fixes, and repaired team previews.
 - `0.2.1` makes the hosted meta pipeline fully automatic by splitting it into a base daily refresh and a separate automatic deep-discovery refresh with export/article ingestion diagnostics.
 - `0.2.2` adds in-app documentation to the hosted frontend, deepens the live board scorer with dual-type and interaction-aware context, and lets matchup-specific preview plans point at concrete current board shells.
+- `0.3.0` rebuilds the meta board on real, usage-weighted tournament results (official events over online), with multi-source reconciliation, provenance stamping, and a daily GitHub Action publish that replaces the old request-path scraping.
+- `0.3.1` fixes the Champions stat formula and genderless-form legality, corrects meta standing so structurally weak teams are no longer over-graded, and makes dual-mega shells read as dual-mode with each mega anchoring its own core.
+
+### 0.3.1 Highlights
+
+- Dual-mega shells (two mega stones — only one is legal per battle) are now recognized as dual-mode teams: they are tagged `dual_mode` and each mega anchors its own core with its top support, instead of one mega being paired with supports while the second drops out of the cores.
+- Team meta standing now combines the relative matchup scores with an **absolute team-soundness penalty** (dominated by stacked shared weaknesses), and the grade bands were retuned, so a structurally weak build — for example a mono-grass team — grades as a clear liability instead of "solid".
+- Fixed the Champions stat formula to apply the nature multiplier after Stat Points (Jolly Aerodactyl with 32 Speed SP is now 200, not 197), and the speed benchmark catalog is now generated from `compute_stat()` so it can never drift from the engine.
+- Added Champions base-stat overrides for rebalanced species and fixed legality for genderless gender-form species given by bare name (for example Basculegion), which now resolve to their default form instead of being rejected.
+- Gated matchup and builder reason strings on the roster's actual moves so explainers no longer cite tools the team does not run, and removed internal deployment copy from user-facing messages.
+
+### 0.3.0 Highlights
+
+- Replaced the curated meta shells with an automated, usage-based board: the `pokemon_team_analyzer/meta_ingest/` pipeline ingests real Regulation M-A results from official (limitlessvgc.com) and grassroots (Limitless) events, weights them by event tier and top-cut depth, and a daily GitHub Action publishes the ranked board to the runtime feed.
+- Added multi-source reconciliation (weighted usage cross-checked base-normalized against secondary sources such as Pikalytics) and provenance stamping on every meta panel — an as-of date, source links, a methodology note, and a stale badge once the board ages past the threshold.
+- Removed the legacy in-request refresh and deep-refresh routes and the request-path scraping module that backed them, so all ingestion now runs in the scheduled Action and the hosted app only serves and stores the published board.
 
 ### 0.2.2 Highlights
 
@@ -243,7 +259,7 @@ What it does:
 
 - **Two roster sources.** *Official results* come from **limitlessvgc.com** (Regionals, Internationals, Special Events, Players Cup, Worlds — filtered to `data-format="m-a"`, tier read from the event name, top-finisher team lists parsed from each standings page). *Grassroots/online* events come from the **Limitless tournament API** (`play.limitlesstcg.com/api`, `format == "M-A"`, full structured decklists per player; set `LIMITLESS_API_KEY` to raise rate limits). Official events are *not* on the grassroots platform, hence the dedicated source.
 - **Usage weighted toward the biggest events and deepest runs.** The headline `commonMetaPokemon[].metaShare` is a **weighted** usage: each team contributes `tier_weight(tournament) × placement_weight(placing)`, so official events dominate online ones (even a mid-size Regional outweighs the 6,000-player online Grand Champions Festival) and top-cut runs count more than early exits. The raw share-of-teams is retained alongside as `usagePercent` (and used for reconciliation). Because the authoritative official source reports **base species only** (no items, so no observable mega form), all tokens are collapsed to a base species — e.g. `charizard-mega-y` → `charizard` — which is honest and prevents a Pokémon splitting across two tokens.
-- **Automatic shell discovery, weighted by official top-cut teams.** Teams are clustered into representative `tournamentTeamSnapshots` using modes/archetypes inferred from each decklist (weather abilities, Trick Room / Tailwind, the offensive-support move mix). The deepest finishers at official events are pulled in with full decklists from their `limitlessvgc.com/teams/{id}` pages, and every team is weighted by the same `tier × placement` factor — so the teams list is dominated by the shells that actually win Regionals/Specials and get netdecked to ladder and smaller events, not by whatever was spammed at a small online weekly. Each shell records its best official result (e.g. "Regional winner", "Special Event top-4 finish"), with official events leading its provenance.
+- **Automatic shell discovery, weighted by official top-cut teams.** Teams are clustered into representative `tournamentTeamSnapshots` using modes/archetypes inferred from each decklist (weather abilities, Trick Room / Tailwind, the offensive-support move mix). The deepest finishers at official events are pulled in with full decklists from their `limitlessvgc.com/teams/{id}` pages, and every team is weighted by the same `tier × placement` factor — so the teams list is dominated by the shells that actually win Regionals/Specials and get netdecked to ladder and smaller events, not by whatever was spammed at a small online weekly. Each shell records its best official result (e.g. "Regional winner", "Special Event top-4 finish"), with official events leading its provenance. Shells carrying two or more mega stones are tagged `dual_mode` (only one mega is legal per battle) and have their `key_cores` rebuilt so each mega anchors its own core with its top support.
 - **Multi-source reconciliation** — raw usage is cross-checked (base-normalized) against Pikalytics and Pokémon Zone (best-effort; bot-protected, often 403s). Disagreements and unavailable sources are flagged in the run report and the published `notes`; the run never aborts because a secondary source is down.
 - **Schema-gated** — the assembled feed is validated against the same contract the web app enforces (`web/src/lib/meta-snapshots.ts`) before anything is written. Provenance records the official events weighted in (name/tier/players/url) and the per-tier team breakdown.
 
@@ -367,9 +383,10 @@ The analyzer is intentionally deterministic. It does not use machine learning or
 ### Weighted meta analysis
 
 - `infer_meta_analysis()` sits on top of the tournament-calibrated mode layer instead of replacing it.
-- It still computes weighted mode-level pressure for internal routing, but it now projects that data into a curated May 2026 tournament-team snapshot table so the user-facing board can talk about real teams instead of only shell labels.
-- Each board row carries a concrete team name, a source/result label, defining cores, repeated key Pokemon, popularity weight, result weight, a dual-type `target_summary`, and an `interaction_summary` that tracks broader board answers like redirection counterplay, setup denial, spread control, and ability-aware lines.
-- This keeps the live-field read explainable: the analyzer can say both "you are good into Rain Archaludon" and why that matters because the shell is both popular and converting strong finishes.
+- It still computes weighted mode-level pressure for internal routing, but it now projects that data onto a tournament-team snapshot board — the live published usage feed when one is configured, the curated built-in board otherwise — so the user-facing read can talk about real teams instead of only shell labels.
+- Each board row carries a concrete team name, a source/result label, defining cores, repeated key Pokemon, popularity weight, result weight, a dual-type `target_summary`, and an `interaction_summary` that tracks broader board answers like redirection counterplay, setup denial, spread control, and ability-aware lines. Shells that run two or more mega stones are read as dual-mode, so each mega anchors its own core rather than the second mega being dropped from the cores.
+- The mode and broad matchup scores are mean-centered (they describe which matchups are relatively best and worst for this team), so `_score_team_field_soundness()` adds an **absolute** team-soundness offset on top — dominated by stacked shared weaknesses, reinforced by exposure to the common attacking field and one-dimensional offense. The offset is applied uniformly to every board row, so relative shell ranking is preserved while the overall standing reflects how field-viable the team actually is, and `_label_team_meta_standing()` maps that into the strong / solid / even / shaky / pressured bands.
+- This keeps the live-field read explainable: the analyzer can say both "you are good into Rain Archaludon" and why that matters because the shell is both popular and converting strong finishes — and, conversely, why a defensively stacked team grades as a liability even when its centered matchup scores look even.
 - The same board layer now also feeds the already-visible Benchmark notes and Team Notes blocks, so speed guidance and beginner-facing coaching can point at the concrete live shells that are creating the pressure.
 
 ### Team preview planning
