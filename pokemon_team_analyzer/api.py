@@ -12,7 +12,10 @@ from .service import (
     build_analysis_route_payload,
     build_builder_move_payload,
     build_builder_species_options_payload,
+    build_damage_payload,
+    build_preview_payload,
     build_regulation_catalog_payload,
+    build_slot_doctor_payload,
 )
 from .version import __version__
 
@@ -27,6 +30,44 @@ app = FastAPI(
 
 
 class AnalyzeRequest(BaseModel):
+    teamText: str = ""
+    regulationId: str = DEFAULT_REGULATION_ID
+
+
+class DamageSide(BaseModel):
+    species: str
+    move: str | None = None
+    ability: str | None = None
+    item: str | None = None
+    nature: str | None = None
+    evs: dict[str, int] = {}
+
+
+class DamageField(BaseModel):
+    weather: str | None = None
+    spread: bool | None = None
+    crit: bool = False
+    attackerAtkStage: int = 0
+    defenderDefStage: int = 0
+    attackerBurned: bool = False
+    reflect: bool = False
+    lightScreen: bool = False
+
+
+class DamageRequest(BaseModel):
+    attacker: DamageSide
+    defender: DamageSide
+    field: DamageField = DamageField()
+    regulationId: str = DEFAULT_REGULATION_ID
+
+
+class PreviewRequest(BaseModel):
+    myTeamText: str = ""
+    opponentTeamText: str = ""
+    regulationId: str = DEFAULT_REGULATION_ID
+
+
+class SlotDoctorRequest(BaseModel):
     teamText: str = ""
     regulationId: str = DEFAULT_REGULATION_ID
 
@@ -76,6 +117,34 @@ def analyze_team(payload: AnalyzeRequest) -> JSONResponse:
         regulation_id=payload.regulationId,
     )
     return JSONResponse(response_payload, status_code=status_code)
+
+
+@app.post("/api/damage")
+def calculate_damage(payload: DamageRequest) -> dict[str, object]:
+    try:
+        return build_damage_payload(payload.model_dump())
+    except (KeyError, LookupError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/preview")
+def preview_matchup(payload: PreviewRequest) -> dict[str, object]:
+    try:
+        return build_preview_payload(
+            payload.myTeamText,
+            payload.opponentTeamText,
+            regulation_id=payload.regulationId,
+        )
+    except (ValueError, KeyError, LookupError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/api/slot-doctor")
+def slot_doctor(payload: SlotDoctorRequest) -> dict[str, object]:
+    try:
+        return build_slot_doctor_payload(payload.teamText, regulation_id=payload.regulationId)
+    except (ValueError, KeyError, LookupError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.get("/api/builder-species")

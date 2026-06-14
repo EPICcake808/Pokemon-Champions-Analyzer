@@ -7,6 +7,9 @@ from statistics import median, pstdev
 from typing import Iterable, cast
 
 from .champions_m_a_meta import MODE_LABEL_ORDER, TOURNAMENT_MODE_SNAPSHOTS
+from .damage import Combatant
+from .damage_benchmarks import build_damage_matchups
+from .glossary import build_plain_language_summary
 from .data import CachedPokeApiClient, MetadataProvider
 from .meta_snapshots import (
     get_runtime_common_meta_pokemon,
@@ -46,28 +49,7 @@ from .stats import (
     CHAMPIONS_MAX_STAT_SPS,
     compute_stat,
 )
-
-
-TYPE_EFFECTIVENESS = {
-    "normal": {"rock": 0.5, "ghost": 0.0, "steel": 0.5},
-    "fire": {"fire": 0.5, "water": 0.5, "grass": 2.0, "ice": 2.0, "bug": 2.0, "rock": 0.5, "dragon": 0.5, "steel": 2.0},
-    "water": {"fire": 2.0, "water": 0.5, "grass": 0.5, "ground": 2.0, "rock": 2.0, "dragon": 0.5},
-    "electric": {"water": 2.0, "electric": 0.5, "grass": 0.5, "ground": 0.0, "flying": 2.0, "dragon": 0.5},
-    "grass": {"fire": 0.5, "water": 2.0, "grass": 0.5, "poison": 0.5, "ground": 2.0, "flying": 0.5, "bug": 0.5, "rock": 2.0, "dragon": 0.5, "steel": 0.5},
-    "ice": {"fire": 0.5, "water": 0.5, "grass": 2.0, "ice": 0.5, "ground": 2.0, "flying": 2.0, "dragon": 2.0, "steel": 0.5},
-    "fighting": {"normal": 2.0, "ice": 2.0, "poison": 0.5, "flying": 0.5, "psychic": 0.5, "bug": 0.5, "rock": 2.0, "ghost": 0.0, "dark": 2.0, "steel": 2.0, "fairy": 0.5},
-    "poison": {"grass": 2.0, "poison": 0.5, "ground": 0.5, "rock": 0.5, "ghost": 0.5, "steel": 0.0, "fairy": 2.0},
-    "ground": {"fire": 2.0, "electric": 2.0, "grass": 0.5, "poison": 2.0, "flying": 0.0, "bug": 0.5, "rock": 2.0, "steel": 2.0},
-    "flying": {"electric": 0.5, "grass": 2.0, "fighting": 2.0, "bug": 2.0, "rock": 0.5, "steel": 0.5},
-    "psychic": {"fighting": 2.0, "poison": 2.0, "psychic": 0.5, "dark": 0.0, "steel": 0.5},
-    "bug": {"fire": 0.5, "grass": 2.0, "fighting": 0.5, "poison": 0.5, "flying": 0.5, "psychic": 2.0, "ghost": 0.5, "dark": 2.0, "steel": 0.5, "fairy": 0.5},
-    "rock": {"fire": 2.0, "ice": 2.0, "fighting": 0.5, "ground": 0.5, "flying": 2.0, "bug": 2.0, "steel": 0.5},
-    "ghost": {"normal": 0.0, "psychic": 2.0, "ghost": 2.0, "dark": 0.5},
-    "dragon": {"dragon": 2.0, "steel": 0.5, "fairy": 0.0},
-    "dark": {"fighting": 0.5, "psychic": 2.0, "ghost": 2.0, "dark": 0.5, "fairy": 0.5},
-    "steel": {"fire": 0.5, "water": 0.5, "electric": 0.5, "ice": 2.0, "rock": 2.0, "steel": 0.5, "fairy": 2.0},
-    "fairy": {"fire": 0.5, "fighting": 2.0, "poison": 0.5, "dragon": 2.0, "dark": 2.0, "steel": 0.5},
-}
+from .typechart import TYPE_EFFECTIVENESS, defensive_multiplier
 
 PROTECTION_MOVES = {
     "baneful-bunker",
@@ -927,6 +909,26 @@ def analyze_team(
         vector_labels.append(f"team_archetype_{archetype}")
         vector.append(float(team_archetype_scores[archetype]))
 
+    damage_matchups = _build_damage_matchups(members, provider)
+    try:
+        speed_coverage = _build_speed_coverage(members, member_battle_speeds, provider, regulation_id)
+    except Exception:  # pragma: no cover - defensive: coverage is non-essential
+        speed_coverage = {"available": False, "sample_species": 0, "members": [], "note": ""}
+
+    plain_summary = build_plain_language_summary(
+        archetype=primary_team_archetype,
+        style=primary_team_style,
+        mode_labels=team_mode_packages,
+        win_condition_labels=team_win_condition_labels,
+        speed_tier=team_speed_tier,
+        favorable_matchups=favorable_matchups,
+        unfavorable_matchups=unfavorable_matchups,
+        unfavorable_modes=unfavorable_modes,
+        top_defensive_weaknesses=top_defensive_weaknesses,
+        difficulty_label=team_difficulty_label,
+        difficulty_score=team_difficulty_score,
+    )
+
     return TeamAnalysis(
         regulation_id=regulation_id,
         team_size=len(members),
@@ -956,6 +958,9 @@ def analyze_team(
         member_speed_benchmark_tags=member_speed_benchmark_tags,
         member_speed_contexts=member_speed_contexts,
         damage_split=damage_split,
+        damage_matchups=damage_matchups,
+        speed_coverage=speed_coverage,
+        plain_summary=plain_summary,
         utility_moves=utility_moves,
         utility_role_counts=utility_role_counts,
         utility_role_moves=utility_role_moves,
@@ -993,14 +998,6 @@ def analyze_team(
         vector_labels=vector_labels,
         vector=vector,
     )
-
-
-def defensive_multiplier(defending_types: tuple[str, ...], attack_type: str) -> float:
-    multiplier = 1.0
-    matchups = TYPE_EFFECTIVENESS[attack_type]
-    for defending_type in defending_types:
-        multiplier *= matchups.get(defending_type, 1.0)
-    return multiplier
 
 
 def _member_context_ability_names(member: TeamMember) -> tuple[str, ...]:
@@ -1097,6 +1094,116 @@ def _rank_coverage_gaps(target_coverage: dict[str, dict[str, float | int]], limi
 
 def _normalized_battle_speed(member: TeamMember) -> int:
     return _normalized_member_stats(member)["speed"]
+
+
+def _combatant_from_member(member: TeamMember) -> Combatant:
+    stats = _normalized_member_stats(member)
+    return Combatant(
+        species=member.pokemon_set.display_name,
+        types=member.species_data.types,
+        hp=stats["hp"],
+        attack=stats["attack"],
+        defense=stats["defense"],
+        special_attack=stats["special_attack"],
+        special_defense=stats["special_defense"],
+        ability=member.pokemon_set.ability,
+        item=member.pokemon_set.item,
+    )
+
+
+def _build_damage_matchups(members: list[TeamMember], provider: MetadataProvider) -> dict[str, object]:
+    """Curated OHKO/2HKO grid; resilient so benchmark data issues never break analysis."""
+    try:
+        team = [(_combatant_from_member(member), member.move_data) for member in members]
+        return build_damage_matchups(team, provider)
+    except Exception:  # pragma: no cover - defensive: grid is non-essential
+        return {"outgoing": [], "incoming": [], "benchmark_walls": [], "benchmark_attackers": [], "notes": []}
+
+
+def _speed_coverage_share(
+    meta_speeds: list[tuple[int, float]],
+    my_speed: int,
+    total: float,
+    *,
+    faster_wins: bool,
+) -> float:
+    """Usage-weighted share of the meta this speed moves before.
+
+    ``faster_wins`` is True for +0/Tailwind (you win by being faster) and False under
+    Trick Room (you win by being slower). Speed ties split the share 50/50.
+    """
+    value = 0.0
+    for assumed_speed, share in meta_speeds:
+        if my_speed == assumed_speed:
+            value += 0.5 * share
+        elif (my_speed > assumed_speed) == faster_wins:
+            value += share
+    return round(100 * value / total, 1) if total else 0.0
+
+
+def _build_speed_coverage(
+    members: list[TeamMember],
+    member_battle_speeds: dict[str, int],
+    provider: MetadataProvider,
+    regulation_id: str | None,
+) -> dict[str, object]:
+    """Per-member usage-weighted outspeed coverage at +0, under Tailwind, and under Trick Room."""
+    note = (
+        "Each common meta Pokemon is weighted by usage share and assumed to run a max-speed "
+        "set, so the +0 and Tailwind figures are conservative."
+    )
+    try:
+        common = _build_common_meta_pokemon(regulation_id)
+    except Exception:  # pragma: no cover - defensive
+        common = []
+
+    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
+    meta_speeds: list[tuple[int, float]] = []
+    sampled: list[str] = []
+    for row in common:
+        species_name = str(row.get("species", ""))
+        share = float(row.get("meta_share", 0.0) or 0.0)
+        if not species_name or share <= 0:
+            continue
+        try:
+            canonical = resolve_regulation_species_name(species_name, regulation_id=resolved_regulation_id) or species_name
+            species = provider.get_species(canonical)
+        except (KeyError, LookupError, ConnectionError):
+            continue
+        assumed_speed = compute_stat(species.base_speed, CHAMPIONS_MAX_STAT_SPS, nature=1)
+        meta_speeds.append((assumed_speed, share))
+        sampled.append(species_name)
+
+    total = sum(share for _, share in meta_speeds)
+    if not meta_speeds or total <= 0:
+        return {"available": False, "sample_species": 0, "members": [], "note": note}
+
+    members_out = [
+        {
+            "pokemon": member.pokemon_set.display_name,
+            "battle_speed": member_battle_speeds[member.pokemon_set.display_name],
+            "natural_pct": _speed_coverage_share(
+                meta_speeds, member_battle_speeds[member.pokemon_set.display_name], total, faster_wins=True
+            ),
+            "tailwind_pct": _speed_coverage_share(
+                meta_speeds, member_battle_speeds[member.pokemon_set.display_name] * 2, total, faster_wins=True
+            ),
+            "trick_room_pct": _speed_coverage_share(
+                meta_speeds, member_battle_speeds[member.pokemon_set.display_name], total, faster_wins=False
+            ),
+        }
+        for member in members
+    ]
+
+    return {
+        "available": True,
+        "weighted": True,
+        "sample_species": len(meta_speeds),
+        "sampled_pokemon": sampled,
+        "contexts": ["natural", "tailwind", "trick_room"],
+        "members": members_out,
+        "note": note,
+    }
 
 
 def _normalized_member_stats(member: TeamMember) -> dict[str, int]:

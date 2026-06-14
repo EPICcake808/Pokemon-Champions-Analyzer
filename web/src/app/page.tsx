@@ -91,6 +91,7 @@ export default async function Home() {
       initialAnalysis={initialAnalysis}
       initialAnalysisError={initialAnalysisError}
       initialTeamText={initialExample.teamText}
+      exampleTeams={exampleTeams}
       initialSessionUser={initialSessionUser}
       initialSavedTeams={initialSavedTeams}
       regulationOptions={regulationCatalog.regulations}

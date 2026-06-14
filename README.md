@@ -6,7 +6,7 @@ It is scoped to Pokemon Champions and ships with an official, data-first regulat
 
 ## Release Status
 
-- Current release: `0.3.1`
+- Current release: `0.4.0`
 - Release history now lives in [`CHANGELOG.md`](CHANGELOG.md)
 - `0.1.0` established the split Vercel deployment shape for the Python API and the Next.js frontend.
 - `0.2.0` added account support, reweighted matchup scoring, deeper context-based matchup scoring with reason output, hosted meta snapshot refreshes for teams and common meta Pokemon, legality and sprite fixes, and repaired team previews.
@@ -14,6 +14,16 @@ It is scoped to Pokemon Champions and ships with an official, data-first regulat
 - `0.2.2` adds in-app documentation to the hosted frontend, deepens the live board scorer with dual-type and interaction-aware context, and lets matchup-specific preview plans point at concrete current board shells.
 - `0.3.0` rebuilds the meta board on real, usage-weighted tournament results (official events over online), with multi-source reconciliation, provenance stamping, and a daily GitHub Action publish that replaces the old request-path scraping.
 - `0.3.1` fixes the Champions stat formula and genderless-form legality, corrects meta standing so structurally weak teams are no longer over-graded, and makes dual-mega shells read as dual-mode with each mega anchoring its own core.
+- `0.4.0` turns abstract scores into evidence: a Gen 9 damage calculator (curated OHKO/2HKO grid + interactive calc), a preview-trainer that recommends a bring-four and lead against a pasted opponent, usage-weighted speed coverage, an actionable slot doctor, a plain-language glossary/summary layer, a searchable species picker with starter templates, and a mobile rendering pass.
+
+### 0.4.0 Highlights
+
+- **Damage calculator** — a standard Generation 9 damage engine fed Champions stat values powers a curated OHKO/2HKO grid (with the assumed opposing build disclosed per row) and an interactive calculator, so matchup reads are backed by concrete rolls instead of abstract scores.
+- **Preview-trainer mode** — paste an opponent's six and get a recommended bring-four and lead, justified with real speed and KO math against your roster.
+- **Usage-weighted speed coverage** — per member, the share of the most-used meta Pokemon you move before at +0, under your Tailwind, and under your Trick Room.
+- **Slot doctor** — diagnoses Trick Room, Tailwind, setup, and defensive-type gaps and suggests Regulation M-A-legal move swaps and replacements, every suggestion legality-checked.
+- **Plain-language onboarding** — a shared glossary and team summary are embedded in the analysis; the web adds inline tooltips, an "In plain terms" summary, and a score-anchoring legend.
+- **Builder UX** — a searchable species picker replaces the long flat dropdown, with one-click archetype starter templates, plus a responsive pass so the new panels render cleanly on phones.
 
 ### 0.3.1 Highlights
 

@@ -12,8 +12,14 @@ import type {
   BuilderMoveDetails,
   BuilderSpeciesOptions,
   ChangelogRoutePayload,
+  DamageCalcRequest,
+  DamageCalcResponse,
   PokemonTeamAnalysis,
+  PreviewRequest,
+  PreviewResponse,
   RegulationCatalogPayload,
+  SlotDoctorRequest,
+  SlotDoctorResponse,
 } from "@/lib/types";
 
 const execFileAsync = promisify(execFile);
@@ -175,6 +181,126 @@ export async function runPokemonAnalyzer(
     };
   } finally {
     await rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+function parseDamagePayload(stdout: string): DamageCalcResponse {
+  const parsed = JSON.parse(stdout) as DamageCalcResponse & { error?: string };
+  if (typeof parsed.error === "string") {
+    throw new Error(parsed.error);
+  }
+  return parsed;
+}
+
+export async function runDamageCalc(request: DamageCalcRequest): Promise<DamageCalcResponse> {
+  const body: DamageCalcRequest = {
+    ...request,
+    regulationId: request.regulationId ?? DEFAULT_REGULATION_ID,
+  };
+
+  if (shouldUseRemoteAnalyzerApi()) {
+    const { payload, response } = await fetchAnalyzerApi<DamageCalcResponse & { detail?: string }>(
+      "/api/damage",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(payload.detail || "The damage calculation request failed.");
+    }
+    return payload;
+  }
+
+  try {
+    const stdout = await runPythonCli(["--damage-json", JSON.stringify(body)]);
+    return parseDamagePayload(stdout);
+  } catch (error) {
+    const executionError = error as Error & { stdout?: string };
+    if (executionError.stdout) {
+      return parseDamagePayload(executionError.stdout);
+    }
+    throw error;
+  }
+}
+
+function parsePreviewPayload(stdout: string): PreviewResponse {
+  const parsed = JSON.parse(stdout) as PreviewResponse & { error?: string };
+  if (typeof parsed.error === "string") {
+    throw new Error(parsed.error);
+  }
+  return parsed;
+}
+
+export async function runPreview(request: PreviewRequest): Promise<PreviewResponse> {
+  const body: PreviewRequest = {
+    ...request,
+    regulationId: request.regulationId ?? DEFAULT_REGULATION_ID,
+  };
+
+  if (shouldUseRemoteAnalyzerApi()) {
+    const { payload, response } = await fetchAnalyzerApi<PreviewResponse & { detail?: string }>(
+      "/api/preview",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(payload.detail || "The preview request failed.");
+    }
+    return payload;
+  }
+
+  try {
+    const stdout = await runPythonCli(["--preview-json", JSON.stringify(body)]);
+    return parsePreviewPayload(stdout);
+  } catch (error) {
+    const executionError = error as Error & { stdout?: string };
+    if (executionError.stdout) {
+      return parsePreviewPayload(executionError.stdout);
+    }
+    throw error;
+  }
+}
+
+function parseSlotDoctorPayload(stdout: string): SlotDoctorResponse {
+  const parsed = JSON.parse(stdout) as SlotDoctorResponse & { error?: string };
+  if (typeof parsed.error === "string") {
+    throw new Error(parsed.error);
+  }
+  return parsed;
+}
+
+export async function runSlotDoctor(request: SlotDoctorRequest): Promise<SlotDoctorResponse> {
+  const body: SlotDoctorRequest = {
+    ...request,
+    regulationId: request.regulationId ?? DEFAULT_REGULATION_ID,
+  };
+
+  if (shouldUseRemoteAnalyzerApi()) {
+    const { payload, response } = await fetchAnalyzerApi<SlotDoctorResponse & { detail?: string }>(
+      "/api/slot-doctor",
+      {
+        method: "POST",
+        body: JSON.stringify(body),
+      },
+    );
+    if (!response.ok) {
+      throw new Error(payload.detail || "The slot doctor request failed.");
+    }
+    return payload;
+  }
+
+  try {
+    const stdout = await runPythonCli(["--slot-doctor-json", JSON.stringify(body)]);
+    return parseSlotDoctorPayload(stdout);
+  } catch (error) {
+    const executionError = error as Error & { stdout?: string };
+    if (executionError.stdout) {
+      return parseSlotDoctorPayload(executionError.stdout);
+    }
+    throw error;
   }
 }
 
