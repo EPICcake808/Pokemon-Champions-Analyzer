@@ -24,6 +24,10 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 - Responsive pass across the web workspace so the new panels render cleanly on phones: wide tables scroll instead of overflowing, term tooltips reveal in-flow rather than as clipped popovers, and charts scale fluidly.
 - Bumped the package version to 0.4.0.
 
+### Fixed
+
+- Added the mobile viewport meta (`width=device-width, initial-scale=1, viewport-fit=cover`) via a Next `viewport` export. Without it the site fell back to a ~980px desktop layout viewport on phones, so it loaded zoomed-out, was hard to navigate, and showed dark borders around the page; it now renders at 1x device width. Also added `overflow-x: clip` on `html` as a sticky-safe guard against stray horizontal overflow.
+
 ## [0.3.1] - 2026-06-13
 
 ### Added

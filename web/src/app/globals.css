@@ -29,6 +29,10 @@
 
 html {
   background: var(--bg);
+  /* Guard against any stray horizontal overflow expanding the layout viewport on
+     mobile. `clip` (unlike `hidden`/`auto`) does not create a scroll container, so it
+     leaves the sticky header working. */
+  overflow-x: clip;
 }
 
 body {

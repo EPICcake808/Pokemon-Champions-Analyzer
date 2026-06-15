@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Chakra_Petch, JetBrains_Mono, Manrope, Michroma } from "next/font/google";
 import "./globals.css";
 
@@ -27,6 +27,15 @@ const monoFont = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Pokemon Champions Analyzer",
   description: "A Next.js control room for the deterministic Pokemon Champions team analyzer.",
+};
+
+// Pin the layout viewport to the device width so mobile renders at 1x instead of
+// falling back to a ~980px desktop viewport (which made the site render zoomed-out
+// with dark borders and broke touch navigation).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
