@@ -64,8 +64,8 @@
         {
           "species": "Sneasler",
           "metaShare": 39.0,
-          "whyUsed": "Sneasler appears on 36.1% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like Incineroar Mega Floette Dual Mode and Sneasler Kingambit Dual Mode without forcing the rest of the team to contort around it.",
-          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "whyUsed": "Fast offense and dual-mega shells keep reaching for it because Unburden turns a single consumed item into a speed tier almost nothing outruns, letting it close games before slower control teams stabilize.",
+          "whatItDoes": "It opens with Fake Out, then snowballs with fast Fighting and Poison pressure and Dire Claw status, cleaning chipped boards and punishing teams that fall behind on speed.",
           "featuredTeams": [
             "Incineroar Mega Floette Dual Mode",
             "Sneasler Kingambit Dual Mode",
@@ -94,8 +94,8 @@
         {
           "species": "Charizard",
           "metaShare": 36.0,
-          "whyUsed": "Charizard appears on 30.7% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like the current board without forcing the rest of the team to contort around it.",
-          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "whyUsed": "Sun and fast-offense shells lean on it because its Mega forms fold a self-contained weather engine and one of the format's best nukes into a single, flexible slot.",
+          "whatItDoes": "As Mega Charizard Y it sets harsh sunlight and fires off high-output special Fire damage; as Mega Charizard X it offers a physical Dragon/Fire alternative — either way it turns Tailwind and support turns straight into KO pressure.",
           "featuredTeams": [],
           "weightedUsagePercent": 36.0,
           "usagePercent": 30.7,
@@ -105,8 +105,8 @@
         {
           "species": "Floette Eternal",
           "metaShare": 34.9,
-          "whyUsed": "Floette Eternal appears on 27.9% of sampled Regulation M-A teams (and ranks higher once the biggest official events and deepest runs are weighted in), showing up across shells like the current board without forcing the rest of the team to contort around it.",
-          "whatItDoes": "It compresses either flexible support or immediate damage, which is why so many different structures keep reaching for it.",
+          "whyUsed": "Balance, Trick Room, and dual-mega shells lean on it because its Mega folds a top-tier Fairy special attacker and a durable support body into one flexible slot.",
+          "whatItDoes": "It threatens high-output Fairy damage through Light of Ruin while Flower Veil and its bulk let it stay in to support partners, anchoring both slow Trick Room and fast dual-mode lines.",
           "featuredTeams": [],
           "weightedUsagePercent": 34.9,
           "usagePercent": 27.9,

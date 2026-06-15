@@ -58,15 +58,22 @@ def _build_common_meta_pokemon(
         context = COMMON_META_POKEMON_CONTEXT.get(entry.token)
         featured = featured_by_token.get(entry.token, [])[:3]
         if context is None:
-            featured_text = _render_series(featured[:2]) if featured else "the current board"
-            why_used = (
-                f"{species} appears on {entry.raw_usage_pct:.1f}% of sampled Regulation M-A teams "
-                f"(and ranks higher once the biggest official events and deepest runs are weighted in), "
-                f"showing up across shells like {featured_text} without forcing the rest of the team to contort around it."
-            )
+            featured_text = _render_series(featured[:2]) if featured else ""
+            if featured_text:
+                why_used = (
+                    f"{species} runs on {entry.raw_usage_pct:.1f}% of sampled Regulation M-A teams, "
+                    f"turning up in shells like {featured_text}. That much usage across different "
+                    f"team styles is what lands it on the meta board."
+                )
+            else:
+                why_used = (
+                    f"{species} runs on {entry.raw_usage_pct:.1f}% of sampled Regulation M-A teams, "
+                    f"spread across a range of team styles rather than tied to one shell — enough usage "
+                    f"to land it on the meta board."
+                )
             what_it_does = (
-                "It compresses either flexible support or immediate damage, which is why so many "
-                "different structures keep reaching for it."
+                "Its spot here comes from broad usage across the sampled teams rather than one "
+                "signature role; teams reach for it in both offensive and supportive builds."
             )
         else:
             why_used = context["why_used"]

@@ -138,6 +138,60 @@ const COMMON_META_POKEMON_CONTEXT: Record<string, { whyUsed: string; whatItDoes:
     whatItDoes:
       "It chips the opposing side, punishes contact and bad switching, and helps faster partners convert early momentum into lasting board damage.",
   },
+  sneasler: {
+    whyUsed:
+      "Fast offense and dual-mega shells keep reaching for it because Unburden turns a single consumed item into a speed tier almost nothing outruns, letting it close games before slower control teams stabilize.",
+    whatItDoes:
+      "It opens with Fake Out, then snowballs with fast Fighting and Poison pressure and Dire Claw status, cleaning chipped boards and punishing teams that fall behind on speed.",
+  },
+  "floette-eternal": {
+    whyUsed:
+      "Balance, Trick Room, and dual-mega shells lean on it because its Mega folds a top-tier Fairy special attacker and a durable support body into one flexible slot.",
+    whatItDoes:
+      "It threatens high-output Fairy damage through Light of Ruin while Flower Veil and its bulk let it stay in to support partners, anchoring both slow Trick Room and fast dual-mode lines.",
+  },
+  charizard: {
+    whyUsed:
+      "Sun and fast-offense shells lean on it because its Mega forms fold a self-contained weather engine and one of the format's best nukes into a single, flexible slot.",
+    whatItDoes:
+      "As Mega Charizard Y it sets harsh sunlight and fires off high-output special Fire damage; as Mega Charizard X it offers a physical Dragon/Fire alternative — either way it turns Tailwind and support turns straight into KO pressure.",
+  },
+  tyranitar: {
+    whyUsed:
+      "Sand and bulky-offense shells build around it because Sand Stream chips the field for free and its Mega gives them a hard-hitting, hard-to-remove backbone in one slot.",
+    whatItDoes:
+      "It sets sand to wear down the opposing side, soaks special hits, and threatens heavy Rock and Dark damage that punishes passive trades and fragile special attackers.",
+  },
+  hydreigon: {
+    whyUsed:
+      "Offense and dual-mode shells like it because Levitate plus a broad special movepool gives them safe pivots into Ground attacks and reliable spread damage without much support.",
+    whatItDoes:
+      "It pressures the field with strong Dark and Dragon coverage, weakens special attackers with Snarl, and forces awkward switches thanks to its immunity to Ground.",
+  },
+  "rotom-wash": {
+    whyUsed:
+      "Balance and bulky shells keep it as glue because it pivots safely, spreads status, and answers the format's Water- and Ground-weak attackers from one resilient slot.",
+    whatItDoes:
+      "It pivots with Volt Switch, cripples physical threats with Will-O-Wisp, and chips the field with Hydro Pump while its Electric/Water typing dodges common offensive types.",
+  },
+  corviknight: {
+    whyUsed:
+      "Defensive and pivot-heavy shells rely on it because it patches physical pressure, provides speed control, and keeps recovering without giving up tempo.",
+    whatItDoes:
+      "It pivots with U-turn, sets Tailwind or stalls with Roost, and punishes contact and grounded attackers with Body Press behind its Steel/Flying bulk.",
+  },
+  froslass: {
+    whyUsed:
+      "Fast offense leans on it because it gives reliable speed control and disruption from turn one, and its Mega trades up into a real offensive threat without changing the lead plan.",
+    whatItDoes:
+      "It threatens fast Tailwind, hazards, and Destiny Bond trades, opening clean turns for the backline while its Ice/Ghost coverage chips key targets.",
+  },
+  farigiraf: {
+    whyUsed:
+      "Trick Room and balance shells value it because Armor Tail shuts off opposing priority and one bulky slot can both set the room and protect the win condition.",
+    whatItDoes:
+      "It sets Trick Room under pressure, supports with Helping Hand and Foul Play, and keeps slow attackers safe while the team flips the speed order.",
+  },
 };
 
 const META_BOARD_MIN_FIELD_RELEVANCE = 0.7;
@@ -203,15 +257,17 @@ function deriveCommonMetaPokemon(
       }
 
       if (!context) {
-        const featuredShellText = dedupedFeaturedTeams.length
-          ? renderSeries(dedupedFeaturedTeams.slice(0, 2))
-          : "the current board";
+        const whyUsed = dedupedFeaturedTeams.length
+          ? `${species} keeps turning up in high-performing shells like ${renderSeries(
+              dedupedFeaturedTeams.slice(0, 2),
+            )}, and that spread across different team styles is what keeps it on the meta board.`
+          : `${species} keeps turning up across a range of high-performing shells rather than being tied to one team style, which is what keeps it on the meta board.`;
         return {
           species,
           metaShare: Number(((100 * weightedPresence) / totalWeight).toFixed(1)),
-          whyUsed: `${species} keeps showing up because it fits naturally into high-performing shells like ${featuredShellText} without asking the rest of the team to contort around it.`,
+          whyUsed,
           whatItDoes:
-            "It usually compresses either flexible support or immediate damage so those shells do not have to give up tempo to cover the matchup spread.",
+            "Its spot here comes from broad usage across top teams rather than one signature role; teams reach for it in both offensive and supportive builds.",
           featuredTeams: dedupedFeaturedTeams,
         };
       }
