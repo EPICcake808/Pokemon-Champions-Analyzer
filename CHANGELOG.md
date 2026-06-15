@@ -6,6 +6,24 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+### Added
+
+- A continuous-integration workflow (`.github/workflows/ci.yml`) that runs the Python test suite and the web lint, typecheck, and build on every push and pull request, plus a declared `dev` extra (`pip install -e ".[dev]"`) and pytest configuration so the suite has a single documented entry point.
+- The damage engine now models the 1.2x type-boost held items (Charcoal, Mystic Water, Soft Sand, and the rest of the Regulation M-A type-enhancing items) as a base-power modifier, so legal offensive items are scored instead of being reported back as unmodeled (`pokemon_team_analyzer/damage.py`).
+
+### Changed
+
+- Bumped the web app version to 0.4.0 so it matches the analyzer package and the changelog.
+
+### Fixed
+
+- Replaced the illegal Choice Band sets in the curated damage grid's "defining nukes" with Regulation M-A-legal type-boost items (Soft Sand Garchomp Earthquake and Rain Mystic Water Basculegion Wave Crash), so every benchmark in the grid is now a legal Champions build; Kingambit's already-legal Black Glasses also now correctly applies its 1.2x boost.
+- Fixed the Basculegion nuke benchmark, which silently never appeared in the grid because the bare "Basculegion" name does not resolve through the data provider; it now uses the canonical "Basculegion (Male)" form.
+
+### Repo
+
+- Removed the duplicate sync-artifact files (`* 2.py`, `* 3.py`, and matching test fixtures) that had been committed to the repository alongside their canonical counterparts.
+
 ## [0.4.0] - 2026-06-14
 
 ### Added

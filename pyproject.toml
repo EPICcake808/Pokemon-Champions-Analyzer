@@ -10,6 +10,9 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = ["beautifulsoup4>=4.12.3", "certifi>=2024.2.2", "fastapi>=0.117.1", "uvicorn>=0.35.0"]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [project.scripts]
 pokemon-team-analyzer = "pokemon_team_analyzer.cli:main"
 
@@ -21,3 +24,6 @@ version = { attr = "pokemon_team_analyzer.version.__version__" }
 
 [tool.vercel]
 entrypoint = "pokemon_team_analyzer.api:app"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

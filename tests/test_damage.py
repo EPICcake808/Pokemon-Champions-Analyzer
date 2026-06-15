@@ -128,6 +128,27 @@ class DamageFormulaTests(unittest.TestCase):
         self.assertEqual(result.min_damage, 113)
         self.assertEqual(result.max_damage, 134)
 
+    def test_type_boost_item_matches_move_type(self):
+        # Soft Sand gives a legal 1.2x base-power boost to Ground moves.
+        move = _move("Test Quake", "ground", "physical", 100)
+        attacker = _attacker(types=("bug",), item="Soft Sand")
+        result = compute_damage(attacker, _defender(), move)
+        assert result is not None
+        # base power 100 -> 120; base = ((22*120*200)//100)//50+2 = 107, rolls 90..107.
+        self.assertEqual(result.min_damage, 90)
+        self.assertEqual(result.max_damage, 107)
+        # A modeled item must not be reported back as unmodeled.
+        self.assertEqual(result.unmodeled, ())
+
+    def test_type_boost_item_ignores_other_types(self):
+        # Soft Sand does nothing for a non-Ground move, but is still recognised.
+        attacker = _attacker(types=("bug",), item="Soft Sand")
+        result = compute_damage(attacker, _defender(), self.NEUTRAL_MOVE)
+        assert result is not None
+        self.assertEqual(result.min_damage, 76)
+        self.assertEqual(result.max_damage, 90)
+        self.assertEqual(result.unmodeled, ())
+
     def test_ability_type_immunity(self):
         move = _move("Test Quake", "ground", "physical", 100)
         result = compute_damage(_attacker(types=("bug",)), _defender(ability="Levitate"), move)

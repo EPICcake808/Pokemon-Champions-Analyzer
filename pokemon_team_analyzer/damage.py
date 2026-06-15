@@ -13,8 +13,9 @@ mode on top of this engine). It only depends on :mod:`stats`, :mod:`models`, and
 Modeled modifiers: STAB (incl. Adaptability), full type effectiveness, defender
 type-immunity abilities (Levitate, Flash Fire, etc.), weather (sun/rain on Fire/Water),
 spread (doubles 0.75), critical hits, stat stages (with crit stage-ignore rules), burn
-(with Guts), screens (Reflect/Light Screen), and the common power items/abilities listed
-in the constants below. Anything outside that set is reported back in
+(with Guts), screens (Reflect/Light Screen), the 1.2x type-boost items (Charcoal,
+Mystic Water, Soft Sand, ...), and the common power items/abilities listed in the
+constants below. Anything outside that set is reported back in
 ``DamageResult.unmodeled`` rather than silently ignored.
 """
 
@@ -97,6 +98,32 @@ _KNOWN_NEUTRAL_ITEMS = {
     "wide lens",
 }
 
+# Items that boost a single move type by 1.2x. These fold into the base-power
+# modifier chain exactly like the Smogon-calc ``bpMods`` (0x1333 = 4915). These are
+# the legal Champions Regulation M-A offensive items — note that Choice Band/Specs,
+# Life Orb, and Assault Vest are NOT in the M-A item pool, so the type-boost items
+# (plus Choice Scarf, which only affects Speed) are the format's real damage items.
+TYPE_BOOST_ITEMS = {
+    "black belt": "fighting",
+    "black glasses": "dark",
+    "charcoal": "fire",
+    "dragon fang": "dragon",
+    "fairy feather": "fairy",
+    "hard stone": "rock",
+    "magnet": "electric",
+    "metal coat": "steel",
+    "miracle seed": "grass",
+    "mystic water": "water",
+    "never-melt ice": "ice",
+    "poison barb": "poison",
+    "sharp beak": "flying",
+    "silk scarf": "normal",
+    "silver powder": "bug",
+    "soft sand": "ground",
+    "spell tag": "ghost",
+    "twisted spoon": "psychic",
+}
+
 _CHOICE_BAND = "choice band"
 _CHOICE_SPECS = "choice specs"
 _ASSAULT_VEST = "assault vest"
@@ -109,6 +136,7 @@ _HALF = 2048
 _ONE_AND_HALF = 6144
 _DOUBLE = 8192
 _LIFE_ORB_MOD = 5324  # 1.3
+_TYPE_BOOST_MOD = 4915  # 1.2 (type-enhancing items)
 _SPREAD_MOD = 3072  # 0.75
 _SCREEN_SINGLE = 2048  # 0.5
 _SCREEN_DOUBLE = 2732  # ~0.667
@@ -291,9 +319,14 @@ def compute_damage(
 
     type_eff = defensive_multiplier(defender.types, move_type)
 
-    # --- Technician (base-power modifier) ---
+    # --- Base-power modifiers (Technician, then 1.2x type-boost items) ---
+    power_mods: list[int] = []
     if attacker_ability == "technician" and power <= 60:
-        power = _apply_mod(power, _ONE_AND_HALF)
+        power_mods.append(_ONE_AND_HALF)
+    if TYPE_BOOST_ITEMS.get(attacker_item) == move_type:
+        power_mods.append(_TYPE_BOOST_MOD)
+    if power_mods:
+        power = _apply_chain(power, tuple(power_mods))
 
     # --- Crit stage-ignore rules ---
     atk_stage = field.attacker_atk_stage
@@ -458,6 +491,7 @@ def _modeled_items() -> frozenset[str]:
             _EVIOLITE,
             _LIFE_ORB,
             *_KNOWN_NEUTRAL_ITEMS,
+            *TYPE_BOOST_ITEMS,
         }
     )
 
