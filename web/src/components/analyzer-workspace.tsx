@@ -1588,8 +1588,8 @@ export function AnalyzerWorkspace({
           </div>
         </section>
 
-        <section id="graphs" className="grid gap-10 border-t border-[var(--line)] py-10 lg:grid-cols-2">
-          <div className="space-y-6">
+        <section id="graphs" className="grid grid-cols-1 gap-10 border-t border-[var(--line)] py-10 lg:grid-cols-2">
+          <div className="min-w-0 space-y-6">
             <SectionHeading eyebrow="Speed architecture" title="Battle speed map" />
             <SpeedTrack analysis={analysis} />
             <DistributionChart distribution={analysis.speed_profile.distribution} />
@@ -1607,7 +1607,7 @@ export function AnalyzerWorkspace({
             </div>
           </div>
 
-          <div className="space-y-6">
+          <div className="min-w-0 space-y-6">
             <SectionHeading eyebrow="Matchup outlook" title="Pressure and liabilities" />
             <DivergingBars
               heading="Broad archetype profile"

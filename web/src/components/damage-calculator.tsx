@@ -65,12 +65,12 @@ function MatchupTable({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div>
         <h4 className="text-sm font-semibold text-white/85">{heading}</h4>
         <p className="text-xs leading-5 text-[var(--fg-muted)]">{caption}</p>
       </div>
-      <div className="-mx-2 overflow-x-auto">
+      <div className="-mx-2 min-w-0 overflow-x-auto">
         <table className="w-full min-w-[34rem] border-collapse text-left text-xs">
           <thead className="text-white/45">
             <tr>
@@ -201,7 +201,7 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <MatchupTable
           heading="Incoming threats"
           caption="How the meta's defining nukes hit your team (assumed build shown under each)."

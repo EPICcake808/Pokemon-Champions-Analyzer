@@ -27,6 +27,7 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 ### Fixed
 
 - Added the mobile viewport meta (`width=device-width, initial-scale=1, viewport-fit=cover`) via a Next `viewport` export. Without it the site fell back to a ~980px desktop layout viewport on phones, so it loaded zoomed-out, was hard to navigate, and showed dark borders around the page; it now renders at 1x device width. Also added `overflow-x: clip` on `html` as a sticky-safe guard against stray horizontal overflow.
+- Fixed a horizontal overflow on mobile where the new damage, speed-coverage, and preview tables widened the whole page (causing a right-side dark border and zoom-out) because their `lg:grid-cols-2` containers used an implicit auto-sized base track. The base grids are now `grid-cols-1` (`minmax(0,1fr)`) with `min-w-0` scroll wrappers, so wide tables scroll inside their own container instead of expanding the viewport.
 
 ## [0.3.1] - 2026-06-13
 

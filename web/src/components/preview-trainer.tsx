@@ -108,7 +108,7 @@ export function PreviewTrainer({ myTeamText, regulationId }: Props) {
           </div>
 
           {result?.matchups?.length ? (
-            <div className="-mx-2 overflow-x-auto">
+            <div className="-mx-2 min-w-0 overflow-x-auto">
               <table className="w-full min-w-[34rem] border-collapse text-left text-xs">
                 <thead className="text-white/45">
                   <tr>

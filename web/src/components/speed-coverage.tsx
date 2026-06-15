@@ -22,7 +22,7 @@ export function SpeedCoveragePanel({ coverage }: { coverage: SpeedCoverage | und
   }
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div>
         <h4 className="text-sm font-semibold text-white/85">Meta speed coverage</h4>
         <p className="text-xs leading-5 text-[var(--fg-muted)]">
@@ -30,7 +30,7 @@ export function SpeedCoveragePanel({ coverage }: { coverage: SpeedCoverage | und
           — at +0, with your Tailwind up, and under your Trick Room.
         </p>
       </div>
-      <div className="-mx-2 overflow-x-auto">
+      <div className="-mx-2 min-w-0 overflow-x-auto">
         <table className="w-full min-w-[26rem] border-collapse text-left text-xs">
           <thead className="text-white/45">
             <tr>
