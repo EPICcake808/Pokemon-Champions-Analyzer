@@ -1905,7 +1905,7 @@ Ability: Illusion
             for benchmark in analysis.speed_benchmark_groups["trick_room"]["benchmarks"]
         }
         self.assertEqual(trick_room_statuses["min_speed_torkoal"], "tie")
-        self.assertEqual(trick_room_statuses["min_speed_amoonguss"], "underspeed")
+        self.assertEqual(trick_room_statuses["min_speed_snorlax"], "underspeed")
         self.assertEqual(trick_room_statuses["min_speed_sinistcha"], "tie")
         self.assertTrue(
             any(
@@ -1917,7 +1917,7 @@ Ability: Illusion
             [tag["benchmark_slug"] for tag in analysis.member_speed_benchmark_tags["Torkoal"]],
             [
                 "min_speed_torkoal",
-                "min_speed_amoonguss",
+                "min_speed_snorlax",
                 "min_speed_kingambit",
                 "min_speed_farigiraf",
                 "min_speed_sinistcha",

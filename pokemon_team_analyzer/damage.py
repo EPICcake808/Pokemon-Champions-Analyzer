@@ -68,6 +68,7 @@ _NO_DAMAGE_EFFECT_ABILITIES = {
     "hadron engine",
     "regenerator",
     "stamina",
+    "hospitality",
     "natural cure",
     "clear body",
     "white smoke",

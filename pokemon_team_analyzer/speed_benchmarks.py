@@ -144,7 +144,7 @@ _CHOICE_SCARF_SETS = (
 
 _TRICK_ROOM_SETS = (
     BenchmarkSet("min_speed_torkoal", "Min-Speed Torkoal", 20, "Common dedicated Trick Room floor", nature=-1, sp=0),
-    BenchmarkSet("min_speed_amoonguss", "Min-Speed Amoonguss", 30, "Common slow redirection reference", nature=-1, sp=0),
+    BenchmarkSet("min_speed_snorlax", "Min-Speed Snorlax", 30, "Common slow Trick Room attacker reference", nature=-1, sp=0),
     BenchmarkSet("min_speed_kingambit", "Min-Speed Kingambit", 50, "Common mid-slow Trick Room breaker reference", nature=-1, sp=0),
     BenchmarkSet("min_speed_farigiraf", "Min-Speed Farigiraf", 60, "Common Trick Room setter benchmark", nature=-1, sp=0),
     BenchmarkSet("min_speed_sinistcha", "Min-Speed Sinistcha", 70, "Common M-A Trick Room support benchmark", nature=-1, sp=0),

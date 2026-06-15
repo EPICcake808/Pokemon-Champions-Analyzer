@@ -201,7 +201,7 @@ class _FakeProvider:
     """Knows a couple of benchmark entries; everything else raises (skipped gracefully)."""
 
     SPECIES = {
-        "Amoonguss": SpeciesData("Amoonguss", "amoonguss", ("grass", "poison"), 114, 85, 70, 85, 80, 30),
+        "Sinistcha": SpeciesData("Sinistcha", "sinistcha", ("grass", "ghost"), 71, 60, 106, 121, 80, 70),
         "Charizard-Mega-Y": SpeciesData(
             "Charizard-Mega-Y", "charizard-mega-y", ("fire", "flying"), 78, 104, 78, 159, 115, 100
         ),
@@ -237,7 +237,7 @@ class DamageGridTests(unittest.TestCase):
             _move("Dragon Darts", "dragon", "physical", 50),
         )
         grid = build_damage_matchups([(member, moves)], _FakeProvider())
-        self.assertIn("Assault Vest Amoonguss", grid["benchmark_walls"])
+        self.assertIn("Leftovers Sinistcha", grid["benchmark_walls"])
         self.assertIn("Sun Mega Charizard Y Heat Wave", grid["benchmark_attackers"])
         # Unresolved benchmarks (Archaludon, Garchomp, ...) are skipped, not errored.
         self.assertNotIn("Bulky Archaludon", grid["benchmark_walls"])

@@ -515,10 +515,10 @@
               "tie_members": []
             },
             {
-              "slug": "min_speed_amoonguss",
-              "label": "Min-Speed Amoonguss",
+              "slug": "min_speed_snorlax",
+              "label": "Min-Speed Snorlax",
               "target_speed": 45,
-              "source": "Common slow redirection reference",
+              "source": "Common slow Trick Room attacker reference",
               "comparison": "slower",
               "status": "miss",
               "hit_members": [],

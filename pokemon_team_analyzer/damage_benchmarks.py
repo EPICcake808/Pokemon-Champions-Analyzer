@@ -93,14 +93,14 @@ class DamageBenchmark:
 # --- Common bulky walls (outgoing targets) ------------------------------------
 WALL_BENCHMARKS: tuple[DamageBenchmark, ...] = (
     DamageBenchmark(
-        "wall_amoonguss",
-        "Assault Vest Amoonguss",
-        "Amoonguss",
+        "wall_sinistcha",
+        "Leftovers Sinistcha",
+        "Sinistcha",
         "trick_room",
         _Spread(hp=32, spd=32, plus="special_defense", minus="speed"),
-        ability="Regenerator",
-        item="Assault Vest",
-        note="Standard bulky redirection pivot.",
+        ability="Hospitality",
+        item="Leftovers",
+        note="Standard bulky Rage Powder redirection pivot.",
     ),
     DamageBenchmark(
         "wall_archaludon",
@@ -129,7 +129,7 @@ WALL_BENCHMARKS: tuple[DamageBenchmark, ...] = (
         "trick_room",
         _Spread(hp=32, df=20, spd=14, minus="speed"),
         ability="Armor Tail",
-        item="Throat Spray",
+        item="Sitrus Berry",
         note="Common Trick Room setter and special wall.",
     ),
 )
