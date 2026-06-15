@@ -11,7 +11,8 @@ mode on top of this engine). It only depends on :mod:`stats`, :mod:`models`, and
 :mod:`typechart`.
 
 Modeled modifiers: STAB (incl. Adaptability), full type effectiveness, defender
-type-immunity abilities (Levitate, Flash Fire, etc.), weather (sun/rain on Fire/Water),
+type-immunity abilities (Levitate, Flash Fire, etc.), weather (sun/rain on Fire/Water
+offense, plus the sand SpDef boost for Rock and the snow Def boost for Ice defenders),
 spread (doubles 0.75), critical hits, stat stages (with crit stage-ignore rules), burn
 (with Guts), screens (Reflect/Light Screen), the 1.2x type-boost items (Charcoal,
 Mystic Water, Soft Sand, ...), and the common power items/abilities listed in the
@@ -82,6 +83,14 @@ _NO_DAMAGE_EFFECT_ABILITIES = {
     "prankster",
     "unaware",
     "inner focus",
+    # No effect on a single pre-hit damage roll: contact recoil (Rough Skin),
+    # weather-speed (Swift Swim), priority denial (Armor Tail), and the on-drop /
+    # on-switch Attack changes (Defiant, Intimidate) which are fed in via stat stages.
+    "rough skin",
+    "swift swim",
+    "armor tail",
+    "defiant",
+    "intimidate",
 }
 
 # Items recognised by the engine (everything else is treated as no damage effect).
@@ -199,7 +208,7 @@ class Combatant:
 
 @dataclass(frozen=True)
 class FieldConditions:
-    weather: str | None = None  # "sun" | "rain" | None (sand/snow not modeled for damage)
+    weather: str | None = None  # "sun" | "rain" | "sand" | "snow" | None
     spread: bool = False  # doubles spread move splashing multiple targets
     crit: bool = False
     attacker_atk_stage: int = 0  # stage on whichever offensive stat the move uses
@@ -290,6 +299,7 @@ def compute_damage(
     defender_ability = _norm(defender.ability)
     attacker_item = _norm(attacker.item)
     defender_item = _norm(defender.item)
+    weather = _norm(field.weather)
     move_type = move.type_name
     is_physical = move.damage_class == "physical"
 
@@ -355,6 +365,11 @@ def compute_damage(
         defensive_mods.append(_ONE_AND_HALF)
     if defender_item == _EVIOLITE:
         defensive_mods.append(_ONE_AND_HALF)
+    # Sand boosts a Rock defender's SpDef; snow boosts an Ice defender's Def (Gen 9).
+    if not is_physical and weather == "sand" and "rock" in defender.types:
+        defensive_mods.append(_ONE_AND_HALF)
+    if is_physical and weather == "snow" and "ice" in defender.types:
+        defensive_mods.append(_ONE_AND_HALF)
     def_stat = _apply_chain(def_stat, tuple(defensive_mods))
 
     # --- Base damage ---
@@ -365,8 +380,7 @@ def compute_damage(
     if field.spread:
         base = _apply_mod(base, _SPREAD_MOD)
 
-    # Weather on Fire/Water.
-    weather = _norm(field.weather)
+    # Weather on Fire/Water offense (sand/snow defensive boosts are folded into def_stat).
     if weather == "sun":
         if move_type == "fire":
             base = _apply_mod(base, _ONE_AND_HALF)

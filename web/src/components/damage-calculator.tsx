@@ -123,7 +123,7 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
   const [moveName, setMoveName] = useState("");
   const [defenderIndex, setDefenderIndex] = useState(namedMembers.length > 1 ? 1 : 0);
   const [customDefender, setCustomDefender] = useState("");
-  const [weather, setWeather] = useState<"" | "sun" | "rain">("");
+  const [weather, setWeather] = useState<"" | "sun" | "rain" | "sand" | "snow">("");
   const [spread, setSpread] = useState(false);
   const [crit, setCrit] = useState(false);
   const [attackerBurned, setBurned] = useState(false);
@@ -289,12 +289,14 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
             <span>Weather</span>
             <select
               value={weather}
-              onChange={(event) => setWeather(event.target.value as "" | "sun" | "rain")}
+              onChange={(event) => setWeather(event.target.value as "" | "sun" | "rain" | "sand" | "snow")}
               className="border border-[var(--line)] bg-black/20 px-2 py-1 text-sm text-white/85 outline-none focus:border-white/45"
             >
               <option value="" className="bg-[#090b10]">None</option>
               <option value="sun" className="bg-[#090b10]">Sun</option>
               <option value="rain" className="bg-[#090b10]">Rain</option>
+              <option value="sand" className="bg-[#090b10]">Sand</option>
+              <option value="snow" className="bg-[#090b10]">Snow</option>
             </select>
           </label>
           <label className="flex items-center gap-1.5">

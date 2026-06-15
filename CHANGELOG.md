@@ -10,6 +10,7 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 - A continuous-integration workflow (`.github/workflows/ci.yml`) that runs the Python test suite and the web lint, typecheck, and build on every push and pull request, plus a declared `dev` extra (`pip install -e ".[dev]"`) and pytest configuration so the suite has a single documented entry point.
 - The damage engine now models the 1.2x type-boost held items (Charcoal, Mystic Water, Soft Sand, and the rest of the Regulation M-A type-enhancing items) as a base-power modifier, so legal offensive items are scored instead of being reported back as unmodeled (`pokemon_team_analyzer/damage.py`).
+- Sand and snow are now selectable weather conditions in the interactive damage calculator and modeled by the engine: sand grants Rock-type defenders a 1.5x Special Defense boost and snow grants Ice-type defenders a 1.5x Defense boost (`pokemon_team_analyzer/damage.py`, `web/src/components/damage-calculator.tsx`).
 
 ### Changed
 
@@ -19,10 +20,13 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 - Replaced the illegal Choice Band sets in the curated damage grid's "defining nukes" with Regulation M-A-legal type-boost items (Soft Sand Garchomp Earthquake and Rain Mystic Water Basculegion Wave Crash), so every benchmark in the grid is now a legal Champions build; Kingambit's already-legal Black Glasses also now correctly applies its 1.2x boost.
 - Fixed the Basculegion nuke benchmark, which silently never appeared in the grid because the bare "Basculegion" name does not resolve through the data provider; it now uses the canonical "Basculegion (Male)" form.
+- The damage engine now treats Rough Skin, Swift Swim, Armor Tail, Defiant, and Intimidate as having no effect on a single damage roll (recoil, weather speed, priority denial, and Attack changes that are already fed in as stat stages), so the curated grid rows no longer carry spurious "unmodeled" caveats.
 
 ### Repo
 
 - Removed the duplicate sync-artifact files (`* 2.py`, `* 3.py`, and matching test fixtures) that had been committed to the repository alongside their canonical counterparts.
+- Added an MIT `LICENSE` and declared it in `pyproject.toml` and `web/package.json`.
+- Added a Dependabot configuration (`.github/dependabot.yml`) that keeps the Python, npm, and GitHub Actions dependencies updated weekly.
 
 ## [0.4.0] - 2026-06-14
 
