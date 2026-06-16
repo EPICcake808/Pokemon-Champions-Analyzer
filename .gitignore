@@ -11,3 +11,8 @@ dist/
 # Local analysis scratch dumps
 output.json
 result.json
+
+# iCloud Drive / Finder sync-conflict duplicates (e.g. "build 2.py", "data 3.json").
+# This repo lives under ~/Documents, which iCloud syncs; conflicts spawn these copies.
+* [0-9].*
+* [0-9]
