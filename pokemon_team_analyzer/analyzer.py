@@ -3299,11 +3299,17 @@ def infer_matchup_profile(
         # reason, which would render as an unexplained (or one-sided) matchup. Backfill a structural
         # reason so every meaningful matchup states why it leans the way it does (GPT feedback #2).
         if relative_score <= -0.5 and not detail["negatives"]:
-            structural = _structural_matchup_reason(own_archetype, archetype, negative=True)
+            structural = _structural_matchup_reason(
+                own_archetype, archetype, negative=True, base_bias=bias[archetype]
+            )
             detail["negatives"] = [structural]
             detail["failure_condition"] = structural
         elif relative_score >= 0.5 and not detail["positives"]:
-            detail["positives"] = [_structural_matchup_reason(own_archetype, archetype, negative=False)]
+            detail["positives"] = [
+                _structural_matchup_reason(
+                    own_archetype, archetype, negative=False, base_bias=bias[archetype]
+                )
+            ]
     favorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]), reverse=True)
     unfavorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]))
     favorable_matchups = [archetype for archetype, score in favorable_ranked if score > 0][:2]
@@ -3850,20 +3856,61 @@ def _bucket_context_reasons(reasons: list[tuple[float, str]], limit: int = 3) ->
     }
 
 
-def _structural_matchup_reason(own_archetype: str, target_archetype: str, *, negative: bool) -> str:
-    """Explain a matchup whose edge comes from the broad archetype clash itself.
+# What each opposing archetype leans on to win a matchup, keyed by the *target* shell. Used to give
+# the structural fallback a concrete, varied reason in place of one boilerplate sentence repeated
+# across rows, so a genuine archetype disadvantage reads differently per opponent.
+_ARCHETYPE_PRESSURE_TRAIT = {
+    "hyper_offense": "fast, all-in attackers that try to take a side before a slower plan comes online",
+    "bulky_offense": "efficient attackers that trade evenly and keep chipping through switches",
+    "balance": "a flexible spread that answers threats one at a time without overcommitting",
+    "semi_stall": "recovery and pivoting that drag games long and blunt one-shot pressure",
+    "stall": "passive, recovery-heavy cores that outlast offense lacking a way to force progress",
+    "trick_room": "the speed order flipping so their slow, hard hitters move first",
+}
 
-    The base archetype bias can drive a strongly +/- verdict with no contextual reason attached;
-    without this, a -2.5 matchup could render with only mitigation notes (GPT feedback #2).
+
+def _structural_matchup_reason(
+    own_archetype: str,
+    target_archetype: str,
+    *,
+    negative: bool,
+    base_bias: float = 0.0,
+) -> str:
+    """Give a matchup whose edge is purely the archetype clash a concrete reason.
+
+    The base archetype bias can drive a clearly +/- verdict with no contextual reason attached;
+    without a backfill, such a row could render with only mitigation notes (GPT feedback #2).
+
+    ``base_bias`` is the pure archetype-vs-archetype prior (``ARCHETYPE_MATCHUP_BIAS``). The score
+    shown to the user is *relative to the team's own average* across archetypes, so a row can read
+    negative even when the prior is neutral or favorable (the balance mirror, prior 0.0, is the
+    common case). We only call it a base disadvantage when the prior actually is one; otherwise we
+    frame it as relative positioning, so the text never asserts a structural deficit the model does
+    not encode.
     """
     own = own_archetype.replace("_", " ")
     target = target_archetype.replace("_", " ")
     if negative:
+        if base_bias < 0:
+            trait = _ARCHETYPE_PRESSURE_TRAIT.get(target_archetype)
+            if trait:
+                return f"It's a known {own} pain point: {target} leans on {trait}."
+            return f"On archetype alone, {own} tends to give ground to {target}."
+        if own_archetype == target_archetype:
+            return (
+                f"The {own} mirror is one of this team's softer matchups relative to its spread; "
+                f"the clash itself is even, so it comes down to the better-built side."
+            )
         return (
-            f"Structurally, {own} builds tend to give ground to {target} shells, and nothing on this "
-            f"roster fully offsets that base disadvantage."
+            f"A soft spot only relative to the team's spread, not a losing clash: the "
+            f"{own}-vs-{target} matchup itself doesn't favor {target}."
         )
-    return f"Structurally, {own} builds tend to hold the edge into {target} shells."
+    if base_bias > 0:
+        return f"On archetype alone, {own} is favored into {target}."
+    return (
+        f"This is one of the team's better matchups relative to its spread, rather than a lopsided "
+        f"{own}-vs-{target} archetype edge."
+    )
 
 
 # Display labels for the disruptive "tools" that matchup reason strings may cite. Reason
