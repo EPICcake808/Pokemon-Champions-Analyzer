@@ -6,23 +6,46 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-15
+
+A correctness pass over the analyzer's generated guidance and the damage calculator, driven by an
+external review. Most changes tighten or re-word heuristic outputs so they no longer overstate
+mechanics or read as more precise than they are.
+
 ### Added
 
 - A continuous-integration workflow (`.github/workflows/ci.yml`) that runs the Python test suite and the web lint, typecheck, and build on every push and pull request, plus a declared `dev` extra (`pip install -e ".[dev]"`) and pytest configuration so the suite has a single documented entry point.
 - The damage engine now models the 1.2x type-boost held items (Charcoal, Mystic Water, Soft Sand, and the rest of the Regulation M-A type-enhancing items) as a base-power modifier, so legal offensive items are scored instead of being reported back as unmodeled (`pokemon_team_analyzer/damage.py`).
+- Sand and snow are now selectable weather conditions in the interactive damage calculator and modeled by the engine: sand grants Rock-type defenders a 1.5x Special Defense boost and snow grants Ice-type defenders a 1.5x Defense boost (`pokemon_team_analyzer/damage.py`, `web/src/components/damage-calculator.tsx`).
+- Per-section confidence labels: the analysis now emits a `confidence` tier per section (legality and role/move/item reads are high, archetype and mode detection medium, matchup and meta-board scores low) with caveat text, and the web shows a confidence badge on the score-lane and matchup sections so heuristic scores are not read as precise predictions (`pokemon_team_analyzer/models.py`, `web/src/components/analyzer-workspace.tsx`).
+- Offensive coverage is now classified by reliability — hard gap, thin, centralized, or positioning-dependent, with the contributing attacker named — instead of a flat "coverage gap" list, so a type with a real super-effective answer is never reported as a hard gap (`pokemon_team_analyzer/analyzer.py`, `web/src/components/analyzer-workspace.tsx`).
+- The interactive damage calculator now exposes Reflect, Light Screen, and Aurora Veil toggles (the engine already modeled screens) and discloses per-roll assumptions for variable-power and field-dependent moves (Last Respects, Weather Ball, Electro Shot, Low Kick, Heavy Slam, spread, crit, burn, screens, weather) so no variable row is shown as if it were exact (`pokemon_team_analyzer/damage.py`, `web/src/components/damage-calculator.tsx`).
+- A Fairy / Mega Floette defensive-pressure warning fires when no team member resists Fairy, even when the team can hit Fairy super-effectively, since offensive Steel/Poison coverage is not a defensive switch-in (`pokemon_team_analyzer/analyzer.py`).
 
 ### Changed
 
-- Bumped the web app version to 0.4.0 so it matches the analyzer package and the changelog.
+- Bumped the analyzer package and web app to 0.4.1.
+- Matchup explanations are split into "why you have play" and "why this is dangerous" buckets, and a clearly-negative matchup whose edge is purely the archetype clash now carries an explicit structural danger reason instead of only mitigation notes (`pokemon_team_analyzer/analyzer.py`, `web/src/components/analyzer-workspace.tsx`).
+- Support-heavy / board-control teams (screens, redirection, healing, pivots) are no longer mislabeled Hyper Offense; dense support density now reads as bulky offense or balance unless the plan is genuinely fast damage (`pokemon_team_analyzer/analyzer.py`).
+- Choice Scarf attackers are now classified as fast revenge killers / cleaners rather than bulky attackers, since the item is a speed investment, not defensive bulk (`pokemon_team_analyzer/analyzer.py`).
+- Preview watchlists tag each meta Pokemon as a mode setter, abuser, or support piece instead of grouping them all under the mode label (`pokemon_team_analyzer/analyzer.py`).
+- Meta-board rows now headline a concrete opposing anchor and a concrete team tool that answers or fails into it, instead of a generic counterplay line, and surface a per-row form breakdown for families whose forms need different prep (Mega Charizard X vs Y) (`pokemon_team_analyzer/analyzer.py`, `web/src/components/analyzer-workspace.tsx`).
+- Combined team modes (for example Rain Tailwind) are presented as a primary mode with their components demoted to "subtools" rather than listed as duplicate equal labels (`web/src/components/analyzer-workspace.tsx`).
 
 ### Fixed
 
 - Replaced the illegal Choice Band sets in the curated damage grid's "defining nukes" with Regulation M-A-legal type-boost items (Soft Sand Garchomp Earthquake and Rain Mystic Water Basculegion Wave Crash), so every benchmark in the grid is now a legal Champions build; Kingambit's already-legal Black Glasses also now correctly applies its 1.2x boost.
 - Fixed the Basculegion nuke benchmark, which silently never appeared in the grid because the bare "Basculegion" name does not resolve through the data provider; it now uses the canonical "Basculegion (Male)" form.
+- The damage engine now treats Rough Skin, Swift Swim, Armor Tail, Defiant, and Intimidate as having no effect on a single damage roll (recoil, weather speed, priority denial, and Attack changes that are already fed in as stat stages), so the curated grid rows no longer carry spurious "unmodeled" caveats.
+- Wide Guard and Intimidate are no longer described as Trick Room counterplay; Wide Guard is scoped to spread-damage mitigation, and "Trick Room denial" now means only Taunt, Encore, Imprison, your own Trick Room, or Fake Out on the setter (`pokemon_team_analyzer/analyzer.py`).
+- Redirection and healing are described as softening the first Trick Room turn rather than contesting the setup turn, which only genuine denial tools do (`pokemon_team_analyzer/analyzer.py`).
+- A Tailwind counterplay tip no longer suggests Fake Out when no team member runs it (`pokemon_team_analyzer/analyzer.py`).
 
 ### Repo
 
 - Removed the duplicate sync-artifact files (`* 2.py`, `* 3.py`, and matching test fixtures) that had been committed to the repository alongside their canonical counterparts.
+- Added an MIT `LICENSE` and declared it in `pyproject.toml` and `web/package.json`.
+- Added a Dependabot configuration (`.github/dependabot.yml`) that keeps the Python, npm, and GitHub Actions dependencies updated weekly.
 
 ## [0.4.0] - 2026-06-14
 

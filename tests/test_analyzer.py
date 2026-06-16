@@ -7,6 +7,10 @@ import unittest
 from pokemon_team_analyzer.champions_m_a_meta import MODE_LABEL_ORDER
 from pokemon_team_analyzer.analyzer import (
     ContextualMatchupProfile,
+    _annotate_meta_form_breakdowns,
+    _bucket_context_reasons,
+    _meta_row_specific_reason,
+    _watch_pokemon_role,
     _build_snapshot_interaction_summary,
     _build_snapshot_target_matchup_summary,
     _fast_offense_counter_tools,
@@ -36,6 +40,7 @@ from pokemon_team_analyzer.models import (
     WIN_CONDITION_PACKAGE_ORDER,
 )
 from pokemon_team_analyzer.showdown import parse_showdown_team
+from pokemon_team_analyzer.typechart import defensive_multiplier
 
 
 EXAMPLES_DIR = Path(__file__).resolve().parent.parent / "examples"
@@ -1395,7 +1400,11 @@ Ability: Illusion
             {context["slug"] for context in analysis.member_speed_contexts["Basculegion (M)"]},
             {"choice_scarf", "tailwind", "tailwind_choice_scarf"},
         )
-        self.assertEqual(analysis.primary_team_style, "hyper_offense")
+        # This sample is the support-heavy Sableye/Sinistcha/Aerodactyl shell (screens, redirection,
+        # healing, speed control). Its board-control density means it should read as bulky/control,
+        # not Hyper Offense (#1).
+        self.assertNotEqual(analysis.primary_team_style, "hyper_offense")
+        self.assertIn(analysis.primary_team_style, {"balance", "bulky_offense"})
         analysis_dict = analysis.to_dict()
         self.assertIn("team_package_profile", analysis_dict)
         self.assertEqual(analysis_dict["team_package_profile"]["style"]["label"], analysis.primary_team_style)
@@ -1403,7 +1412,8 @@ Ability: Illusion
         self.assertIn("support", analysis.member_roles["Sableye"])
         self.assertIn("physical_sweeper", analysis.member_roles["Basculegion (M)"])
         self.assertIn("cleaner", analysis.member_roles["Basculegion (M)"])
-        self.assertIn("bulky_attacker", analysis.member_roles["Basculegion (M)"])
+        # Choice Scarf is a speed investment, so this is a fast revenge killer, not a bulky attacker (#14).
+        self.assertNotIn("bulky_attacker", analysis.member_roles["Basculegion (M)"])
         self.assertNotIn("speed_control", analysis.member_roles["Basculegion (M)"])
         self.assertAlmostEqual(analysis.defensive_profile["ghost"]["average_multiplier"], 1.3333, places=4)
 
@@ -2044,7 +2054,9 @@ Ability: Illusion
 
         self.assertIn("physical_sweeper", sample_analysis.member_roles["Basculegion (M)"])
         self.assertIn("cleaner", sample_analysis.member_roles["Basculegion (M)"])
-        self.assertIn("bulky_attacker", sample_analysis.member_roles["Basculegion (M)"])
+        # Choice Scarf spends the item on speed, not bulk, so this reads as a fast revenge
+        # killer / cleaner rather than a bulky attacker (#14).
+        self.assertNotIn("bulky_attacker", sample_analysis.member_roles["Basculegion (M)"])
         self.assertNotIn("speed_control", sample_analysis.member_roles["Basculegion (M)"])
         self.assertIn("bulky_support", trick_room_analysis.member_roles["Porygon2"])
         self.assertIn("bulky_attacker", trick_room_analysis.member_roles["Iron Hands"])
@@ -2540,11 +2552,18 @@ class MatchupReasonGatingTests(unittest.TestCase):
         self.assertIn("item control", _screen_counter_tool_labels(with_knock_off))
 
     def test_trick_room_and_setup_tools_gate_on_real_moves(self) -> None:
+        # Intimidate is Trick Room *mitigation*, not denial, so it must not be labeled as anti-Room
+        # counterplay. Same for Wide Guard, which only blunts spread damage under Room.
         intimidate_only = _make_contextual_profile(intimidate_support=1)
-        tr_tools = _trick_room_counter_tool_labels(intimidate_only)
-        self.assertEqual(tr_tools, ["Intimidate"])
+        self.assertEqual(_trick_room_counter_tool_labels(intimidate_only), [])
+        wide_guard_only = _make_contextual_profile(move_counts=Counter({"wide-guard": 1}))
+        self.assertEqual(_trick_room_counter_tool_labels(wide_guard_only), [])
+
+        # Genuine denial (Taunt the setter) is named; unrelated tools are not invented.
+        taunt_only = _make_contextual_profile(move_counts=Counter({"taunt": 1}))
+        tr_tools = _trick_room_counter_tool_labels(taunt_only)
+        self.assertEqual(tr_tools, ["Taunt"])
         self.assertNotIn("Encore", tr_tools)
-        self.assertNotIn("Taunt", tr_tools)
 
         priority_only = _make_contextual_profile(priority_attacks=1)
         setup_tools = _setup_counter_tool_labels(priority_only)
@@ -2566,8 +2585,9 @@ class MatchupReasonGatingTests(unittest.TestCase):
             recovery_loop=2,
         )
         for archetype in ("hyper_offense", "bulky_offense", "balance", "semi_stall", "stall", "trick_room"):
+            # Reasons are signed (impact, text) tuples; gate the text only.
             _, reasons = _score_broad_contextual_matchup(archetype, profile)
-            for reason in reasons:
+            for _, reason in reasons:
                 for tool in self.NAMED_MOVE_TOOLS:
                     self.assertNotIn(
                         tool,
@@ -2581,7 +2601,200 @@ class MatchupReasonGatingTests(unittest.TestCase):
             trick_room_counter_tools=3.0,
         )
         _, reasons = _score_broad_contextual_matchup("trick_room", with_encore)
-        self.assertTrue(any("Encore" in reason for reason in reasons))
+        self.assertTrue(any("Encore" in text for _, text in reasons))
+
+
+class MatchupReasonBucketingTests(unittest.TestCase):
+    """A negative matchup must explain *why* it is negative, not lead with mitigation."""
+
+    def test_buckets_split_by_sign(self) -> None:
+        reasons = [
+            (0.3, "Strong positive play."),
+            (0.1, "Minor positive."),
+            (-0.5, "Primary danger."),
+            (-0.2, "Secondary danger."),
+        ]
+        buckets = _bucket_context_reasons(reasons)
+        self.assertEqual(buckets["positives"], ["Strong positive play.", "Minor positive."])
+        # Negatives are ordered strongest-first, and the failure condition is the strongest negative.
+        self.assertEqual(buckets["negatives"], ["Primary danger.", "Secondary danger."])
+        self.assertEqual(buckets["failure_condition"], "Primary danger.")
+
+    def test_all_positive_has_no_failure_condition(self) -> None:
+        buckets = _bucket_context_reasons([(0.2, "Only upside.")])
+        self.assertEqual(buckets["positives"], ["Only upside."])
+        self.assertEqual(buckets["negatives"], [])
+        self.assertIsNone(buckets["failure_condition"])
+
+    def test_negative_matchup_surfaces_negatives(self) -> None:
+        # A speed-heavy shell into Trick Room: the detail must carry a danger reason.
+        profile = _make_contextual_profile(fast_members=4, slow_members=0)
+        _, reasons = _score_broad_contextual_matchup("trick_room", profile)
+        buckets = _bucket_context_reasons(reasons)
+        self.assertTrue(buckets["negatives"], msg="negative Trick Room matchup must explain the danger")
+
+    def test_clearly_negative_matchup_always_explains_the_danger(self) -> None:
+        # End to end: even when the edge is purely the archetype clash (no contextual reason),
+        # a clearly-negative matchup must still surface a "why dangerous" line and failure condition.
+        analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+        for archetype, detail in analysis.matchup_details.items():
+            if detail["score"] <= -0.5:
+                self.assertTrue(
+                    detail["negatives"],
+                    msg=f"{archetype} scored {detail['score']} with no 'why dangerous' reason",
+                )
+                self.assertIsNotNone(detail["failure_condition"])
+
+
+class FairyDefensivePressureTests(unittest.TestCase):
+    """No Fairy resist must be flagged even when the team can hit Fairy offensively (#9)."""
+
+    # Sableye/Aerodactyl/Basculegion/Sinistcha: dark, ghost, water, rock, flying, grass — none
+    # resist Fairy (only Steel/Fire/Poison do), and there is no Steel/Poison member here.
+    FAIRY_HOLE_TEAM = """Sableye @ Roseli Berry
+Ability: Prankster
+Level: 50
+- Rain Dance
+- Quash
+- Light Screen
+- Reflect
+
+Aerodactyl @ Focus Sash
+Ability: Unnerve
+Level: 50
+- Rock Slide
+- Tailwind
+- Dual Wingbeat
+- Wide Guard
+
+Basculegion (M) @ Choice Scarf
+Ability: Adaptability
+Level: 50
+- Last Respects
+- Aqua Jet
+- Wave Crash
+- Psychic Fangs
+
+Sinistcha @ Sitrus Berry
+Ability: Hospitality
+Level: 50
+- Matcha Gotcha
+- Rage Powder
+- Life Dew
+- Protect
+"""
+
+    def test_no_fairy_resist_is_flagged(self) -> None:
+        analysis = analyze_team_text(self.FAIRY_HOLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+        self.assertTrue(
+            any("No member resists Fairy" in note for note in analysis.beginner_guidance_notes),
+            msg="a team with zero Fairy resists must be warned about Fairy/Mega Floette pressure",
+        )
+
+    def test_resist_detection_is_net_typing_not_just_steel_tag(self) -> None:
+        # The warning keys off a *net* Fairy resist, not the presence of a Steel tag: Steel/Dragon and
+        # Fighting/Steel are neutral to Fairy (Dragon/Fighting are weak to it), while a clean Steel,
+        # Steel/Ground, or Grass/Poison body genuinely resists. SAMPLE_TEAM (Lucario + Archaludon)
+        # therefore really does have zero Fairy resists, just as GPT flagged.
+        self.assertEqual(defensive_multiplier(("steel", "dragon"), "fairy"), 1.0)
+        self.assertEqual(defensive_multiplier(("fighting", "steel"), "fairy"), 1.0)
+        self.assertLess(defensive_multiplier(("steel",), "fairy"), 1.0)
+        self.assertLess(defensive_multiplier(("grass", "poison"), "fairy"), 1.0)
+
+        analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+        self.assertTrue(
+            any("No member resists Fairy" in note for note in analysis.beginner_guidance_notes),
+            msg="Lucario + Archaludon are both neutral to Fairy, so the hole must still be flagged",
+        )
+
+
+class MetaRowSpecificReasonTests(unittest.TestCase):
+    """Each board matchup names a concrete opposing threat and a concrete team tool (#8)."""
+
+    def test_favorable_row_names_threat_and_present_tool(self) -> None:
+        profile = _make_contextual_profile(move_counts=Counter({"fake-out": 1}), priority_attacks=1)
+        reason = _meta_row_specific_reason(["Pelipper", "Archaludon"], profile, 0.4)
+        assert reason is not None
+        self.assertIn("Pelipper", reason)  # specific opposing threat
+        self.assertIn("Fake Out", reason)  # specific team tool that is actually present
+
+    def test_unfavorable_row_with_no_tools_states_the_gap(self) -> None:
+        profile = _make_contextual_profile()
+        reason = _meta_row_specific_reason(["Whimsicott"], profile, -0.3)
+        assert reason is not None
+        self.assertIn("Whimsicott", reason)
+        self.assertIn("no dedicated tool", reason)
+
+    def test_does_not_invent_absent_tools(self) -> None:
+        # Only priority is present; the reason must not name Fake Out / Wide Guard / etc.
+        profile = _make_contextual_profile(priority_attacks=1)
+        reason = _meta_row_specific_reason(["Pelipper"], profile, 0.4)
+        assert reason is not None
+        for absent in ("Fake Out", "Wide Guard", "Encore", "Taunt"):
+            self.assertNotIn(absent, reason)
+
+
+class MetaFormBreakdownTests(unittest.TestCase):
+    """Divergent families (Charizard X/Y) are split for matchup prep (#7)."""
+
+    def test_charizard_row_lists_both_forms(self) -> None:
+        for species in ("Charizard", "Mega Charizard Y", "Mega Charizard X"):
+            rows = _annotate_meta_form_breakdowns([{"species": species}])
+            forms = {form["form"] for form in rows[0]["form_breakdown"]}
+            self.assertEqual(forms, {"Mega Charizard Y", "Mega Charizard X"})
+
+    def test_non_divergent_species_has_no_breakdown(self) -> None:
+        rows = _annotate_meta_form_breakdowns([{"species": "Garchomp"}])
+        self.assertNotIn("form_breakdown", rows[0])
+
+
+class WatchPokemonRoleTests(unittest.TestCase):
+    """Watchlists distinguish mode setters, abusers, and support pieces (#5)."""
+
+    def test_trick_room_roles_are_distinguished(self) -> None:
+        # GPT's example: these four were all lumped under "Trick Room".
+        self.assertEqual(_watch_pokemon_role("farigiraf", "trick_room"), "setter")
+        self.assertEqual(_watch_pokemon_role("hatterene", "trick_room"), "setter")
+        self.assertEqual(_watch_pokemon_role("incineroar", "trick_room"), "support")
+        self.assertEqual(_watch_pokemon_role("torkoal", "trick_room"), "abuser")
+        self.assertEqual(_watch_pokemon_role("aegislash", "trick_room"), "abuser")
+
+    def test_combined_modes_inherit_setters_from_each_mechanic(self) -> None:
+        # Pelipper sets rain even inside rain_room; Torkoal sets sun inside sun_room.
+        self.assertEqual(_watch_pokemon_role("pelipper", "rain_room"), "setter")
+        self.assertEqual(_watch_pokemon_role("torkoal", "sun_room"), "setter")
+        # But Torkoal does not set Trick Room itself in a pure room.
+        self.assertEqual(_watch_pokemon_role("torkoal", "trick_room"), "abuser")
+
+
+class ChoiceScarfRoleTests(unittest.TestCase):
+    """Choice Scarf users read as fast revenge killers, not bulky attackers (#14)."""
+
+    def test_scarf_basculegion_is_cleaner_not_bulky_attacker(self) -> None:
+        analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+        roles = analysis.member_roles["Basculegion (M)"]
+        self.assertIn("cleaner", roles)
+        self.assertNotIn(
+            "bulky_attacker",
+            roles,
+            msg="a Choice Scarf set is a speed investment, not a bulky attacker",
+        )
+
+
+class CoverageQualityTests(unittest.TestCase):
+    """Coverage is classified by reliability (#6): valid answers are never called hard gaps."""
+
+    def test_coverage_quality_classifies_and_attributes(self) -> None:
+        analysis = analyze_team_text(SAMPLE_TEAM, metadata_provider=FakeMetadataProvider(), regulation_id=None)
+        valid = {"hard_gap", "thin", "centralized", "positioning_dependent"}
+        self.assertIsInstance(analysis.coverage_quality, list)
+        for entry in analysis.coverage_quality:
+            self.assertIn(entry["quality"], valid)
+            if entry["quality"] == "hard_gap":
+                self.assertEqual(entry["super_effective_lines"], 0)
+            else:
+                # A type with a real answer must name the attacker(s) that supply it.
+                self.assertTrue(entry["contributors"], msg=f"{entry} claims coverage but names no attacker")
 
 
 if __name__ == "__main__":

@@ -276,6 +276,25 @@ export interface MatchupDetail {
   contextual_adjustment: number;
   score: number;
   reasons: string[];
+  positives?: string[];
+  negatives?: string[];
+  failure_condition?: string | null;
+}
+
+export type ConfidenceTier = "high" | "medium" | "low" | "very_low";
+
+export type CoverageQuality =
+  | "hard_gap"
+  | "thin"
+  | "centralized"
+  | "positioning_dependent";
+
+export interface CoverageQualityEntry {
+  type: string;
+  quality: CoverageQuality;
+  super_effective_lines: number;
+  best_multiplier: number;
+  contributors: string[];
 }
 
 export interface MetaProvenanceSource {
@@ -312,6 +331,7 @@ export interface MetaAnalysis {
     why_used: string;
     what_it_does: string;
     featured_teams: string[];
+    form_breakdown?: Array<{ form: string; plan: string }>;
   }>;
   notes: string[];
   provenance?: MetaProvenance;
@@ -331,6 +351,7 @@ export interface DamageMatchupRow {
   possible_ohko: boolean;
   guaranteed_2hko: boolean;
   unmodeled: string[];
+  assumptions?: string[];
   // The build assumed for the curated (benchmark) side of this row.
   benchmark_set: string;
 }
@@ -363,6 +384,7 @@ export interface DamageRollResult {
   guaranteed_ko_hits: number | null;
   summary: string;
   unmodeled: string[];
+  assumptions?: string[];
 }
 
 export interface DamageCalcSide {
@@ -503,6 +525,9 @@ export interface PokemonTeamAnalysis {
     }
   >;
   coverage_gaps: string[];
+  coverage_quality?: CoverageQualityEntry[];
+  confidence?: Record<string, ConfidenceTier>;
+  confidence_tiers?: Record<string, string>;
   speed_profile: SpeedProfile;
   damage_split: {
     physical: number;

@@ -11,7 +11,8 @@ mode on top of this engine). It only depends on :mod:`stats`, :mod:`models`, and
 :mod:`typechart`.
 
 Modeled modifiers: STAB (incl. Adaptability), full type effectiveness, defender
-type-immunity abilities (Levitate, Flash Fire, etc.), weather (sun/rain on Fire/Water),
+type-immunity abilities (Levitate, Flash Fire, etc.), weather (sun/rain on Fire/Water
+offense, plus the sand SpDef boost for Rock and the snow Def boost for Ice defenders),
 spread (doubles 0.75), critical hits, stat stages (with crit stage-ignore rules), burn
 (with Guts), screens (Reflect/Light Screen), the 1.2x type-boost items (Charcoal,
 Mystic Water, Soft Sand, ...), and the common power items/abilities listed in the
@@ -82,6 +83,14 @@ _NO_DAMAGE_EFFECT_ABILITIES = {
     "prankster",
     "unaware",
     "inner focus",
+    # No effect on a single pre-hit damage roll: contact recoil (Rough Skin),
+    # weather-speed (Swift Swim), priority denial (Armor Tail), and the on-drop /
+    # on-switch Attack changes (Defiant, Intimidate) which are fed in via stat stages.
+    "rough skin",
+    "swift swim",
+    "armor tail",
+    "defiant",
+    "intimidate",
 }
 
 # Items recognised by the engine (everything else is treated as no damage effect).
@@ -199,7 +208,7 @@ class Combatant:
 
 @dataclass(frozen=True)
 class FieldConditions:
-    weather: str | None = None  # "sun" | "rain" | None (sand/snow not modeled for damage)
+    weather: str | None = None  # "sun" | "rain" | "sand" | "snow" | None
     spread: bool = False  # doubles spread move splashing multiple targets
     crit: bool = False
     attacker_atk_stage: int = 0  # stage on whichever offensive stat the move uses
@@ -230,6 +239,7 @@ class DamageResult:
     guaranteed_ko_hits: int | None
     summary: str
     unmodeled: tuple[str, ...] = field(default_factory=tuple)
+    assumptions: tuple[str, ...] = field(default_factory=tuple)
 
 
 def _norm(name: str | None) -> str:
@@ -267,6 +277,27 @@ def _ohko_chance(result_min: int, result_max: int, hp: int) -> float:
     return above / 16
 
 
+# Moves whose printed base power stands in for a value that depends on battle state the single-roll
+# engine cannot see (fainted allies, weight, boosts, weather, held item, ...). We surface the
+# assumption next to the roll so a variable-power row is never presented as if it were exact (#11).
+# ``{power}`` is filled with the base power the engine actually used.
+_VARIABLE_POWER_MOVES: dict[str, str] = {
+    "last-respects": "Last Respects scales with fainted allies (50 BP +50 each); calculated at {power} BP.",
+    "weather-ball": "Weather Ball doubles and changes type in weather; calculated at {power} BP with no weather adjustment unless one is set.",
+    "electro-shot": "Electro Shot normally charges a turn (rain skips it); calculated as if it fires this turn at {power} BP.",
+    "low-kick": "Low Kick scales with the target's weight; calculated at {power} BP.",
+    "grass-knot": "Grass Knot scales with the target's weight; calculated at {power} BP.",
+    "heavy-slam": "Heavy Slam scales with the attacker/defender weight ratio; calculated at {power} BP.",
+    "heat-crash": "Heat Crash scales with the attacker/defender weight ratio; calculated at {power} BP.",
+    "stored-power": "Stored Power gains 20 BP per stat boost; calculated at {power} BP (no boosts).",
+    "power-trip": "Power Trip gains 20 BP per stat boost; calculated at {power} BP (no boosts).",
+    "rage-fist": "Rage Fist gains 50 BP per hit taken; calculated at {power} BP (no hits taken).",
+    "acrobatics": "Acrobatics doubles to 110 BP with no held item; calculated at {power} BP as listed.",
+    "facade": "Facade doubles when the user is statused; calculated at {power} BP (no status).",
+    "hex": "Hex doubles against a statused target; calculated at {power} BP (target not statused).",
+}
+
+
 def compute_damage(
     attacker: Combatant,
     defender: Combatant,
@@ -290,6 +321,7 @@ def compute_damage(
     defender_ability = _norm(defender.ability)
     attacker_item = _norm(attacker.item)
     defender_item = _norm(defender.item)
+    weather = _norm(field.weather)
     move_type = move.type_name
     is_physical = move.damage_class == "physical"
 
@@ -355,6 +387,11 @@ def compute_damage(
         defensive_mods.append(_ONE_AND_HALF)
     if defender_item == _EVIOLITE:
         defensive_mods.append(_ONE_AND_HALF)
+    # Sand boosts a Rock defender's SpDef; snow boosts an Ice defender's Def (Gen 9).
+    if not is_physical and weather == "sand" and "rock" in defender.types:
+        defensive_mods.append(_ONE_AND_HALF)
+    if is_physical and weather == "snow" and "ice" in defender.types:
+        defensive_mods.append(_ONE_AND_HALF)
     def_stat = _apply_chain(def_stat, tuple(defensive_mods))
 
     # --- Base damage ---
@@ -365,8 +402,7 @@ def compute_damage(
     if field.spread:
         base = _apply_mod(base, _SPREAD_MOD)
 
-    # Weather on Fire/Water.
-    weather = _norm(field.weather)
+    # Weather on Fire/Water offense (sand/snow defensive boosts are folded into def_stat).
     if weather == "sun":
         if move_type == "fire":
             base = _apply_mod(base, _ONE_AND_HALF)
@@ -437,6 +473,25 @@ def compute_damage(
     max_damage = max(rolls_t)
     hp = defender.hp
 
+    # Surface the assumptions behind any variable-power or field-dependent number (#11), so a row is
+    # never shown as exact when it actually depends on state this single roll cannot see.
+    assumptions: list[str] = []
+    variable_note = _VARIABLE_POWER_MOVES.get(move.api_name)
+    if variable_note:
+        assumptions.append(variable_note.format(power=power))
+    if field.spread:
+        assumptions.append("Spread move: base damage ×0.75 (move hits multiple targets).")
+    if field.crit:
+        assumptions.append("Critical hit: ×1.5 and ignores screens and the defender's positive defense boosts.")
+    if is_burned:
+        assumptions.append("Attacker burned: physical damage halved.")
+    if weather in ("sun", "rain") and move_type in ("fire", "water"):
+        assumptions.append(f"{weather.title()}: {move_type.title()} damage adjusted (×1.5 boosted / ×0.5 weakened).")
+    if not field.crit and is_physical and field.reflect:
+        assumptions.append("Reflect: physical damage ×0.5 (×0.667 in doubles).")
+    if not field.crit and not is_physical and field.light_screen:
+        assumptions.append("Light Screen: special damage ×0.5 (×0.667 in doubles).")
+
     # Surface ability/item factors we did not model so the UI can flag them.
     if attacker_ability and attacker_ability not in _modeled_attacker_abilities():
         unmodeled.append(f"attacker ability {attacker.ability}")
@@ -467,6 +522,7 @@ def compute_damage(
         guaranteed_ko_hits=_ko_hits(min_damage, hp),
         summary=_ko_summary(min_damage, max_damage, hp),
         unmodeled=tuple(dict.fromkeys(unmodeled)),
+        assumptions=tuple(dict.fromkeys(assumptions)),
     )
 
 

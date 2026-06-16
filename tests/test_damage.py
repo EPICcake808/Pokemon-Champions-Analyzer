@@ -177,6 +177,61 @@ class DamageFormulaTests(unittest.TestCase):
         self.assertEqual(result.summary, "Guaranteed OHKO")
 
 
+class SandSnowDefensiveBoostTests(unittest.TestCase):
+    """Sand gives Rock defenders 1.5x SpDef; snow gives Ice defenders 1.5x Def (Gen 9)."""
+
+    # Psychic is neutral on Rock; Normal is neutral on Ice -- keeps type_eff at 1.0 with no STAB.
+    SPECIAL_MOVE = _move("Test Beam", "psychic", "special", 100)
+    PHYSICAL_MOVE = _move("Test Strike", "normal", "physical", 100)
+
+    def test_sand_boosts_rock_special_defense(self):
+        rock = _defender(types=("rock",))
+        baseline = compute_damage(_attacker(), rock, self.SPECIAL_MOVE)
+        sand = compute_damage(_attacker(), rock, self.SPECIAL_MOVE, FieldConditions(weather="sand"))
+        assert baseline is not None and sand is not None
+        # SpDef 100 -> 150, so base drops from 90 (76..90) to 60 (51..60).
+        self.assertEqual((baseline.min_damage, baseline.max_damage), (76, 90))
+        self.assertEqual((sand.min_damage, sand.max_damage), (51, 60))
+
+    def test_sand_does_not_boost_physical_or_non_rock(self):
+        # Sand only touches SpDef, so a physical hit is unchanged...
+        rock_physical = compute_damage(
+            _attacker(types=("bug",)), _defender(types=("rock",)), self.PHYSICAL_MOVE,
+            FieldConditions(weather="sand"),
+        )
+        baseline_physical = compute_damage(
+            _attacker(types=("bug",)), _defender(types=("rock",)), self.PHYSICAL_MOVE,
+        )
+        assert rock_physical is not None and baseline_physical is not None
+        self.assertEqual(rock_physical.max_damage, baseline_physical.max_damage)
+        # ...and a non-Rock special target gets nothing either.
+        non_rock = compute_damage(
+            _attacker(), _defender(types=("normal",)), self.SPECIAL_MOVE,
+            FieldConditions(weather="sand"),
+        )
+        assert non_rock is not None
+        self.assertEqual(non_rock.max_damage, 90)
+
+    def test_snow_boosts_ice_defense(self):
+        ice = _defender(types=("ice",))
+        baseline = compute_damage(_attacker(types=("bug",)), ice, self.PHYSICAL_MOVE)
+        snow = compute_damage(
+            _attacker(types=("bug",)), ice, self.PHYSICAL_MOVE, FieldConditions(weather="snow"),
+        )
+        assert baseline is not None and snow is not None
+        # Def 100 -> 150, so base drops from 90 (76..90) to 60 (51..60).
+        self.assertEqual((baseline.min_damage, baseline.max_damage), (76, 90))
+        self.assertEqual((snow.min_damage, snow.max_damage), (51, 60))
+
+    def test_snow_does_not_boost_special_or_non_ice(self):
+        ice_special = compute_damage(
+            _attacker(), _defender(types=("ice",)), self.SPECIAL_MOVE,
+            FieldConditions(weather="snow"),
+        )
+        assert ice_special is not None
+        self.assertEqual(ice_special.max_damage, 90)
+
+
 class SunHeatWaveSurvivalTests(unittest.TestCase):
     """The headline example: a bulky Steel/Dragon survives a sun-boosted spread Heat Wave."""
 
@@ -264,6 +319,45 @@ class DamageGridTests(unittest.TestCase):
         self.assertNotIn("Bulky Archaludon", grid["benchmark_walls"])
         self.assertTrue(grid["outgoing"])
         self.assertTrue(grid["incoming"])
+
+
+class AssumptionDisclosureTests(unittest.TestCase):
+    """Variable-power and field-dependent rolls must disclose their assumptions (#11)."""
+
+    def test_variable_power_move_discloses_assumption(self):
+        last_respects = _move("Last Respects", "ghost", "physical", 50)
+        result = compute_damage(_attacker(types=("ghost",)), _defender(), last_respects)
+        assert result is not None
+        self.assertTrue(
+            any("Last Respects" in note and "50 BP" in note for note in result.assumptions),
+            msg=f"expected a Last Respects BP assumption, got {result.assumptions}",
+        )
+
+    def test_field_conditions_are_disclosed(self):
+        move = _move("Test Strike", "normal", "physical", 100)
+        field = FieldConditions(spread=True, crit=True, attacker_burned=True)
+        result = compute_damage(_attacker(types=("bug",)), _defender(), move, field)
+        assert result is not None
+        joined = " ".join(result.assumptions)
+        self.assertIn("Spread move", joined)
+        self.assertIn("Critical hit", joined)
+        self.assertIn("burned", joined)
+
+    def test_exact_move_has_no_spurious_assumptions(self):
+        move = _move("Test Strike", "normal", "physical", 100)
+        result = compute_damage(_attacker(types=("bug",)), _defender(), move)
+        assert result is not None
+        self.assertEqual(result.assumptions, ())
+
+    def test_light_screen_reduces_special_and_is_disclosed(self):
+        move = _move("Test Beam", "normal", "special", 100)
+        plain = compute_damage(_attacker(types=("bug",)), _defender(), move)
+        screened = compute_damage(
+            _attacker(types=("bug",)), _defender(), move, FieldConditions(light_screen=True)
+        )
+        assert plain is not None and screened is not None
+        self.assertLess(screened.max_damage, plain.max_damage)
+        self.assertTrue(any("Light Screen" in note for note in screened.assumptions))
 
 
 if __name__ == "__main__":

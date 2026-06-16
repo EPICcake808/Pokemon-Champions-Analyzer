@@ -261,6 +261,7 @@ def _damage_payload(result, attacker: str, defender: str, move: str, benchmark_s
         "possible_ohko": result.possible_ohko,
         "guaranteed_2hko": result.guaranteed_2hko,
         "unmodeled": list(result.unmodeled),
+        "assumptions": list(result.assumptions),
         # The build assumed for the curated (benchmark) side of this row.
         "benchmark_set": benchmark_set,
     }

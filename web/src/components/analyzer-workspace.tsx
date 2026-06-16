@@ -23,6 +23,9 @@ import type {
   BenchmarkTag,
   BuilderMoveDetails,
   BuilderSpeciesOptions,
+  ConfidenceTier,
+  CoverageQuality,
+  CoverageQualityEntry,
   EffortValueStat,
   ExampleTeam,
   MemberStatBlock,
@@ -920,6 +923,14 @@ export function AnalyzerWorkspace({
   const coverageGapNotes = TYPE_ORDER.filter((typeName) => coverageGapSet.has(typeName)).map((typeName) =>
     describeCoverageGap(typeName, targetCoverage[typeName]),
   );
+  // Prefer the reliability-tiered classification (hard gap vs thin/centralized/positioning) when
+  // the backend provides it; fall back to the legacy flat gap notes for older payloads.
+  const coverageQualityNotes = analysis.coverage_quality
+    ? analysis.coverage_quality.map(describeCoverageQuality)
+    : coverageGapNotes;
+  const archetypeConfidence = analysis.confidence?.archetype;
+  const matchupConfidence = analysis.confidence?.matchup;
+  const confidenceCaveat = (tier?: ConfidenceTier) => (tier ? analysis.confidence_tiers?.[tier] : undefined);
   const utilityRows = rankedBreakdownRows(analysis.utility_breakdown, 7);
   const roleRows = rankedBreakdownRows(analysis.pokemon_role_breakdown, 7);
   const defensiveRows = TYPE_ORDER.map((label) => {
@@ -955,9 +966,10 @@ export function AnalyzerWorkspace({
   const previewPlans = analysis.team_preview.bring_plans;
   const activePreviewPlan = previewPlans.find((plan) => plan.label === selectedPreviewPlanLabel) ?? previewPlans[0] ?? null;
   const teamStyleLabel = formatLabel(analysis.team_package_profile.style.label);
-  const modePackageLabel = analysis.team_package_profile.modes.labels.length
-    ? analysis.team_package_profile.modes.labels.map(formatLabel).join(" / ")
-    : "No dominant mode package";
+  const modePackageLabel = formatModePackageLabel(
+    analysis.team_package_profile.modes.labels,
+    "No dominant mode package",
+  );
   const winConditionLabel = analysis.team_package_profile.win_conditions.labels.length
     ? analysis.team_package_profile.win_conditions.labels.map(formatLabel).join(" / ")
     : "No clear endgame plan";
@@ -1553,6 +1565,12 @@ export function AnalyzerWorkspace({
 
           <div className="space-y-6 border-t border-[var(--line)] pt-6 lg:border-t-0 lg:border-l lg:border-[var(--line)] lg:pl-8 lg:pt-0">
             <SectionHeading eyebrow="Score lanes" title="Broad pressure and package reads" />
+            {archetypeConfidence ? (
+              <p className="flex flex-wrap items-center gap-2 text-xs leading-5 text-white/45">
+                <ConfidenceBadge tier={archetypeConfidence} caveat={confidenceCaveat(archetypeConfidence)} />
+                <span>{confidenceCaveat(archetypeConfidence)}</span>
+              </p>
+            ) : null}
             <p className="max-w-2xl text-sm leading-6 text-[var(--fg-muted)]">
               These score rails summarize broad pressure, package identity, and endgame plans before the detailed
               charts below.
@@ -1609,6 +1627,12 @@ export function AnalyzerWorkspace({
 
           <div className="min-w-0 space-y-6">
             <SectionHeading eyebrow="Matchup outlook" title="Pressure and liabilities" />
+            {matchupConfidence ? (
+              <p className="flex flex-wrap items-center gap-2 text-xs leading-5 text-white/45">
+                <ConfidenceBadge tier={matchupConfidence} caveat={confidenceCaveat(matchupConfidence)} />
+                <span>{confidenceCaveat(matchupConfidence)}</span>
+              </p>
+            ) : null}
             <DivergingBars
               heading="Broad archetype profile"
               rows={matchupRows}
@@ -1801,8 +1825,12 @@ export function AnalyzerWorkspace({
               accentResolver={(label) => TYPE_ACCENTS[label] ?? "var(--accent)"}
             />
             <PlainList
-              heading="Coverage gaps"
-              values={coverageGapNotes.length ? coverageGapNotes : ["No clear type coverage gaps detected."]}
+              heading="Coverage quality"
+              values={
+                coverageQualityNotes.length
+                  ? coverageQualityNotes
+                  : ["Super-effective answers are spread across multiple attackers — no meaningful coverage gaps."]
+              }
             />
             <BarLedger
               heading="Defensive exposure"
@@ -2502,9 +2530,10 @@ function TeamBuilderEditor({
 
 function MetricRail({ analysis }: { analysis: PokemonTeamAnalysis }) {
   const styleLabel = formatLabel(analysis.team_package_profile.style.label);
-  const modePackageLabel = analysis.team_package_profile.modes.labels.length
-    ? analysis.team_package_profile.modes.labels.map(formatLabel).join(" / ")
-    : "No dominant mode package";
+  const modePackageLabel = formatModePackageLabel(
+    analysis.team_package_profile.modes.labels,
+    "No dominant mode package",
+  );
   const winConditionLabel = analysis.team_package_profile.win_conditions.labels.length
     ? analysis.team_package_profile.win_conditions.labels.map(formatLabel).join(" / ")
     : "No clear endgame plan";
@@ -2809,6 +2838,18 @@ function MetaCommonPokemonBoard({
               <p className="mt-3 border-t border-[var(--line)] pt-3 text-sm leading-6 text-white/52">
                 <span className="text-white/34">Common shells:</span> {row.featured_teams.join(" / ")}
               </p>
+            ) : null}
+            {row.form_breakdown?.length ? (
+              <div className="mt-3 border-t border-[var(--line)] pt-3 text-sm leading-6 text-white/60">
+                <span className="text-white/34">Forms to prep separately:</span>
+                <ul className="mt-1 space-y-1">
+                  {row.form_breakdown.map((form) => (
+                    <li key={form.form}>
+                      <span className="text-white/78">{form.form}:</span> {form.plan}
+                    </li>
+                  ))}
+                </ul>
+              </div>
             ) : null}
           </article>
         ))}
@@ -3145,7 +3186,7 @@ function DivergingBars({
   negativeColor,
 }: {
   heading: string;
-  rows: Array<{ label: string; value: number; note?: string }>;
+  rows: Array<{ label: string; value: number; note?: string; positives?: string[]; negatives?: string[] }>;
   positiveColor: string;
   negativeColor: string;
 }) {
@@ -3166,7 +3207,22 @@ function DivergingBars({
                 <span>{formatLabel(row.label)}</span>
                 <span className="font-mono text-xs text-white/45">{row.value.toFixed(2)}</span>
               </div>
-              {row.note ? <p className="text-xs leading-5 text-white/42">{row.note}</p> : null}
+              {row.positives?.length || row.negatives?.length ? (
+                <div className="space-y-1 text-xs leading-5">
+                  {row.positives?.length ? (
+                    <p className="text-white/55">
+                      <span style={{ color: positiveColor }}>Why you have play:</span> {row.positives.join(" ")}
+                    </p>
+                  ) : null}
+                  {row.negatives?.length ? (
+                    <p className="text-white/55">
+                      <span style={{ color: negativeColor }}>Why it&apos;s dangerous:</span> {row.negatives.join(" ")}
+                    </p>
+                  ) : null}
+                </div>
+              ) : row.note ? (
+                <p className="text-xs leading-5 text-white/42">{row.note}</p>
+              ) : null}
               <div className="relative h-px bg-[var(--line)]">
                 <div className="absolute inset-y-[-6px] left-1/2 w-px bg-white/20" />
                 {positive ? (
@@ -3667,14 +3723,22 @@ function rankedBreakdownRows(values: Record<string, { count: number; moves?: str
 
 function scoreRows(
   values: Record<string, number>,
-  details?: Record<string, { reasons?: string[] }>,
+  details?: Record<
+    string,
+    { reasons?: string[]; positives?: string[]; negatives?: string[]; failure_condition?: string | null }
+  >,
 ) {
   return Object.entries(values)
-    .map(([label, value]) => ({
-      label,
-      value,
-      note: details?.[label]?.reasons?.[0],
-    }))
+    .map(([label, value]) => {
+      const detail = details?.[label];
+      return {
+        label,
+        value,
+        note: detail?.reasons?.[0],
+        positives: detail?.positives,
+        negatives: detail?.negatives,
+      };
+    })
     .sort((left, right) => right.value - left.value);
 }
 
@@ -4263,6 +4327,97 @@ function buildMoveDetailNotes(details: BuilderMoveDetails) {
   }
 
   return notes;
+}
+
+// Combined team modes already imply their component modes, so listing both reads as a duplicate
+// ("Rain / Tailwind / Rain Tailwind"). Map each combined mode to its parts so we can present the
+// combined mode as primary and demote its components to "subtools" (#15).
+const COMBINED_MODE_COMPONENTS: Record<string, string[]> = {
+  rain_tailwind: ["rain", "tailwind"],
+  sun_tailwind: ["sun", "tailwind"],
+  sand_tailwind: ["sand", "tailwind"],
+  snow_tailwind: ["snow", "tailwind"],
+  rain_room: ["rain", "trick_room"],
+  sun_room: ["sun", "trick_room"],
+  sand_room: ["sand", "trick_room"],
+  snow_room: ["snow", "trick_room"],
+  tailroom: ["tailwind", "trick_room"],
+  rain_tailroom: ["rain", "tailwind", "trick_room"],
+  sun_tailroom: ["sun", "tailwind", "trick_room"],
+  dual_mode: ["tailwind", "trick_room"],
+};
+
+function formatModePackageLabel(labels: string[], emptyText: string): string {
+  if (!labels.length) {
+    return emptyText;
+  }
+  const components = new Set<string>();
+  for (const label of labels) {
+    for (const part of COMBINED_MODE_COMPONENTS[label] ?? []) {
+      components.add(part);
+    }
+  }
+  const primary = labels.filter((label) => !components.has(label));
+  const subtools = labels.filter((label) => components.has(label));
+  if (!primary.length) {
+    return labels.map(formatLabel).join(" / ");
+  }
+  const head = primary.map(formatLabel).join(" / ");
+  return subtools.length ? `${head} · Subtools: ${subtools.map(formatLabel).join(", ")}` : head;
+}
+
+const CONFIDENCE_LABEL: Record<ConfidenceTier, string> = {
+  high: "High confidence",
+  medium: "Medium confidence",
+  low: "Low confidence",
+  very_low: "Very low confidence",
+};
+
+const CONFIDENCE_COLOR: Record<ConfidenceTier, string> = {
+  high: "var(--positive)",
+  medium: "var(--accent)",
+  low: "var(--negative)",
+  very_low: "var(--negative)",
+};
+
+function ConfidenceBadge({ tier, caveat }: { tier?: ConfidenceTier; caveat?: string }) {
+  if (!tier) {
+    return null;
+  }
+  return (
+    <span
+      className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-[0.6rem] font-medium uppercase tracking-[0.18em]"
+      style={{ borderColor: CONFIDENCE_COLOR[tier], color: CONFIDENCE_COLOR[tier] }}
+      title={caveat}
+    >
+      {CONFIDENCE_LABEL[tier]}
+    </span>
+  );
+}
+
+const COVERAGE_QUALITY_LABEL: Record<CoverageQuality, string> = {
+  hard_gap: "Hard gap",
+  thin: "Thin coverage",
+  centralized: "Centralized coverage",
+  positioning_dependent: "Positioning-dependent",
+};
+
+function describeCoverageQuality(entry: CoverageQualityEntry): string {
+  const type = formatLabel(entry.type);
+  const label = COVERAGE_QUALITY_LABEL[entry.quality];
+  const who = entry.contributors.map(formatLabel).join(", ");
+  switch (entry.quality) {
+    case "hard_gap":
+      return `${type} · ${label}: no super-effective answer (best hit ${describeBestMultiplier(entry.best_multiplier)}).`;
+    case "thin":
+      return `${type} · ${label}: only one super-effective line${who ? ` (${who})` : ""} — fragile if it is removed.`;
+    case "centralized":
+      return `${type} · ${label}: ${who || "a single Pokemon"} carries the whole matchup into this type.`;
+    case "positioning_dependent":
+      return `${type} · ${label}: an answer exists but only from slow attackers (${who}), so it is awkward to land.`;
+    default:
+      return `${type} · ${label}.`;
+  }
 }
 
 function describeCoverageGap(
