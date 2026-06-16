@@ -781,7 +781,7 @@ def analyze_team(
         offensive_coverage,
         defensive_profile,
         top_defensive_weaknesses,
-        team_archetype_scores,
+        primary_team_style,
         contextual_matchup_profile,
     )
     team_mode_scores, team_mode_labels, mode_matchup_scores, favorable_modes, unfavorable_modes = infer_meta_mode_profile(
@@ -3052,7 +3052,7 @@ def infer_matchup_profile(
     offensive_coverage: dict[str, int],
     defensive_profile: dict[str, dict[str, float | int]],
     top_defensive_weaknesses: list[str],
-    team_archetype_scores: dict[str, float],
+    primary_team_style: str,
     contextual_matchup_profile: ContextualMatchupProfile,
 ) -> tuple[dict[str, float], dict[str, dict[str, object]], list[str], list[str]]:
     move_counts = Counter()
@@ -3084,10 +3084,12 @@ def infer_matchup_profile(
             if move.priority > 0 and move.damage_class != "status":
                 priority_attack_count += 1
 
-    own_archetype = max(
-        BROAD_TEAM_ARCHETYPE_ORDER,
-        key=lambda archetype: (team_archetype_scores[archetype], archetype),
-    )
+    # Reuse the team's displayed broad style (the corrected label from infer_team_packages)
+    # rather than re-deriving an archetype from the raw scores here. The package layer demotes
+    # Hyper Offense / boosts Balance for support-dense or structured builds, so an independent
+    # argmax could disagree with the label the user sees and make the matchup explainers describe
+    # the team as the wrong archetype (e.g. calling a Balance team "hyper offense").
+    own_archetype = primary_team_style
     sweepers = pokemon_role_counts["physical_sweeper"] + pokemon_role_counts["special_sweeper"]
     setup_sweepers = pokemon_role_counts["setup_sweeper"]
     cleaners = pokemon_role_counts["cleaner"]
