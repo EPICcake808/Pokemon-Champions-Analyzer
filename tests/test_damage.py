@@ -321,5 +321,44 @@ class DamageGridTests(unittest.TestCase):
         self.assertTrue(grid["incoming"])
 
 
+class AssumptionDisclosureTests(unittest.TestCase):
+    """Variable-power and field-dependent rolls must disclose their assumptions (#11)."""
+
+    def test_variable_power_move_discloses_assumption(self):
+        last_respects = _move("Last Respects", "ghost", "physical", 50)
+        result = compute_damage(_attacker(types=("ghost",)), _defender(), last_respects)
+        assert result is not None
+        self.assertTrue(
+            any("Last Respects" in note and "50 BP" in note for note in result.assumptions),
+            msg=f"expected a Last Respects BP assumption, got {result.assumptions}",
+        )
+
+    def test_field_conditions_are_disclosed(self):
+        move = _move("Test Strike", "normal", "physical", 100)
+        field = FieldConditions(spread=True, crit=True, attacker_burned=True)
+        result = compute_damage(_attacker(types=("bug",)), _defender(), move, field)
+        assert result is not None
+        joined = " ".join(result.assumptions)
+        self.assertIn("Spread move", joined)
+        self.assertIn("Critical hit", joined)
+        self.assertIn("burned", joined)
+
+    def test_exact_move_has_no_spurious_assumptions(self):
+        move = _move("Test Strike", "normal", "physical", 100)
+        result = compute_damage(_attacker(types=("bug",)), _defender(), move)
+        assert result is not None
+        self.assertEqual(result.assumptions, ())
+
+    def test_light_screen_reduces_special_and_is_disclosed(self):
+        move = _move("Test Beam", "normal", "special", 100)
+        plain = compute_damage(_attacker(types=("bug",)), _defender(), move)
+        screened = compute_damage(
+            _attacker(types=("bug",)), _defender(), move, FieldConditions(light_screen=True)
+        )
+        assert plain is not None and screened is not None
+        self.assertLess(screened.max_damage, plain.max_damage)
+        self.assertTrue(any("Light Screen" in note for note in screened.assumptions))
+
+
 if __name__ == "__main__":
     unittest.main()

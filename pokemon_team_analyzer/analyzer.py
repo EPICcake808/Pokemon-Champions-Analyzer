@@ -600,6 +600,7 @@ def analyze_team(
     members = _resolve_members(team_sets, provider, regulation_id=regulation_id)
     typing_counts = {type_name: 0 for type_name in TYPE_ORDER}
     offensive_coverage = {type_name: 0 for type_name in TYPE_ORDER}
+    attack_type_members: dict[str, set[str]] = {type_name: set() for type_name in TYPE_ORDER}
     defensive_profile: dict[str, dict[str, float | int]] = {}
     utility_role_counts = {role: 0 for role in UTILITY_ROLE_ORDER}
     utility_role_moves = {role: [] for role in UTILITY_ROLE_ORDER}
@@ -629,6 +630,7 @@ def analyze_team(
 
             if move.damage_class != "status":
                 offensive_coverage[move.type_name] += 1
+                attack_type_members[move.type_name].add(member.pokemon_set.display_name)
             if move.damage_class == "physical":
                 physical_moves += 1
             elif move.damage_class == "special":
@@ -646,6 +648,10 @@ def analyze_team(
 
     target_coverage = _build_target_coverage_profile(offensive_coverage)
     coverage_gaps = _rank_coverage_gaps(target_coverage)
+    member_base_speeds = {
+        member.pokemon_set.display_name: member.species_data.base_speed for member in members
+    }
+    coverage_quality = _classify_coverage_quality(target_coverage, attack_type_members, member_base_speeds)
 
     for attack_type in TYPE_ORDER:
         multipliers = []
@@ -937,6 +943,7 @@ def analyze_team(
         offensive_coverage=offensive_coverage,
         target_coverage=target_coverage,
         coverage_gaps=coverage_gaps,
+        coverage_quality=coverage_quality,
         average_base_speed=average_base_speed,
         average_battle_speed=average_battle_speed,
         median_battle_speed=median_battle_speed,
@@ -1090,6 +1097,71 @@ def _rank_coverage_gaps(target_coverage: dict[str, dict[str, float | int]], limi
         ),
     )
     return [type_name for type_name, _ in ranked[:limit]]
+
+
+# How a defending type's offensive coverage reads once you account for reliability, not just
+# presence. A type with a super-effective answer is never a "hard gap"; it may still be thin,
+# carried by a single Pokemon, or only reachable through slow/awkward attackers.
+COVERAGE_QUALITY_SLOW_SPEED = 60
+
+
+def _classify_coverage_quality(
+    target_coverage: dict[str, dict[str, float | int]],
+    attack_type_members: dict[str, set[str]],
+    member_base_speeds: dict[str, int],
+    limit: int = 5,
+) -> list[dict[str, object]]:
+    """Classify the team's weakest offensive coverage by *reliability* rather than absence.
+
+    Mirrors GPT feedback #6: ``hard_gap`` (no super-effective pressure), ``thin`` (one narrow
+    line), ``centralized`` (a single Pokemon carries the answer), and ``positioning_dependent``
+    (an answer exists but only from slow attackers). Anything better is dropped from the list.
+    """
+    ranked = sorted(
+        target_coverage.items(),
+        key=lambda item: (
+            float(item[1]["best_multiplier"]),
+            int(item[1]["super_effective_lines"]),
+            int(item[1]["neutral_or_better_lines"]),
+            -int(item[1]["immune_lines"]),
+            item[0],
+        ),
+    )
+    flagged: list[dict[str, object]] = []
+    for defending_type, profile in ranked:
+        super_effective_lines = int(profile["super_effective_lines"])
+        contributors: set[str] = set()
+        for attack_type, holders in attack_type_members.items():
+            if holders and defensive_multiplier((defending_type,), attack_type) > 1.0:
+                contributors |= holders
+
+        if super_effective_lines <= 0:
+            quality = "hard_gap"
+        elif super_effective_lines == 1:
+            quality = "thin"
+        elif len(contributors) <= 1:
+            quality = "centralized"
+        elif contributors and all(
+            member_base_speeds.get(name, 0) <= COVERAGE_QUALITY_SLOW_SPEED for name in contributors
+        ):
+            quality = "positioning_dependent"
+        else:
+            quality = "covered"
+
+        if quality == "covered":
+            continue
+        flagged.append(
+            {
+                "type": defending_type,
+                "quality": quality,
+                "super_effective_lines": super_effective_lines,
+                "best_multiplier": float(profile["best_multiplier"]),
+                "contributors": sorted(contributors),
+            }
+        )
+        if len(flagged) >= limit:
+            break
+    return flagged
 
 
 def _normalized_battle_speed(member: TeamMember) -> int:
@@ -2231,7 +2303,9 @@ def infer_pokemon_roles(
         and (support_move_count >= 1 or offense <= 110)
     ):
         roles.append("bulky_support")
-    if (
+    # A Choice Scarf set spends its item on speed, not defensive investment, so a naturally bulky
+    # statline does not make it a bulky attacker — it is a fast revenge killer / cleaner (#14).
+    if not has_choice_scarf and (
         (bulk >= 260 and offense >= 100 and damaging_moves >= 2 and speed < 95)
         or (has_assault_vest and bulk >= 230 and offense >= 100 and damaging_moves >= 2)
     ):
@@ -2820,6 +2894,15 @@ def infer_team_packages(
         style_scores["hyper_offense"] = round(style_scores["hyper_offense"] - (0.7 + 0.05 * structure_delta), 2)
         style_scores["semi_stall"] = round(style_scores["semi_stall"] - (1.1 + 0.08 * structure_delta), 2)
         style_scores["stall"] = round(style_scores["stall"] - (1.7 + 0.1 * structure_delta), 2)
+    elif supportive_structure >= 5 and supportive_structure >= proactive_pressure:
+        # Dense board-control/support density (redirection, screens, healing, pivots) is a bulky/control
+        # identity, not Hyper Offense, even when the team also stacks attackers or sets screens (#1). The
+        # specialized-shell gate above can miss this, so demote Hyper Offense toward bulky offense/balance.
+        support_delta = supportive_structure - proactive_pressure
+        demotion = 1.6 + 0.2 * support_delta
+        style_scores["hyper_offense"] = round(style_scores["hyper_offense"] - demotion, 2)
+        style_scores["bulky_offense"] = round(style_scores["bulky_offense"] + 0.6, 2)
+        style_scores["balance"] = round(style_scores["balance"] + 0.6, 2)
 
     style_priority = {style: index for index, style in enumerate(STYLE_PACKAGE_ORDER)}
     primary_style = max(STYLE_PACKAGE_ORDER, key=lambda style: (style_scores[style], style_priority[style]))
@@ -3197,7 +3280,8 @@ def infer_matchup_profile(
         matchup_detail_map[archetype] = {
             "base_score": round(raw_scores[archetype], 2),
             "contextual_adjustment": contextual_adjustment,
-            "reasons": contextual_reasons,
+            "reasons": _finalize_context_reasons(contextual_reasons),
+            **_bucket_context_reasons(contextual_reasons),
         }
 
     average_score = sum(adjusted_raw_scores.values()) / len(adjusted_raw_scores)
@@ -3206,7 +3290,18 @@ def infer_matchup_profile(
         for archetype in BROAD_TEAM_ARCHETYPE_ORDER
     }
     for archetype in BROAD_TEAM_ARCHETYPE_ORDER:
-        matchup_detail_map[archetype]["score"] = matchup_scores[archetype]
+        detail = matchup_detail_map[archetype]
+        relative_score = matchup_scores[archetype]
+        detail["score"] = relative_score
+        # A clearly +/- verdict whose edge is purely the archetype clash carries no contextual
+        # reason, which would render as an unexplained (or one-sided) matchup. Backfill a structural
+        # reason so every meaningful matchup states why it leans the way it does (GPT feedback #2).
+        if relative_score <= -0.5 and not detail["negatives"]:
+            structural = _structural_matchup_reason(own_archetype, archetype, negative=True)
+            detail["negatives"] = [structural]
+            detail["failure_condition"] = structural
+        elif relative_score >= 0.5 and not detail["positives"]:
+            detail["positives"] = [_structural_matchup_reason(own_archetype, archetype, negative=False)]
     favorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]), reverse=True)
     unfavorable_ranked = sorted(matchup_scores.items(), key=lambda item: (item[1], item[0]))
     favorable_matchups = [archetype for archetype, score in favorable_ranked if score > 0][:2]
@@ -3602,19 +3697,22 @@ def _build_contextual_matchup_profile(
         + 0.25 * protective_turns,
         2,
     )
+    # Only genuine Trick Room *denial* counts here (Taunt/Encore/Imprison the setter, your own
+    # Trick Room to flip it, Fake Out to flinch the setup turn, sleep, anti-setup). Wide Guard and
+    # Intimidate are spread/physical *mitigation*, not Room denial, and are credited separately with
+    # accurate wording below so the matchup text never claims they "counter" Trick Room.
     trick_room_counter_tools = round(
         1.1 * move_counts["taunt"]
         + 1.0 * move_counts["encore"]
         + 1.25 * move_counts["imprison"]
         + 0.9 * move_counts["trick-room"]
         + 0.75 * move_counts["fake-out"]
-        + 0.65 * move_counts["wide-guard"]
         + 0.45 * utility_role_counts["anti_setup"]
         + 0.35 * sleep_pressure,
         2,
     )
     trick_room_counter_tools = round(
-        trick_room_counter_tools + 0.8 * priority_block_bypass + 0.4 * intimidate_support,
+        trick_room_counter_tools + 0.8 * priority_block_bypass,
         2,
     )
     screen_counter_tools = round(
@@ -3733,6 +3831,39 @@ def _finalize_context_reasons(reasons: list[tuple[float, str]], limit: int = 3) 
     return ordered
 
 
+def _bucket_context_reasons(reasons: list[tuple[float, str]], limit: int = 3) -> dict[str, object]:
+    """Split signed matchup reasons into "why you have play" vs "why this is dangerous".
+
+    A net-negative verdict can still carry positive mitigation reasons; surfacing them in one flat
+    list reads as contradictory (e.g. a -2.2 Trick Room score "explained" by a survival note). We
+    bucket by the sign of each reason's impact so a negative matchup always shows *why* it is
+    negative, and expose the single strongest negative as the failure condition.
+    """
+    positives = _finalize_context_reasons([item for item in reasons if item[0] > 0], limit=limit)
+    negatives = _finalize_context_reasons([item for item in reasons if item[0] < 0], limit=limit)
+    return {
+        "positives": positives,
+        "negatives": negatives,
+        "failure_condition": negatives[0] if negatives else None,
+    }
+
+
+def _structural_matchup_reason(own_archetype: str, target_archetype: str, *, negative: bool) -> str:
+    """Explain a matchup whose edge comes from the broad archetype clash itself.
+
+    The base archetype bias can drive a strongly +/- verdict with no contextual reason attached;
+    without this, a -2.5 matchup could render with only mitigation notes (GPT feedback #2).
+    """
+    own = own_archetype.replace("_", " ")
+    target = target_archetype.replace("_", " ")
+    if negative:
+        return (
+            f"Structurally, {own} builds tend to give ground to {target} shells, and nothing on this "
+            f"roster fully offsets that base disadvantage."
+        )
+    return f"Structurally, {own} builds tend to hold the edge into {target} shells."
+
+
 # Display labels for the disruptive "tools" that matchup reason strings may cite. Reason
 # strings must only name a tool when the team actually carries the move, so these labels are
 # resolved against the team's real ``move_counts`` before they appear in any explainer.
@@ -3807,15 +3938,15 @@ def _fast_offense_counter_tools(profile: ContextualMatchupProfile, *, include_pr
     return tools
 
 
+# The strict set of moves that actually deny or contest Trick Room (not merely survive under it).
+# Reused by the score term and the label helper so the two can never drift back out of sync.
+TRICK_ROOM_DENIAL_MOVES = ("taunt", "encore", "imprison", "trick-room", "fake-out")
+
+
 def _trick_room_counter_tool_labels(profile: ContextualMatchupProfile) -> list[str]:
-    tools = _present_move_labels(
-        profile,
-        ("encore", "taunt", "fake-out", "imprison", "trick-room", "wide-guard"),
-    )
+    tools = _present_move_labels(profile, TRICK_ROOM_DENIAL_MOVES)
     if profile.priority_block_bypass > 0 and "Fake Out" not in tools:
         tools.append("Mold Breaker Fake Out")
-    if profile.intimidate_support > 0:
-        tools.append("Intimidate")
     return tools
 
 
@@ -3837,7 +3968,7 @@ def _screen_counter_tool_labels(profile: ContextualMatchupProfile) -> list[str]:
 def _score_broad_contextual_matchup(
     archetype: str,
     contextual_matchup_profile: ContextualMatchupProfile,
-) -> tuple[float, list[str]]:
+) -> tuple[float, list[tuple[float, str]]]:
     score = 0.0
     reasons: list[tuple[float, str]] = []
 
@@ -3993,7 +4124,7 @@ def _score_broad_contextual_matchup(
         score += fire_penalty
         _push_context_reason(reasons, fire_penalty, "Common Room fire attackers can still punish awkward defensive overlaps.")
 
-    return round(score, 2), _finalize_context_reasons(reasons)
+    return round(score, 2), reasons
 
 
 def infer_meta_analysis(
@@ -4310,6 +4441,12 @@ def _build_tournament_meta_rows(
         matchup_score = round(
             0.34 * mode_score + 0.1 * broad_score + 0.56 * contextual_score + field_soundness, 2
         )
+        rendered_key_pokemon = [
+            _render_species_token(species_token)
+            for species_token in cast(tuple[str, ...], snapshot["key_pokemon"])
+        ]
+        specific_reason = _meta_row_specific_reason(rendered_key_pokemon, contextual_matchup_profile, matchup_score)
+        row_reasons = [specific_reason, *context_reasons] if specific_reason else context_reasons
         rows.append(
             {
                 "slug": snapshot["slug"],
@@ -4318,16 +4455,13 @@ def _build_tournament_meta_rows(
                 "result_label": snapshot["result_label"],
                 "modes": [_render_mode_label(mode_name) for mode_name in cast(tuple[str, ...], snapshot["modes"])],
                 "key_cores": list(cast(tuple[str, ...], snapshot["key_cores"])),
-                "key_pokemon": [
-                    _render_species_token(species_token)
-                    for species_token in cast(tuple[str, ...], snapshot["key_pokemon"])
-                ],
+                "key_pokemon": rendered_key_pokemon,
                 "popularity_score": round(100 * cast(float, snapshot["popularity_weight"]), 1),
                 "result_score": round(100 * cast(float, snapshot["result_weight"]), 1),
                 "meta_weight": round(meta_weight, 4),
                 "meta_share": round(100 * meta_weight / total_weight, 1),
                 "contextual_score": contextual_score,
-                "context_reasons": context_reasons,
+                "context_reasons": row_reasons,
                 "target_summary": {
                     "resolved_targets": target_summary.resolved_targets,
                     "strong_answer_targets": target_summary.strong_answer_targets,
@@ -4357,6 +4491,35 @@ def _build_tournament_meta_rows(
         rows,
         key=lambda row: (-cast(float, row["meta_share"]), -abs(cast(float, row["impact_score"])), cast(str, row["label"])),
     )
+
+
+def _meta_row_specific_reason(
+    key_pokemon: list[str],
+    profile: ContextualMatchupProfile,
+    matchup_score: float,
+) -> str | None:
+    """A board-specific headline naming one concrete opposing threat and one concrete team tool (#8).
+
+    Generic "Wide Guard and priority give you play" lines are too vague to explain a specific board;
+    this ties an actual board anchor to a tool the roster actually runs (or to the absence of one).
+    """
+    if not key_pokemon:
+        return None
+    threat = key_pokemon[0]
+    answers = _present_move_labels(profile, ("fake-out", "taunt", "encore", "wide-guard", "trick-room", "imprison"))
+    if profile.redirection > 0:
+        answers.append("redirection")
+    if profile.screens > 0:
+        answers.append("screens")
+    if profile.priority_attacks > 0:
+        answers.append("priority")
+    if matchup_score >= 0.1 and answers:
+        return f"Into {threat}-led boards, lean on your {_render_series(answers[:2])} to keep this matchup playable."
+    if matchup_score <= -0.1:
+        if answers:
+            return f"{threat} headlines this board and your {answers[0]} only partly checks it, so expect to play from behind."
+        return f"{threat} headlines this board and the roster has no dedicated tool to blunt it."
+    return None
 
 
 def _score_tournament_snapshot_contextual_matchup(
@@ -4592,6 +4755,14 @@ def _score_tournament_snapshot_contextual_matchup(
         recovery_bonus = 0.04 * min(contextual_matchup_profile.recovery_loop, 3)
         score += recovery_bonus
         _push_context_reason(reasons, recovery_bonus, "Healing support keeps it from auto-losing long Room cycles.")
+
+        wide_guard_room_bonus = 0.05 * min(contextual_matchup_profile.move_counts["wide-guard"], 2)
+        score += wide_guard_room_bonus
+        _push_context_reason(
+            reasons,
+            wide_guard_room_bonus,
+            "Wide Guard blunts the spread attackers that cash in under Trick Room, but it does not stop the Room itself.",
+        )
         if (
             contextual_matchup_profile.fast_members >= 3
             and contextual_matchup_profile.move_counts["trick-room"] == 0
@@ -5250,6 +5421,37 @@ COMMON_META_POKEMON_CONTEXT: dict[str, dict[str, str]] = {
 MAX_COMMON_META_POKEMON = 10
 
 
+# Families whose distinct forms demand different matchup prep but collapse to one base-species usage
+# row (#7). The usage weight stays aggregated (forms share a base species), but we surface a per-row
+# breakdown so prep isn't blurred across forms that need opposite answers.
+META_FORM_BREAKDOWNS: dict[str, list[dict[str, str]]] = {
+    "charizard": [
+        {
+            "form": "Mega Charizard Y",
+            "plan": "Sun special attacker — Drought powers Heat Wave / Solar Beam; check it with rain or sand and special bulk.",
+        },
+        {
+            "form": "Mega Charizard X",
+            "plan": "Physical Dragon Dance setup attacker — Tough Claws Flare Blitz; check it with speed control or a physical wall.",
+        },
+    ],
+}
+
+
+def _annotate_meta_form_breakdowns(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    """Attach a form breakdown to any row whose species family needs form-specific prep (#7).
+
+    Matches whether the board aggregates the family to one base row ("Charizard") or surfaces a single
+    form ("Mega Charizard Y"); either way the breakdown lists every form that needs its own answer.
+    """
+    for row in rows:
+        token = str(row.get("species", "")).strip().lower().replace(" ", "-")
+        family = next((name for name in META_FORM_BREAKDOWNS if name in token), None)
+        if family:
+            row["form_breakdown"] = [dict(form) for form in META_FORM_BREAKDOWNS[family]]
+    return rows
+
+
 def _build_common_meta_pokemon(
     regulation_id: str | None = DEFAULT_REGULATION_ID,
 ) -> list[dict[str, object]]:
@@ -5258,7 +5460,7 @@ def _build_common_meta_pokemon(
     # live usage feed is configured/available.
     runtime_usage = get_runtime_common_meta_pokemon(regulation_id)
     if runtime_usage:
-        return [dict(row) for row in runtime_usage][:MAX_COMMON_META_POKEMON]
+        return _annotate_meta_form_breakdowns([dict(row) for row in runtime_usage][:MAX_COMMON_META_POKEMON])
 
     eligible_snapshots = [
         snapshot
@@ -5328,7 +5530,7 @@ def _build_common_meta_pokemon(
             }
         )
 
-    return common_pokemon
+    return _annotate_meta_form_breakdowns(common_pokemon)
 
 
 def _tournament_snapshot_weight(snapshot: dict[str, object]) -> float:
@@ -5699,6 +5901,27 @@ def infer_beginner_guidance(
         notes.append(
             f"The current attack spread still struggles to pressure {highlighted_gaps}. Against those types, support turns need to create especially clean damage positions."
         )
+
+    # Fairy / Mega Floette defensive-pressure check (#9): hitting Fairy super-effectively is NOT the
+    # same as having a defensive switch-in. Flag a team with no Fairy resist even when it runs Steel.
+    fairy_resists = any(_defensive_multiplier_for_member(member, "fairy") < 1.0 for member in members)
+    if not fairy_resists:
+        has_fairy_offense = any(
+            move.damage_class != "status" and move.type_name in {"steel", "poison"}
+            for _, classified_moves in classified_members
+            for move, _ in classified_moves
+        )
+        if has_fairy_offense:
+            notes.append(
+                "No member resists Fairy. You can hit Fairy attackers super-effectively, but offensive "
+                "Steel/Poison coverage is not a defensive answer: nothing here safely sponges Dazzling "
+                "Gleam or denies a Mega Floette the room to set up."
+            )
+        else:
+            notes.append(
+                "No member resists Fairy and the team has no Steel or Poison attack to pressure it, so "
+                "Fairy attackers like Mega Floette can chip and set up almost unchecked."
+            )
 
     if not notes:
         notes.append(
@@ -7437,10 +7660,68 @@ def _render_team_preview_watch_team_note(shell_name: str, *, is_mode: bool) -> s
     )
 
 
+# Curated mode-role knowledge for the meta's signature species so watchlists distinguish a Pokemon
+# that *sets* a mode from one that *abuses* it from one that merely *supports* it (#5). Setter sets
+# are keyed by base mode mechanic; a combined mode (e.g. rain_room) inherits every mechanic in its
+# name. Anything that isn't a setter or a known support piece is, by definition of being a mode's
+# signature attacker, an abuser of that mode.
+_WATCH_MODE_SETTERS: dict[str, frozenset[str]] = {
+    "trick_room": frozenset({"hatterene", "farigiraf"}),
+    "tailwind": frozenset({"whimsicott", "aerodactyl", "talonflame", "pelipper", "tornadus"}),
+    "rain": frozenset({"pelipper", "politoed"}),
+    "sun": frozenset({"torkoal", "ninetales"}),
+    "sand": frozenset({"tyranitar", "hippowdon"}),
+    "snow": frozenset({"abomasnow", "ninetales-alola"}),
+}
+_WATCH_MODE_SUPPORT: frozenset[str] = frozenset(
+    {
+        "incineroar",
+        "sinistcha",
+        "whimsicott",
+        "farigiraf",
+        "amoonguss",
+        "rillaboom",
+        "grimmsnarl",
+        "indeedee",
+        "indeedee-f",
+        "clefairy",
+        "primarina",
+        "sylveon",
+        "florges",
+        "audino",
+    }
+)
+
+
+def _watch_mode_families(mode_name: str) -> set[str]:
+    """The base mode mechanics implied by a (possibly combined) mode name."""
+    families: set[str] = set()
+    if "room" in mode_name:
+        families.add("trick_room")
+    if "tailwind" in mode_name or "tailroom" in mode_name:
+        families.add("tailwind")
+    for weather in ("rain", "sun", "sand", "snow"):
+        if weather in mode_name:
+            families.add(weather)
+    return families or {mode_name}
+
+
+def _watch_pokemon_role(species_token: str, mode_name: str) -> str:
+    families = _watch_mode_families(mode_name)
+    if any(species_token in _WATCH_MODE_SETTERS.get(family, frozenset()) for family in families):
+        return "setter"
+    if species_token in _WATCH_MODE_SUPPORT:
+        return "support"
+    return "abuser"
+
+
 def _render_team_preview_watch_pokemon_note(species_token: str, mode_name: str) -> str:
     species_name = _render_species_token(species_token)
     mode_label = _render_mode_label(mode_name)
-    return f"{species_name} ({mode_label})" if mode_label else species_name
+    if not mode_label:
+        return species_name
+    role = _watch_pokemon_role(species_token, mode_name)
+    return f"{species_name} ({mode_label} {role})"
 
 
 def _build_team_preview_strategy_notes(
@@ -7549,8 +7830,12 @@ def _build_team_preview_counterplay_notes(
             )
         elif role_members["speed_control"] or role_members["fake_out_support"]:
             tools = _dedupe_preserving_order(role_members["speed_control"] + role_members["fake_out_support"])
+            # Only suggest Fake Out if the team actually carries it (#10).
+            disruption_phrase = (
+                "Fake Out, stall, or force Protects" if role_members["fake_out_support"] else "stall or force Protects"
+            )
             notes.append(
-                f"Against opposing Tailwind shells, preserve {_render_series(tools[:2])} so the first fast turn cycle does not force your cleaner in too early. Use those turns to stall, Fake Out, or force Protects rather than offering a straight damage race."
+                f"Against opposing Tailwind shells, preserve {_render_series(tools[:2])} so the first fast turn cycle does not force your cleaner in too early. Use those turns to {disruption_phrase} rather than offering a straight damage race."
             )
         elif utility_role_counts["protection"] >= 2:
             notes.append(
@@ -7558,10 +7843,19 @@ def _build_team_preview_counterplay_notes(
             )
 
     if any("room" in mode_name for mode_name in unfavorable_modes) or "trick_room" in unfavorable_matchups:
-        setup_contesters = _dedupe_preserving_order(role_members["fake_out_support"] + role_members["trick_room_setter"] + role_members["redirector"])
+        # Genuine setup contest (Fake Out flinches the setter, your own Trick Room flips theirs) is
+        # distinct from softening the first room turn (redirection, healing). Don't conflate them.
+        setup_contesters = _dedupe_preserving_order(role_members["fake_out_support"] + role_members["trick_room_setter"])
+        room_softeners = _dedupe_preserving_order(role_members["redirector"] + role_members["healing_support"])
         if setup_contesters:
+            note = f"Into Trick Room preview, lean on {_render_series(setup_contesters[:2])} to contest the setup turn itself"
+            if room_softeners:
+                note += f", and use {_render_series(room_softeners[:2])} to soften the first room turn rather than to stop the Room"
+            note += ". Beginners often lose this matchup by aiming only at the sweeper; making the setup turn or first room turn low-value is usually enough."
+            notes.append(note)
+        elif room_softeners:
             notes.append(
-                f"Into Trick Room preview, lean on {_render_series(setup_contesters[:2])} to either contest the setup turn or make the first room turn low-impact. Beginners often lose this matchup by aiming only at the sweeper; making the setup turn or first room turn low-value is usually enough."
+                f"Into Trick Room preview, you have no direct way to deny the Room, but {_render_series(room_softeners[:2])} can soften the first room turn. Keep a bulkier or slower member that survives the room turns rather than bringing four frail fast attackers."
             )
         else:
             notes.append(

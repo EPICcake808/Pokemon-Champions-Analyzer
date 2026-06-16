@@ -90,7 +90,12 @@ function MatchupTable({
                     <span className="block text-[0.68rem] leading-4 text-white/40">{row.benchmark_set}</span>
                   ) : null}
                 </td>
-                <td className="px-2 py-1.5 text-white/65">{row.move}</td>
+                <td className="px-2 py-1.5 text-white/65">
+                  {row.move}
+                  {row.assumptions?.length ? (
+                    <span className="block text-[0.68rem] leading-4 text-white/40">{row.assumptions[0]}</span>
+                  ) : null}
+                </td>
                 <td className="px-2 py-1.5 text-white/80">
                   {row.defender}
                   {benchmarkSide === "defender" ? (
@@ -127,6 +132,9 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
   const [spread, setSpread] = useState(false);
   const [crit, setCrit] = useState(false);
   const [attackerBurned, setBurned] = useState(false);
+  const [reflect, setReflect] = useState(false);
+  const [lightScreen, setLightScreen] = useState(false);
+  const [auroraVeil, setAuroraVeil] = useState(false);
   const [result, setResult] = useState<DamageCalcResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -180,7 +188,15 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
             evs: toEvTokens(attacker.evs),
           },
           defender: defenderSide,
-          field: { weather: weather || null, spread, crit, attackerBurned },
+          field: {
+            weather: weather || null,
+            spread,
+            crit,
+            attackerBurned,
+            // Aurora Veil is mechanically both screens (under snow), so it sets both flags.
+            reflect: reflect || auroraVeil,
+            lightScreen: lightScreen || auroraVeil,
+          },
           regulationId,
         }),
       });
@@ -311,6 +327,18 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
             <input type="checkbox" checked={attackerBurned} onChange={(event) => setBurned(event.target.checked)} />
             <span>Attacker burned</span>
           </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={reflect} onChange={(event) => setReflect(event.target.checked)} />
+            <span>Reflect</span>
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={lightScreen} onChange={(event) => setLightScreen(event.target.checked)} />
+            <span>Light Screen</span>
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="checkbox" checked={auroraVeil} onChange={(event) => setAuroraVeil(event.target.checked)} />
+            <span>Aurora Veil</span>
+          </label>
           <button
             type="button"
             onClick={calculate}
@@ -338,6 +366,13 @@ export function DamageCalculator({ analysis, members, regulationId }: Props) {
                 {roll.min_damage}–{roll.max_damage} of {roll.defender_hp} HP · type ×{roll.type_multiplier} · STAB{" "}
                 {roll.stab}
               </p>
+              {roll.assumptions?.length ? (
+                <ul className="space-y-0.5 text-xs leading-5 text-white/55">
+                  {roll.assumptions.map((note) => (
+                    <li key={note}>Assumes: {note}</li>
+                  ))}
+                </ul>
+              ) : null}
               {roll.unmodeled.length ? (
                 <p className="text-xs text-[var(--accent)]">
                   Not modeled: {roll.unmodeled.map((item) => formatLabel(item)).join(", ")}

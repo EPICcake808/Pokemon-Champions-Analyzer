@@ -163,6 +163,27 @@ SPEED_TIER_ORDER = (
     "elite_fast",
 )
 
+# Per-section confidence in the analysis (#16). Surfaced so heuristic outputs are not read as precise
+# predictions: high-confidence sections rest on directly checked facts, low-confidence ones are
+# heuristic inferences. ``ANALYSIS_CONFIDENCE`` maps each analysis section to a tier in
+# ``CONFIDENCE_TIERS``; the web renders the tier as a caveat badge.
+CONFIDENCE_TIERS: dict[str, str] = {
+    "high": "Based on directly checked facts — legality and the team's actual moves, items, and stats.",
+    "medium": "A heuristic read of archetype and mode from team composition.",
+    "low": "A heuristic matchup estimate — directional, not a win-rate prediction.",
+    "very_low": "Low-sample or unknown custom sets — treat as a rough signal only.",
+}
+ANALYSIS_CONFIDENCE: dict[str, str] = {
+    "legality": "high",
+    "roles": "high",
+    "speed": "high",
+    "coverage": "high",
+    "archetype": "medium",
+    "modes": "medium",
+    "matchup": "low",
+    "meta_board": "low",
+}
+
 
 @dataclass(frozen=True)
 class PokemonSet:
@@ -237,6 +258,7 @@ class TeamAnalysis:
     offensive_coverage: dict[str, int]
     target_coverage: dict[str, dict[str, float | int]]
     coverage_gaps: list[str]
+    coverage_quality: list[dict[str, object]]
     average_base_speed: float
     average_battle_speed: float
     median_battle_speed: float
@@ -305,6 +327,8 @@ class TeamAnalysis:
     def to_dict(self) -> dict[str, object]:
         return {
             "regulation_id": self.regulation_id,
+            "confidence": ANALYSIS_CONFIDENCE,
+            "confidence_tiers": CONFIDENCE_TIERS,
             "team_size": self.team_size,
             "typing_counts": self.typing_counts,
             "defensive_profile": self.defensive_profile,
@@ -312,6 +336,7 @@ class TeamAnalysis:
             "offensive_coverage": self.offensive_coverage,
             "target_coverage": self.target_coverage,
             "coverage_gaps": self.coverage_gaps,
+            "coverage_quality": self.coverage_quality,
             "speed_profile": {
                 "average_base_speed": self.average_base_speed,
                 "average_battle_speed": self.average_battle_speed,
