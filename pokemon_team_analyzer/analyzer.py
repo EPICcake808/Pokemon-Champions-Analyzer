@@ -35,6 +35,7 @@ from .models import (
 from .regulations import (
     DEFAULT_REGULATION_ID,
     IllegalTeamError,
+    apply_regulation_stat_overrides,
     resolve_regulation_pokemon_set,
     resolve_regulation_species_name,
     validate_team_legality,
@@ -1239,7 +1240,9 @@ def _build_speed_coverage(
             continue
         try:
             canonical = resolve_regulation_species_name(species_name, regulation_id=resolved_regulation_id) or species_name
-            species = provider.get_species(canonical)
+            species = apply_regulation_stat_overrides(
+                provider.get_species(canonical), resolved_regulation_id
+            )
         except (KeyError, LookupError, ConnectionError):
             continue
         assumed_speed = compute_stat(species.base_speed, CHAMPIONS_MAX_STAT_SPS, nature=1)
@@ -1378,14 +1381,19 @@ def _evaluate_speed_benchmarks(
 ) -> tuple[dict[str, str] | None, list[str], dict[str, dict[str, object]], dict[str, list[dict[str, object]]]]:
     benchmark_regulation_id = regulation_id or DEFAULT_REGULATION_ID
     catalog = get_speed_benchmark_catalog(benchmark_regulation_id)
+    # Every member must appear in the tags map even when there is no curated catalog, since
+    # TeamAnalysis.to_dict indexes it per member; an empty list degrades gracefully.
+    empty_member_tags: dict[str, list[dict[str, object]]] = {
+        member_name: [] for member_name in member_battle_speeds
+    }
     if catalog is None:
         if regulation_id is None:
-            return None, [], {}, {}
+            return None, [], {}, empty_member_tags
         return (
             {"regulation_id": regulation_id, "display_name": regulation_id},
             ["No curated speed benchmark table is defined for this regulation yet."],
             {},
-            {},
+            empty_member_tags,
         )
 
     natural_context = dict(member_battle_speeds)
@@ -2107,7 +2115,9 @@ def _resolve_members(
         species_name = pokemon_set.species
         if regulation_id is not None:
             species_name = resolve_regulation_species_name(pokemon_set.species, regulation_id=regulation_id) or species_name
-        species_data = provider.get_species(species_name)
+        species_data = apply_regulation_stat_overrides(
+            provider.get_species(species_name), regulation_id
+        )
         move_data = tuple(provider.get_move(move_name) for move_name in pokemon_set.moves)
         members.append(TeamMember(pokemon_set=pokemon_set, species_data=species_data, move_data=move_data))
     return members

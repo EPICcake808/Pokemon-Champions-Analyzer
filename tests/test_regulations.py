@@ -11,14 +11,17 @@ from pokemon_team_analyzer.analyzer import analyze_team_text
 from pokemon_team_analyzer.champions_m_a_moves import get_allowed_moves_for_species
 from pokemon_team_analyzer.cli import main as cli_main
 from pokemon_team_analyzer.data import pokemon_name_candidates
-from pokemon_team_analyzer.models import MoveData, MoveStatChange, SpeciesData
+from pokemon_team_analyzer.models import MoveData, MoveStatChange, PokemonSet, SpeciesData
 from pokemon_team_analyzer.regulations import (
+    CATALOG_DEFAULT_REGULATION_ID,
     DEFAULT_REGULATION_ID,
     IllegalTeamError,
+    M_B_REGULATION_ID,
     get_regulation,
     regulation_catalog_as_dict,
     resolve_regulation_pokemon_set,
     resolve_regulation_species_name,
+    validate_team_legality,
     validate_team_legality_text,
 )
 from pokemon_team_analyzer.showdown import parse_showdown_team
@@ -647,8 +650,9 @@ class RegulationTests(unittest.TestCase):
         payload = regulation_catalog_as_dict(include_team_text=False)
         rendered = json.dumps(payload)
 
-        self.assertEqual(len(payload), 1)
-        self.assertIn(DEFAULT_REGULATION_ID, rendered)
+        regulation_ids = [regulation["id"] for regulation in payload]
+        self.assertIn(DEFAULT_REGULATION_ID, regulation_ids)
+        self.assertIn(M_B_REGULATION_ID, regulation_ids)
         self.assertIn("official", rendered)
         self.assertIn("eligible_pokemon_count", rendered)
         self.assertNotIn("team_text", rendered)
@@ -662,9 +666,66 @@ class RegulationTests(unittest.TestCase):
         payload = json.loads(stdout.getvalue())
 
         self.assertEqual(exit_code, 0)
-        self.assertEqual(payload["default_regulation_id"], DEFAULT_REGULATION_ID)
-        self.assertEqual(payload["regulations"][0]["id"], DEFAULT_REGULATION_ID)
+        # The UI loads the catalog default (M-B), while the engine fallback stays M-A.
+        self.assertEqual(payload["default_regulation_id"], CATALOG_DEFAULT_REGULATION_ID)
+        catalog_ids = [regulation["id"] for regulation in payload["regulations"]]
+        self.assertIn(DEFAULT_REGULATION_ID, catalog_ids)
+        self.assertIn(M_B_REGULATION_ID, catalog_ids)
         self.assertIn("display_name", payload["regulations"][0])
+
+    def test_regulation_m_b_is_a_superset_of_m_a(self) -> None:
+        m_a = get_regulation(DEFAULT_REGULATION_ID)
+        m_b = get_regulation(M_B_REGULATION_ID)
+
+        self.assertTrue(set(m_a.eligible_species).issubset(m_b.eligible_species))
+        self.assertTrue(set(m_a.allowed_held_items).issubset(m_b.allowed_held_items))
+        self.assertTrue(set(m_a.allowed_mega_evolutions).issubset(m_b.allowed_mega_evolutions))
+        # M-B adds exactly its delta: 22 species, 16 megas, 15 items + 16 new mega stones.
+        self.assertEqual(len(m_b.eligible_species) - len(m_a.eligible_species), 22)
+        self.assertEqual(len(m_b.allowed_mega_evolutions) - len(m_a.allowed_mega_evolutions), 16)
+        self.assertEqual(len(m_b.allowed_held_items) - len(m_a.allowed_held_items), 15 + 16)
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=lambda name: ())
+    def test_new_m_b_species_legal_in_m_b_only(self, _mock_moves: object) -> None:
+        # Gholdengo is eligible in M-B but not M-A.
+        team = [
+            PokemonSet(species="Gholdengo", moves=[]),
+            PokemonSet(species="Incineroar", moves=[]),
+            PokemonSet(species="Garchomp", moves=[]),
+            PokemonSet(species="Rotom-Wash", moves=[]),
+            PokemonSet(species="Tinkaton", moves=[]),
+            PokemonSet(species="Kingambit", moves=[]),
+        ]
+
+        m_a = validate_team_legality(team, regulation_id=DEFAULT_REGULATION_ID)
+        self.assertFalse(m_a.is_legal)
+        self.assertTrue(
+            any(issue.code == "illegal_species" and issue.value == "Gholdengo" for issue in m_a.issues)
+        )
+
+        m_b = validate_team_legality(team, regulation_id=M_B_REGULATION_ID)
+        self.assertTrue(m_b.is_legal, msg=[issue.message for issue in m_b.issues])
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=lambda name: ())
+    def test_new_m_b_mega_and_stone_legal_in_m_b_only(self, _mock_moves: object) -> None:
+        # Mega Staraptor + its verified Champions-original stone is legal only in M-B.
+        team = [
+            PokemonSet(species="Mega Staraptor", item="Staraptite", moves=[]),
+            PokemonSet(species="Garchomp", moves=[]),
+            PokemonSet(species="Rotom-Wash", moves=[]),
+            PokemonSet(species="Tinkaton", moves=[]),
+            PokemonSet(species="Kingambit", moves=[]),
+            PokemonSet(species="Incineroar", moves=[]),
+        ]
+
+        m_a = validate_team_legality(team, regulation_id=DEFAULT_REGULATION_ID)
+        self.assertFalse(m_a.is_legal)
+        m_a_codes = {issue.code for issue in m_a.issues}
+        self.assertIn("illegal_mega_species", m_a_codes)
+        self.assertIn("illegal_item", m_a_codes)
+
+        m_b = validate_team_legality(team, regulation_id=M_B_REGULATION_ID)
+        self.assertTrue(m_b.is_legal, msg=[issue.message for issue in m_b.issues])
 
     @patch("pokemon_team_analyzer.cli.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     @patch("pokemon_team_analyzer.cli.CachedPokeApiClient")
@@ -904,6 +965,65 @@ Ability: Mold Breaker
 
         self.assertEqual(analysis.team_size, 6)
         self.assertIn(analysis.team_archetype, analysis.team_archetype_scores)
+
+    @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
+    def test_analysis_under_regulation_without_curated_speed_benchmarks_degrades(self, _mock_get_allowed_moves: object) -> None:
+        # M-B has no curated speed benchmark catalog yet. Analysis must degrade gracefully
+        # (every member still appears in the speed profile) rather than KeyError in to_dict.
+        team = """Hisuian Zoroark @ Spell Tag
+Ability: Illusion
+- Hyper Voice
+- Shadow Ball
+- Protect
+- Bitter Malice
+
+Incineroar @ Sitrus Berry
+Ability: Intimidate
+- Fake Out
+- Flare Blitz
+- Knock Off
+- Parting Shot
+
+Garchomp @ Focus Sash
+Ability: Rough Skin
+- Earthquake
+- Dragon Claw
+- Protect
+- Swords Dance
+
+Rotom-Wash @ Leftovers
+Ability: Levitate
+- Thunderbolt
+- Hydro Pump
+- Will-O-Wisp
+- Protect
+
+Corviknight @ Sharp Beak
+Ability: Mirror Armor
+- Tailwind
+- Roost
+- Body Press
+- U-turn
+
+Tinkaton @ Mental Herb
+Ability: Mold Breaker
+- Fake Out
+- Gigaton Hammer
+- Play Rough
+- Thunder Wave
+"""
+
+        analysis = analyze_team_text(
+            team,
+            metadata_provider=ChampionsMetadataProvider(),
+            regulation_id=M_B_REGULATION_ID,
+        )
+        payload = analysis.to_dict()
+
+        self.assertEqual(payload["regulation_id"], M_B_REGULATION_ID)
+        self.assertEqual(len(payload["speed_profile"]["members"]), 6)
+        for member in payload["speed_profile"]["members"]:
+            self.assertIn("benchmark_tags", member)
 
     @patch("pokemon_team_analyzer.regulations.get_allowed_moves_for_species", side_effect=fake_get_allowed_moves_for_species)
     def test_validate_team_legality_accepts_legal_m_a_team(self, _mock_get_allowed_moves: object) -> None:

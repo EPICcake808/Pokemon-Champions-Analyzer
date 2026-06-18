@@ -348,6 +348,9 @@ export function AnalyzerWorkspace({
   const savedTeams = savedTeamsOverride !== undefined ? savedTeamsOverride : initialSavedTeams;
   const activeRegulation =
     regulationOptions.find((regulation) => regulation.id === selectedRegulationId) ?? regulationOptions[0];
+  // Short form for inline copy, e.g. "Regulation M-B" instead of the full display name.
+  const activeRegulationShortLabel =
+    activeRegulation?.display_name.replace(/^Pokemon Champions\s+/i, "") ?? "the selected regulation";
   const parsedTeam = canonicalizeParsedTeamForRegulation(parseShowdownTeam(teamText), activeRegulation);
   const analysis = canonicalizeAnalysisForRegulation(analysisState, activeRegulation);
   const builderMembers = normalizeBuilderMembers(parsedTeam);
@@ -1313,7 +1316,7 @@ export function AnalyzerWorkspace({
                   Starter templates
                 </p>
                 <p className="mt-2 text-xs leading-5 text-white/46">
-                  Load a ready-made Regulation M-A team to study or remix.
+                  Load a ready-made team to study or remix.
                 </p>
                 <select
                   value=""
@@ -1674,7 +1677,7 @@ export function AnalyzerWorkspace({
           <SectionHeading eyebrow="Slot doctor" title="Patch your gaps" />
           <p className="mt-4 max-w-4xl text-sm leading-6 text-[var(--fg-muted)]">
             Diagnoses the team&apos;s biggest liabilities — Trick Room, speed control, setup, and type holes — and
-            suggests concrete Regulation M-A-legal move swaps and replacements to fix them.
+            suggests concrete {activeRegulationShortLabel}-legal move swaps and replacements to fix them.
           </p>
           <div className="mt-8">
             <SlotDoctor teamText={teamText} regulationId={selectedRegulationId} />
@@ -1683,10 +1686,10 @@ export function AnalyzerWorkspace({
 
         <section id="meta" className="grid gap-10 border-t border-[var(--line)] py-10 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
           <div className="space-y-6">
-            <SectionHeading eyebrow="Meta analysis" title="Current Regulation M-A field" />
+            <SectionHeading eyebrow="Meta analysis" title={`Current ${activeRegulationShortLabel} field`} />
             <p className="max-w-3xl text-sm leading-6 text-[var(--fg-muted)]">
-              These results compare your team against the current Regulation M-A field so you can spot likely edges and
-              pressure points.
+              These results compare your team against the current {activeRegulationShortLabel} field so you can spot likely
+              edges and pressure points.
             </p>
             {analysis.meta_analysis.provenance ? (
               <MetaProvenanceStamp provenance={analysis.meta_analysis.provenance} />

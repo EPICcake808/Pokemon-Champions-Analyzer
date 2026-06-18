@@ -12,7 +12,10 @@ import certifi
 from bs4 import BeautifulSoup
 
 from .cache_paths import resolve_cache_path
-from .champions_m_a_data import ELIGIBLE_SPECIES
+# M-B's eligible-species tuple is the union of every regulation's pool (M-A + the M-B
+# additions), so form expansion / page caching covers newer species too. The data module
+# depends only on M-A data, so this import introduces no cycle.
+from .champions_regulation_m_b_data import ELIGIBLE_SPECIES as _ALL_ELIGIBLE_SPECIES
 
 
 MOVE_CACHE_PATH = resolve_cache_path("champions_m_a_moves_cache.json")
@@ -116,7 +119,7 @@ def _page_slug_for_species(species_name: str) -> str:
 
 
 def _related_species_names(base_species_name: str) -> tuple[str, ...]:
-    return tuple(species_name for species_name in ELIGIBLE_SPECIES if _base_species_name(species_name) == base_species_name)
+    return tuple(species_name for species_name in _ALL_ELIGIBLE_SPECIES if _base_species_name(species_name) == base_species_name)
 
 
 def _parse_move_tables(html: str) -> dict[str, dict[str, object]]:

@@ -24,7 +24,14 @@ import type {
 
 const execFileAsync = promisify(execFile);
 
+// Engine fallback regulation (mirrors the Python DEFAULT_REGULATION_ID): used when a
+// request omits a regulation. The regulation the UI loads first is the catalog's
+// default_regulation_id (CATALOG_DEFAULT_REGULATION_ID below), not this.
 export const DEFAULT_REGULATION_ID = "champions_regulation_m_a";
+
+// The regulation the web app loads first (current official format). Kept in sync with the
+// Python CATALOG_DEFAULT_REGULATION_ID and surfaced by the catalog's default_regulation_id.
+export const CATALOG_DEFAULT_REGULATION_ID = "champions_regulation_m_b";
 
 const REPO_ROOT = resolveRepositoryRoot();
 const PYTHON_EXECUTABLE = resolvePythonExecutable();

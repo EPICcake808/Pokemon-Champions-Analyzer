@@ -1,23 +1,42 @@
 from __future__ import annotations
 
-from dataclasses import replace
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 import re
 from typing import Iterable
 
+from . import champions_regulation_m_b_data as _m_b
 from .champions_m_a_data import (
-    ALLOWED_HELD_ITEMS,
-    ALLOWED_MEGA_EVOLUTIONS,
-    ELIGIBLE_SPECIES,
-    MEGA_STONE_TO_BASE_SPECIES,
+    ALLOWED_HELD_ITEMS as _M_A_ALLOWED_HELD_ITEMS,
+    ALLOWED_MEGA_EVOLUTIONS as _M_A_ALLOWED_MEGA_EVOLUTIONS,
+    ELIGIBLE_SPECIES as _M_A_ELIGIBLE_SPECIES,
+    MEGA_STONE_TO_BASE_SPECIES as _M_A_MEGA_STONE_TO_BASE_SPECIES,
+    MEGA_STONE_TO_MEGA_NAME as _M_A_MEGA_STONE_TO_MEGA_NAME,
 )
 from .champions_m_a_moves import get_allowed_moves_for_species
 from .data import MetadataProvider, normalize_showdown_name
-from .models import PokemonSet, TeamAnalysis
+from .models import PokemonSet, SpeciesData, TeamAnalysis
 from .showdown import parse_showdown_team
 
 
+# The engine's fallback regulation: also the key that gates the live meta feed in
+# meta_snapshots.py, so it intentionally stays M-A even though the UI defaults to a newer
+# regulation (see CATALOG_DEFAULT_REGULATION_ID).
 DEFAULT_REGULATION_ID = "champions_regulation_m_a"
+M_B_REGULATION_ID = "champions_regulation_m_b"
+
+# The regulation the web app loads first. This is the only "default" the UI consumes
+# (page.tsx reads regulationCatalog.default_regulation_id); keeping it separate from
+# DEFAULT_REGULATION_ID lets M-B be the front-page default without rerouting M-A's
+# meta feed onto the (not-yet-published) M-B board.
+CATALOG_DEFAULT_REGULATION_ID = M_B_REGULATION_ID
+
+# Every species eligible in any known regulation. Name normalization (the alias tables and
+# _normalized_species_name) is regulation-agnostic -- it turns a Showdown name into a
+# canonical one -- so it is built from the union of all regulations' pools. Legality, which
+# decides whether that canonical name is *allowed*, is per-regulation (see _regulation_lookups).
+ALL_ELIGIBLE_SPECIES: tuple[str, ...] = tuple(
+    dict.fromkeys((*_M_A_ELIGIBLE_SPECIES, *_m_b.ELIGIBLE_SPECIES))
+)
 
 SHOWDOWN_SPECIES_ALIASES = {
     "arcanine-hisui": "arcanine (hisuian form)",
@@ -95,7 +114,7 @@ def _build_generated_species_aliases() -> dict[str, str]:
         re.IGNORECASE,
     )
 
-    for species_name in ELIGIBLE_SPECIES:
+    for species_name in ALL_ELIGIBLE_SPECIES:
         canonical_name = species_name.lower()
 
         gender_match = gender_form_pattern.match(species_name)
@@ -145,68 +164,6 @@ def _build_generated_species_aliases() -> dict[str, str]:
 
 
 GENERATED_SPECIES_ALIASES = _build_generated_species_aliases()
-
-MEGA_STONE_TO_MEGA_NAME = {
-    "abomasite": "mega abomasnow",
-    "absolite": "mega absol",
-    "aerodactylite": "mega aerodactyl",
-    "aggronite": "mega aggron",
-    "alakazite": "mega alakazam",
-    "altarianite": "mega altaria",
-    "ampharosite": "mega ampharos",
-    "audinite": "mega audino",
-    "banettite": "mega banette",
-    "beedrillite": "mega beedrill",
-    "blastoisinite": "mega blastoise",
-    "cameruptite": "mega camerupt",
-    "chandelurite": "mega chandelure",
-    "charizardite x": "mega charizard x",
-    "charizardite y": "mega charizard y",
-    "chesnaughtite": "mega chesnaught",
-    "chimechite": "mega chimecho",
-    "clefablite": "mega clefable",
-    "crabominite": "mega crabominable",
-    "delphoxite": "mega delphox",
-    "dragoninite": "mega dragonite",
-    "drampanite": "mega drampa",
-    "emboarite": "mega emboar",
-    "excadrite": "mega excadrill",
-    "feraligite": "mega feraligatr",
-    "floettite": "mega eternal flower floette",
-    "froslassite": "mega froslass",
-    "galladite": "mega gallade",
-    "garchompite": "mega garchomp",
-    "gardevoirite": "mega gardevoir",
-    "gengarite": "mega gengar",
-    "glalitite": "mega glalie",
-    "glimmoranite": "mega glimmora",
-    "golurkite": "mega golurk",
-    "greninjite": "mega greninja",
-    "gyaradosite": "mega gyarados",
-    "hawluchanite": "mega hawlucha",
-    "heracronite": "mega heracross",
-    "houndoominite": "mega houndoom",
-    "kangaskhanite": "mega kangaskhan",
-    "lopunnite": "mega lopunny",
-    "lucarionite": "mega lucario",
-    "manectite": "mega manectric",
-    "medichamite": "mega medicham",
-    "meganiumite": "mega meganium",
-    "meowsticite": "mega meowstic",
-    "pidgeotite": "mega pidgeot",
-    "pinsirite": "mega pinsir",
-    "sablenite": "mega sableye",
-    "scizorite": "mega scizor",
-    "scovillainite": "mega scovillain",
-    "sharpedonite": "mega sharpedo",
-    "skarmorite": "mega skarmory",
-    "slowbronite": "mega slowbro",
-    "starminite": "mega starmie",
-    "steelixite": "mega steelix",
-    "tyranitarite": "mega tyranitar",
-    "venusaurite": "mega venusaur",
-    "victreebelite": "mega victreebel",
-}
 
 
 def _normalized_item_name(item: str | None) -> str:
@@ -268,30 +225,68 @@ def _base_species_from_mega_species(species_name: str) -> str | None:
     return None
 
 
-OFFICIAL_SPECIES_BY_KEY = {
-    _normalized_species_name(species_name): species_name
-    for species_name in ELIGIBLE_SPECIES
-}
-OFFICIAL_ITEM_BY_KEY = {
-    _normalized_item_name(item_name): item_name
-    for item_name in ALLOWED_HELD_ITEMS
-}
-OFFICIAL_MEGA_BY_KEY = {
-    mega_name.lower(): mega_name
-    for mega_name in ALLOWED_MEGA_EVOLUTIONS
-}
-MEGA_STONE_TO_BASE_KEYS = {
-    _normalized_item_name(stone_name): tuple(_normalized_species_name(species_name) for species_name in species_names)
-    for stone_name, species_names in MEGA_STONE_TO_BASE_SPECIES.items()
-}
-MEGA_TO_BASE_KEYS = {
-    mega_name: MEGA_STONE_TO_BASE_KEYS[stone_name]
-    for stone_name, mega_name in MEGA_STONE_TO_MEGA_NAME.items()
-}
-MEGA_TO_REQUIRED_ITEM_KEYS = {
-    mega_name: stone_name
-    for stone_name, mega_name in MEGA_STONE_TO_MEGA_NAME.items()
-}
+@dataclass(frozen=True)
+class _RegulationLookups:
+    """Normalized legality lookups for one regulation, compiled once and cached.
+
+    Legality is decided against the *active* regulation's pool, not a global one, so every
+    map here is derived from a specific RegulationEntry. Keys are normalized (lowercased /
+    alias-resolved) so Showdown imports match regardless of spelling.
+    """
+
+    species_by_key: dict[str, str]
+    item_by_key: dict[str, str]
+    mega_by_key: dict[str, str]
+    stone_to_base_keys: dict[str, tuple[str, ...]]
+    stone_to_mega_key: dict[str, str]
+    mega_to_required_item_key: dict[str, str]
+
+
+_REGULATION_LOOKUPS_CACHE: dict[str, _RegulationLookups] = {}
+
+
+def _regulation_lookups(regulation_id: str) -> _RegulationLookups:
+    cached = _REGULATION_LOOKUPS_CACHE.get(regulation_id)
+    if cached is not None:
+        return cached
+
+    regulation = get_regulation(regulation_id)
+    species_by_key = {
+        _normalized_species_name(species_name): species_name
+        for species_name in regulation.eligible_species
+    }
+    item_by_key = {
+        _normalized_item_name(item_name): item_name
+        for item_name in regulation.allowed_held_items
+    }
+    mega_by_key = {
+        mega_name.lower(): mega_name
+        for mega_name in regulation.allowed_mega_evolutions
+    }
+    stone_to_base_keys = {
+        _normalized_item_name(stone_name): tuple(
+            _normalized_species_name(species_name) for species_name in species_names
+        )
+        for stone_name, species_names in regulation.mega_stone_to_base_species.items()
+    }
+    stone_to_mega_key = {
+        _normalized_item_name(stone_name): mega_name.lower()
+        for stone_name, mega_name in regulation.mega_stone_to_mega_name.items()
+    }
+    mega_to_required_item_key = {
+        mega_key: stone_key for stone_key, mega_key in stone_to_mega_key.items()
+    }
+
+    lookups = _RegulationLookups(
+        species_by_key=species_by_key,
+        item_by_key=item_by_key,
+        mega_by_key=mega_by_key,
+        stone_to_base_keys=stone_to_base_keys,
+        stone_to_mega_key=stone_to_mega_key,
+        mega_to_required_item_key=mega_to_required_item_key,
+    )
+    _REGULATION_LOOKUPS_CACHE[regulation_id] = lookups
+    return lookups
 
 
 @dataclass(frozen=True)
@@ -383,6 +378,11 @@ class RegulationEntry:
     duplicate_species_disallowed: bool
     duplicate_held_items_disallowed: bool
     teams: tuple[TournamentTeamEntry, ...] = ()
+    # Per-regulation Mega data and base-stat rebalances. Defaulted so a regulation without
+    # Megas or stat changes can omit them; legality compiles these into normalized lookups.
+    mega_stone_to_base_species: dict[str, tuple[str, ...]] = field(default_factory=dict)
+    mega_stone_to_mega_name: dict[str, str] = field(default_factory=dict)
+    stat_overrides: dict[str, dict[str, int]] = field(default_factory=dict)
 
     def to_dict(
         self,
@@ -413,12 +413,11 @@ class RegulationEntry:
             payload["eligible_species"] = list(self.eligible_species)
             payload["allowed_held_items"] = list(self.allowed_held_items)
             payload["allowed_mega_evolutions"] = list(self.allowed_mega_evolutions)
+            lookups = _regulation_lookups(self.id)
             payload["required_items_by_mega_species"] = {
-                OFFICIAL_MEGA_BY_KEY[mega_name]: OFFICIAL_ITEM_BY_KEY[required_item_key]
-                for mega_name, required_item_key in sorted(MEGA_TO_REQUIRED_ITEM_KEYS.items())
-                if mega_name in OFFICIAL_MEGA_BY_KEY
-                and required_item_key in OFFICIAL_ITEM_BY_KEY
-                and OFFICIAL_MEGA_BY_KEY[mega_name] in self.allowed_mega_evolutions
+                lookups.mega_by_key[mega_key]: lookups.item_by_key[required_item_key]
+                for mega_key, required_item_key in sorted(lookups.mega_to_required_item_key.items())
+                if mega_key in lookups.mega_by_key and required_item_key in lookups.item_by_key
             }
         if include_teams:
             payload["teams"] = [team.to_dict(include_team_text=include_team_text) for team in self.teams]
@@ -443,11 +442,41 @@ _BUILTIN_REGULATIONS = (
             "not duplicate held items. Mega Evolution is allowed once per battle for the listed Mega Evolutions when "
             "the matching Mega Stone is held."
         ),
-        eligible_species=ELIGIBLE_SPECIES,
-        allowed_held_items=ALLOWED_HELD_ITEMS,
-        allowed_mega_evolutions=ALLOWED_MEGA_EVOLUTIONS,
+        eligible_species=_M_A_ELIGIBLE_SPECIES,
+        allowed_held_items=_M_A_ALLOWED_HELD_ITEMS,
+        allowed_mega_evolutions=_M_A_ALLOWED_MEGA_EVOLUTIONS,
         duplicate_species_disallowed=True,
         duplicate_held_items_disallowed=True,
+        mega_stone_to_base_species=_M_A_MEGA_STONE_TO_BASE_SPECIES,
+        mega_stone_to_mega_name=_M_A_MEGA_STONE_TO_MEGA_NAME,
+    ),
+    RegulationEntry(
+        id=M_B_REGULATION_ID,
+        display_name="Pokemon Champions Regulation M-B",
+        battle_type="double",
+        team_size=6,
+        source_ruleset_name="Pokemon Champions Regulation Set M-B",
+        source_ruleset_url="https://www.pokemon.com/us/pokemon-news/regulation-set-m-b-kicks-off-a-new-ranked-battles-season-and-battle-pass-in-pokemon-champions",
+        source_eligible_pokemon_url="https://www.serebii.net/pokemonchampions/rankedbattle/regulationm-b.shtml",
+        source_held_items_url="https://www.serebii.net/pokemonchampions/items.shtml",
+        champions_status="official",
+        is_official_champions_regulation=True,
+        notes=(
+            "Current official Pokemon Champions regulation (active 17 June 2026 - 2 September 2026, "
+            "used at the 2026 World Championships). M-B is additive over M-A: it keeps the entire M-A "
+            "pool and adds new eligible Pokemon, Mega Evolutions, and held items, with a few base-stat "
+            "rebalances. The same clauses apply -- only eligible Pokemon and allowed held items, no "
+            "duplicate Pokedex numbers, no duplicate held items, and one Mega Evolution per battle when "
+            "the matching Mega Stone is held."
+        ),
+        eligible_species=_m_b.ELIGIBLE_SPECIES,
+        allowed_held_items=_m_b.ALLOWED_HELD_ITEMS,
+        allowed_mega_evolutions=_m_b.ALLOWED_MEGA_EVOLUTIONS,
+        duplicate_species_disallowed=True,
+        duplicate_held_items_disallowed=True,
+        mega_stone_to_base_species=_m_b.MEGA_STONE_TO_BASE_SPECIES,
+        mega_stone_to_mega_name=_m_b.MEGA_STONE_TO_MEGA_NAME,
+        stat_overrides=_m_b.STAT_OVERRIDES,
     ),
 )
 
@@ -500,13 +529,14 @@ def resolve_regulation_pokemon_set(
     if _canonical_mega_name(pokemon_set.species) is not None:
         return pokemon_set
 
+    lookups = _regulation_lookups(regulation_id)
     normalized_item = _normalized_item_name(pokemon_set.item)
-    if normalized_item in MEGA_STONE_TO_BASE_KEYS:
-        allowed_base_species = set(MEGA_STONE_TO_BASE_KEYS[normalized_item])
+    if normalized_item in lookups.stone_to_base_keys:
+        allowed_base_species = set(lookups.stone_to_base_keys[normalized_item])
         base_species_name = _base_species_from_mega_species(pokemon_set.species) or pokemon_set.species
         normalized_base_species = _normalized_species_name(base_species_name)
         if normalized_base_species in allowed_base_species:
-            expected_mega_name = OFFICIAL_MEGA_BY_KEY.get(MEGA_STONE_TO_MEGA_NAME[normalized_item])
+            expected_mega_name = lookups.mega_by_key.get(lookups.stone_to_mega_key[normalized_item])
             if expected_mega_name is not None and pokemon_set.species != expected_mega_name:
                 return replace(pokemon_set, species=expected_mega_name)
 
@@ -523,16 +553,60 @@ def resolve_builder_option_source_species_name(species_name: str) -> str:
     return _base_species_from_mega_species(species_name) or species_name
 
 
-def resolve_required_item_for_species(species_name: str) -> str | None:
+_SPECIES_STAT_FIELD_BY_KEY = {
+    "hp": "base_hp",
+    "attack": "base_attack",
+    "defense": "base_defense",
+    "special_attack": "base_special_attack",
+    "special_defense": "base_special_defense",
+    "speed": "base_speed",
+}
+
+
+def apply_regulation_stat_overrides(
+    species_data: SpeciesData,
+    regulation_id: str | None,
+) -> SpeciesData:
+    """Apply a regulation's base-stat rebalances on top of the Champions baseline.
+
+    The metadata provider serves the Champions baseline (equal to M-A). Regulations that
+    rebalance a species (e.g. M-B nerfs) carry a per-regulation ``stat_overrides`` delta,
+    applied here at the regulation-aware boundary so the same provider cache serves every
+    regulation. A regulation with no override for the species (the common case) is a no-op.
+    """
+    if regulation_id is None:
+        return species_data
+    try:
+        regulation = get_regulation(regulation_id)
+    except KeyError:
+        return species_data
+    overrides = regulation.stat_overrides.get((species_data.api_name or "").strip().lower())
+    if not overrides:
+        return species_data
+    replacements = {
+        _SPECIES_STAT_FIELD_BY_KEY[stat_key]: int(value)
+        for stat_key, value in overrides.items()
+        if stat_key in _SPECIES_STAT_FIELD_BY_KEY
+    }
+    if not replacements:
+        return species_data
+    return replace(species_data, **replacements)
+
+
+def resolve_required_item_for_species(
+    species_name: str,
+    regulation_id: str = CATALOG_DEFAULT_REGULATION_ID,
+) -> str | None:
     canonical_mega_name = _canonical_mega_name(species_name)
     if canonical_mega_name is None:
         return None
 
-    required_item_key = MEGA_TO_REQUIRED_ITEM_KEYS.get(canonical_mega_name)
+    lookups = _regulation_lookups(regulation_id)
+    required_item_key = lookups.mega_to_required_item_key.get(canonical_mega_name)
     if required_item_key is None:
         return None
 
-    return OFFICIAL_ITEM_BY_KEY.get(required_item_key, required_item_key)
+    return lookups.item_by_key.get(required_item_key, required_item_key)
 
 
 def regulation_catalog_as_dict(
@@ -564,6 +638,7 @@ def validate_team_legality(
     regulation_id: str = DEFAULT_REGULATION_ID,
 ) -> TeamLegalityResult:
     regulation = get_regulation(regulation_id)
+    lookups = _regulation_lookups(regulation.id)
     team_sets = list(team)
     issues: list[TeamLegalityIssue] = []
     allowed_moves_cache: dict[str, frozenset[str]] = {}
@@ -591,7 +666,7 @@ def validate_team_legality(
         move_validation_species_name: str | None = None
 
         if declared_mega is not None:
-            if declared_mega not in OFFICIAL_MEGA_BY_KEY:
+            if declared_mega not in lookups.mega_by_key:
                 issues.append(
                     TeamLegalityIssue(
                         code="illegal_mega_species",
@@ -601,7 +676,7 @@ def validate_team_legality(
                         value=pokemon_set.species,
                     )
                 )
-            if base_from_mega is not None and _normalized_species_name(base_from_mega) not in OFFICIAL_SPECIES_BY_KEY:
+            if base_from_mega is not None and _normalized_species_name(base_from_mega) not in lookups.species_by_key:
                 issues.append(
                     TeamLegalityIssue(
                         code="illegal_species",
@@ -612,8 +687,8 @@ def validate_team_legality(
                     )
                 )
             elif base_from_mega is not None:
-                move_validation_species_name = OFFICIAL_SPECIES_BY_KEY[_normalized_species_name(base_from_mega)]
-        elif normalized_species not in OFFICIAL_SPECIES_BY_KEY:
+                move_validation_species_name = lookups.species_by_key[_normalized_species_name(base_from_mega)]
+        elif normalized_species not in lookups.species_by_key:
             issues.append(
                 TeamLegalityIssue(
                     code="illegal_species",
@@ -624,9 +699,9 @@ def validate_team_legality(
                 )
             )
         else:
-            move_validation_species_name = OFFICIAL_SPECIES_BY_KEY[normalized_species]
+            move_validation_species_name = lookups.species_by_key[normalized_species]
 
-        if normalized_item and normalized_item not in OFFICIAL_ITEM_BY_KEY:
+        if normalized_item and normalized_item not in lookups.item_by_key:
             issues.append(
                 TeamLegalityIssue(
                     code="illegal_item",
@@ -637,11 +712,11 @@ def validate_team_legality(
                 )
             )
 
-        if normalized_item in MEGA_STONE_TO_BASE_KEYS:
-            allowed_base_species = set(MEGA_STONE_TO_BASE_KEYS[normalized_item])
+        if normalized_item in lookups.stone_to_base_keys:
+            allowed_base_species = set(lookups.stone_to_base_keys[normalized_item])
             species_key_for_stone = _normalized_species_name(base_from_mega or pokemon_set.species)
             if species_key_for_stone not in allowed_base_species:
-                readable_species = ", ".join(OFFICIAL_SPECIES_BY_KEY[species_key] for species_key in sorted(allowed_base_species))
+                readable_species = ", ".join(lookups.species_by_key[species_key] for species_key in sorted(allowed_base_species))
                 issues.append(
                     TeamLegalityIssue(
                         code="illegal_mega_stone_holder",
@@ -651,14 +726,14 @@ def validate_team_legality(
                         value=pokemon_set.item,
                     )
                 )
-            expected_mega = MEGA_STONE_TO_MEGA_NAME[normalized_item]
+            expected_mega = lookups.stone_to_mega_key[normalized_item]
             if declared_mega is not None and declared_mega != expected_mega:
                 issues.append(
                     TeamLegalityIssue(
                         code="mismatched_mega_species",
                         message=(
                             f"{pokemon_set.species} does not match {pokemon_set.item}; the matching Mega Evolution is "
-                            f"{OFFICIAL_MEGA_BY_KEY[expected_mega]}."
+                            f"{lookups.mega_by_key[expected_mega]}."
                         ),
                         member_name=member_name,
                         team_slot=index,
@@ -721,7 +796,7 @@ def validate_team_legality(
 
         if normalized_item and regulation.duplicate_held_items_disallowed:
             previous_holder = seen_items.get(normalized_item)
-            item_display_name = OFFICIAL_ITEM_BY_KEY.get(normalized_item, pokemon_set.item)
+            item_display_name = lookups.item_by_key.get(normalized_item, pokemon_set.item)
             if previous_holder is not None:
                 issues.append(
                     TeamLegalityIssue(

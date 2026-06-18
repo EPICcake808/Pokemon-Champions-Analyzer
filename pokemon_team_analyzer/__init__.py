@@ -1,7 +1,9 @@
 from .analyzer import TeamAnalysis, analyze_team_text
 from .regulations import (
+	CATALOG_DEFAULT_REGULATION_ID,
 	DEFAULT_REGULATION_ID,
 	IllegalTeamError,
+	M_B_REGULATION_ID,
 	RegulationEntry,
 	TeamLegalityIssue,
 	TeamLegalityResult,
@@ -17,8 +19,10 @@ from .showdown import PokemonSet, parse_showdown_team
 from .version import __version__
 
 __all__ = [
+	"CATALOG_DEFAULT_REGULATION_ID",
 	"DEFAULT_REGULATION_ID",
 	"IllegalTeamError",
+	"M_B_REGULATION_ID",
 	"PokemonSet",
 	"RegulationEntry",
 	"TeamLegalityIssue",

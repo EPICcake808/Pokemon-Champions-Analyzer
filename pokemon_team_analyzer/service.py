@@ -14,8 +14,10 @@ from .models import MoveData, PokemonSet, SpeciesData, TeamMember
 from .preview import analyze_preview
 from .slot_doctor import analyze_slots
 from .regulations import (
+    CATALOG_DEFAULT_REGULATION_ID,
     DEFAULT_REGULATION_ID,
     IllegalTeamError,
+    apply_regulation_stat_overrides,
     get_regulation,
     regulation_catalog_as_dict,
     resolve_required_item_for_species,
@@ -29,7 +31,7 @@ _SPREAD_TARGET_NAMES = {"all-opponents", "all-other-pokemon", "entire-field"}
 
 def build_regulation_catalog_payload(*, include_team_text: bool = False, include_rules: bool = False) -> dict[str, object]:
     return {
-        "default_regulation_id": DEFAULT_REGULATION_ID,
+        "default_regulation_id": CATALOG_DEFAULT_REGULATION_ID,
         "regulations": regulation_catalog_as_dict(
             include_team_text=include_team_text,
             include_rules=include_rules,
@@ -45,7 +47,9 @@ def build_builder_species_options_payload(species_name: str, regulation_id: str 
 
     provider = CachedPokeApiClient()
     move_source_species = resolve_builder_option_source_species_name(canonical_species)
-    species_data = provider.get_species(canonical_species)
+    species_data = apply_regulation_stat_overrides(
+        provider.get_species(canonical_species), regulation_id
+    )
     return {
         "species": canonical_species,
         "types": list(species_data.types),
@@ -59,7 +63,7 @@ def build_builder_species_options_payload(species_name: str, regulation_id: str 
             "special_defense": species_data.base_special_defense,
             "speed": species_data.base_speed,
         },
-        "required_item": resolve_required_item_for_species(canonical_species),
+        "required_item": resolve_required_item_for_species(canonical_species, regulation_id=regulation_id),
     }
 
 

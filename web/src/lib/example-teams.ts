@@ -1,14 +1,15 @@
 import "server-only";
 
-import { DEFAULT_REGULATION_ID } from "@/lib/python-analyzer";
+import { CATALOG_DEFAULT_REGULATION_ID, DEFAULT_REGULATION_ID } from "@/lib/python-analyzer";
 import type { ExampleTeam } from "@/lib/types";
 
 const FEATURED_EXAMPLES: ExampleTeam[] = [
   {
     slug: "sample-team",
     title: "Curated Sample",
-    note: "Rain Tailwind shell with layered support turns and flexible speed control.",
-    regulationId: DEFAULT_REGULATION_ID,
+    note: "Regulation M-B rain Tailwind shell with layered support turns and flexible speed control.",
+    // Tagged with the current default regulation so the app's first load lands on M-B.
+    regulationId: CATALOG_DEFAULT_REGULATION_ID,
         teamText: `Mega Lucario @ Lucarionite
 Ability: Adaptability
 Level: 50

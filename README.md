@@ -2,11 +2,11 @@
 
 This project parses Pokemon Showdown team imports and summarizes a team's structure as both a readable report and a fixed-length numeric vector.
 
-It is scoped to Pokemon Champions and ships with an official, data-first regulation catalog for future web or API use. The current and default regulation is Regulation Set M-A, and teams are validated against that ruleset before analysis begins, including Champions-specific species, items, Mega Evolution constraints, and reduced move lists.
+It is scoped to Pokemon Champions and ships with an official, data-first regulation catalog that is toggleable across rulesets. Two official regulations are supported — Regulation Set M-A and Regulation Set M-B (M-B is additive over M-A and is the current default) — and teams are validated against the selected ruleset before analysis begins, including Champions-specific species, items, Mega Evolution constraints, and reduced move lists. Adding a future regulation is a self-contained data drop (see [Adding a regulation](#adding-a-regulation)).
 
 ## Release Status
 
-- Current release: `0.4.1`
+- Current release: `0.5.0`
 - Release history now lives in [`CHANGELOG.md`](CHANGELOG.md)
 - `0.1.0` established the split Vercel deployment shape for the Python API and the Next.js frontend.
 - `0.2.0` added account support, reweighted matchup scoring, deeper context-based matchup scoring with reason output, hosted meta snapshot refreshes for teams and common meta Pokemon, legality and sprite fixes, and repaired team previews.
@@ -155,7 +155,7 @@ npm run build
 
 If you need to launch the web app from a different working directory or runtime wrapper, set `POKEMON_ANALYZER_REPO_ROOT` to the repository root and optionally set `POKEMON_ANALYZER_PYTHON` if `python3` is not the right executable name for the local CLI fallback.
 
-The current web surface is regulation-aware, loads the available regulation catalog from the analyzer API, defaults to `champions_regulation_m_a`, preloads curated legal sample teams, and renders the same speed benchmarks, matchup layers, weighted meta analysis, preview rationale, utility breakdowns, archetype labels, difficulty notes, and per-member benchmark tags already emitted by the Python analyzer.
+The current web surface is regulation-aware, loads the available regulation catalog from the analyzer API, exposes a regulation toggle, defaults to `champions_regulation_m_b` (while the engine fallback stays `champions_regulation_m_a`), preloads curated legal sample teams, and renders the same speed benchmarks, matchup layers, weighted meta analysis, preview rationale, utility breakdowns, archetype labels, difficulty notes, and per-member benchmark tags already emitted by the Python analyzer.
 
 The hosted frontend now also exposes two in-app help surfaces in the top navbar: a Changelog modal for release notes and a Play Guide modal for complete beginners who need a literal walkthrough of team preview, bringing four Pokemon, selecting moves, switching, Protect, and Terastallization.
 
@@ -584,6 +584,14 @@ regulation = get_regulation("champions_regulation_m_a")
 legality = validate_team_legality_text(open("examples/sample_team.txt", "r", encoding="utf-8").read())
 ```
 
-The current built-in regulation is `champions_regulation_m_a`. It models the official Pokemon Champions Regulation Set M-A rules surfaced by the official regulation announcement, the official eligible-Pokemon page, and the published held-item list. The built-in catalog exposes the official eligible species list, the allowed held items, the allowed Mega Evolutions, and the duplicate-item clause in a JSON-friendly shape for future frontend work.
+Two built-in regulations ship today: `champions_regulation_m_a` and `champions_regulation_m_b`. Each models the official Pokemon Champions rules surfaced by the official regulation announcement, the official eligible-Pokemon page, and the published held-item list. M-B is additive over M-A (the full M-A pool plus the M-B species, Mega Evolutions, and held items). The built-in catalog exposes each regulation's eligible species list, allowed held items, allowed Mega Evolutions, required Mega stones, and the duplicate clauses in a JSON-friendly shape. The catalog's `default_regulation_id` (the regulation the web app loads first) is `champions_regulation_m_b`, while `DEFAULT_REGULATION_ID` — the engine's fallback used when a call omits a regulation — stays `champions_regulation_m_a`.
+
+### Adding a regulation
+
+Legality, Mega/stone resolution, and the catalog are compiled per regulation from each `RegulationEntry`, so a new regulation is a self-contained data drop:
+
+1. Add a data module (e.g. `pokemon_team_analyzer/champions_regulation_m_c_data.py`) defining the regulation's eligible species, allowed held items, allowed Mega Evolutions, and the `MEGA_STONE_TO_BASE_SPECIES` / `MEGA_STONE_TO_MEGA_NAME` maps. Model it as a prior regulation plus a delta to avoid duplication, as `champions_regulation_m_b_data.py` does.
+2. Append one `RegulationEntry` to `_BUILTIN_REGULATIONS` in `pokemon_team_analyzer/regulations.py`, passing those maps plus an optional `stat_overrides` table if the regulation rebalances any species' base stats.
+3. To make it the default the UI loads, point `CATALOG_DEFAULT_REGULATION_ID` at it. The web regulation toggle, builder, and analysis panels populate from the catalog automatically; regenerate `web/src/lib/fallback-regulation-catalog.json` with `python -m pokemon_team_analyzer --catalog-json --include-rules`.
 
 The analyzer fetches Pokemon and move metadata from PokeAPI on first use and stores a trimmed local cache in `~/.cache/pokemon_team_analyzer/pokeapi_cache.json`.

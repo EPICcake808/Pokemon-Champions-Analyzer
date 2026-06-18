@@ -6,6 +6,56 @@ The format is based on Keep a Changelog, with release sections grouped by what c
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-06-18
+
+Multi-regulation support. Pokemon Champions Regulation M-B (live 17 June - 2 September 2026,
+including the 2026 World Championships) is now a first-class, toggleable ruleset alongside
+M-A, and the engine was reworked so adding the next regulation is a self-contained data drop.
+
+### Added
+
+- **Regulation M-B** as a selectable ruleset. M-B is additive over M-A: the full M-A pool plus
+  22 new Pokemon (Gholdengo, Annihilape, Grimmsnarl, the Hoenn starters, …), 16 new Mega
+  Evolutions, and 15 new held items, encoded as an M-A-plus-delta data module
+  (`pokemon_team_analyzer/champions_regulation_m_b_data.py`). The new Champions-original mega
+  stones (Staraptite, Scolipite, Scraftinite, Eelektrossite, Pyroarite, Malamarite,
+  Barbaracite, Dragalgite, Falinksite, Raichunite X/Y) were verified against Serebii's Champions
+  pages. M-B is now the default ruleset the web app loads.
+- A per-regulation base-stat override layer (`apply_regulation_stat_overrides`) so a future
+  regulation that rebalances a species uses its own stat line while others stay correct. M-B's
+  table is intentionally empty: verification confirmed M-B changed no base stats (its
+  Annihilape/Grimmsnarl "nerfs" were move/mechanic changes, not stat changes).
+
+### Changed
+
+- Team legality, Mega/stone resolution, and the rules catalog are now compiled **per
+  regulation** from the active `RegulationEntry` instead of from M-A-only module globals, so a
+  Pokemon, Mega, item, or stone is judged against the regulation actually selected. Adding a
+  regulation is now a data drop plus one `_BUILTIN_REGULATIONS` entry
+  (`pokemon_team_analyzer/regulations.py`).
+- The engine fallback regulation (`DEFAULT_REGULATION_ID`) stays M-A so the live meta feed is
+  unaffected, while a separate `CATALOG_DEFAULT_REGULATION_ID` drives which ruleset the UI loads
+  first (now M-B). Showdown name normalization is built from the union of every regulation's
+  pool so newer species resolve regardless of the active ruleset.
+- The web regulation toggle, builder species picker, damage calc, preview, and slot doctor all
+  follow the selected regulation; section copy that hard-coded "Regulation M-A" now reflects the
+  active ruleset.
+
+### Fixed
+
+- Analyzing a team under a regulation without a curated speed-benchmark catalog (e.g. M-B) no
+  longer crashes in `TeamAnalysis.to_dict`; the speed profile now degrades gracefully with empty
+  benchmark tags per member (`pokemon_team_analyzer/analyzer.py`).
+- The meta board for a regulation without its own curated board no longer surfaces M-A
+  tournament-team shells under that regulation's heading (`pokemon_team_analyzer/meta_snapshots.py`).
+
+### Known limitations
+
+- A curated M-B meta board and speed-benchmark catalog are not yet ingested (M-B is ~1 day old);
+  the meta board shows the M-A-derived deterministic board as a disclosed proxy and the speed
+  panel reports that no curated table exists for M-B yet. M-B mega abilities new to the series
+  (e.g. Fire Mane, Elevate) are not yet modeled by the analyzer's ability logic.
+
 ## [0.4.1] - 2026-06-15
 
 A correctness pass over the analyzer's generated guidance and the damage calculator, driven by an

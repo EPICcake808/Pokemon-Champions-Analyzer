@@ -7,7 +7,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from .meta_snapshots import build_built_in_meta_snapshot_feed
-from .regulations import DEFAULT_REGULATION_ID
+from .regulations import CATALOG_DEFAULT_REGULATION_ID, DEFAULT_REGULATION_ID
 from .service import (
     build_analysis_route_payload,
     build_builder_move_payload,
@@ -77,7 +77,7 @@ def read_root() -> dict[str, object]:
     return {
         "service": "pokemon-champions-analyzer",
         "status": "ok",
-        "default_regulation_id": DEFAULT_REGULATION_ID,
+        "default_regulation_id": CATALOG_DEFAULT_REGULATION_ID,
     }
 
 

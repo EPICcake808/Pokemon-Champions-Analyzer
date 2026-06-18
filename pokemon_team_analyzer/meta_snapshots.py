@@ -347,7 +347,10 @@ def get_tournament_team_snapshots(
 ) -> tuple[dict[str, object], ...]:
     resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
     if resolved_regulation_id != DEFAULT_REGULATION_ID:
-        return BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS
+        # The built-in tournament shells are M-A (the engine default). Other regulations
+        # have no curated board yet, so return an empty board that degrades gracefully
+        # rather than mislabeling M-A shells as another regulation's field.
+        return ()
 
     base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
     if not base_url:

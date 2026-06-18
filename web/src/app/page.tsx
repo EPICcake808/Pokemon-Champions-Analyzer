@@ -36,14 +36,14 @@ export default async function Home() {
 
   if (USE_BUNDLED_DEV_SNAPSHOT) {
     initialLoadIssues.push(
-      "Showing the bundled Regulation M-A snapshot for the initial load. Refresh analysis to fetch live results.",
+      "Showing the bundled analysis snapshot for the initial load. Refresh analysis to fetch live results.",
     );
   } else {
     try {
       regulationCatalog = await getRegulationCatalog();
     } catch {
       initialLoadIssues.push(
-        "Live results are temporarily unavailable, so the bundled Regulation M-A snapshot is shown instead.",
+        "Live results are temporarily unavailable, so the bundled analysis snapshot is shown instead.",
       );
     }
   }
@@ -59,7 +59,7 @@ export default async function Home() {
     if (initialResult.ok) {
       initialAnalysis = initialResult.analysis;
     } else {
-      initialLoadIssues.push(`${initialResult.message} Showing the bundled Regulation M-A analysis snapshot instead.`);
+      initialLoadIssues.push(`${initialResult.message} Showing the bundled analysis snapshot instead.`);
     }
   }
 

@@ -24,6 +24,7 @@ from .models import TYPE_ORDER
 from .regulations import (
     DEFAULT_REGULATION_ID,
     IllegalTeamError,
+    apply_regulation_stat_overrides,
     get_regulation,
     list_regulations,
     resolve_required_item_for_species,
@@ -201,7 +202,9 @@ def _builder_species_options_as_dict(species_name: str, regulation_id: str) -> d
 
     provider = CachedPokeApiClient()
     move_source_species = resolve_builder_option_source_species_name(canonical_species)
-    species_data = provider.get_species(canonical_species)
+    species_data = apply_regulation_stat_overrides(
+        provider.get_species(canonical_species), regulation_id
+    )
     return {
         "species": canonical_species,
         "types": list(species_data.types),
@@ -215,7 +218,7 @@ def _builder_species_options_as_dict(species_name: str, regulation_id: str) -> d
             "special_defense": species_data.base_special_defense,
             "speed": species_data.base_speed,
         },
-        "required_item": resolve_required_item_for_species(canonical_species),
+        "required_item": resolve_required_item_for_species(canonical_species, regulation_id=regulation_id),
     }
 
 
