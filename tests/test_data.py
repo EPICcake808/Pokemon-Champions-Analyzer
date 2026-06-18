@@ -323,5 +323,54 @@ class ChampionsStatOverrideTests(unittest.TestCase):
         self.assertEqual(species.base_attack, 130)
 
 
+class ChampionsMegaAbilityOverrideTests(unittest.TestCase):
+    def test_override_lookup_is_keyed_by_form_slug(self) -> None:
+        from pokemon_team_analyzer.champions_mega_abilities import champions_mega_ability_overrides
+
+        self.assertEqual(champions_mega_ability_overrides("staraptor-mega"), ("contrary",))
+        self.assertEqual(champions_mega_ability_overrides("pyroar-mega"), ("fire-mane",))
+        self.assertEqual(champions_mega_ability_overrides("garchomp"), ())
+        self.assertEqual(champions_mega_ability_overrides(None), ())
+
+    def test_get_species_abilities_fills_empty_pokeapi_abilities_for_champions_mega(self) -> None:
+        # PokeAPI serves staraptor-mega with no abilities; the analyzer fills the Champions one.
+        staraptor_mega = {
+            "name": "staraptor-mega",
+            "stats": [
+                {"stat": {"name": "hp"}, "base_stat": 85},
+                {"stat": {"name": "attack"}, "base_stat": 140},
+                {"stat": {"name": "defense"}, "base_stat": 100},
+                {"stat": {"name": "special-attack"}, "base_stat": 60},
+                {"stat": {"name": "special-defense"}, "base_stat": 90},
+                {"stat": {"name": "speed"}, "base_stat": 110},
+            ],
+            "types": [
+                {"slot": 1, "type": {"name": "fighting"}},
+                {"slot": 2, "type": {"name": "flying"}},
+            ],
+            "abilities": [],
+        }
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "pokeapi_cache.json"
+            client = StubbedPokeApiClient(cache_path, {"pokemon/staraptor-mega": staraptor_mega})
+            self.assertEqual(client.get_species_abilities("Mega Staraptor"), ("contrary",))
+
+    def test_get_species_abilities_fills_override_from_stale_empty_cache(self) -> None:
+        # An older cache stored empty abilities for the Mega; reads still surface the override.
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            cache_path = Path(temporary_directory) / "pokeapi_cache.json"
+            cache_path.write_text(
+                json.dumps(
+                    {
+                        "pokemon": {"mega-staraptor": {"api_name": "staraptor-mega", "abilities": []}},
+                        "move": {},
+                    }
+                ),
+                encoding="utf-8",
+            )
+            client = StubbedPokeApiClient(cache_path, {})
+            self.assertEqual(client.get_species_abilities("Mega Staraptor"), ("contrary",))
+
+
 if __name__ == "__main__":
     unittest.main()

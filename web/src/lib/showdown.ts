@@ -108,6 +108,36 @@ export function buildPokemonSpriteUrl(speciesName: string): string {
   return `https://play.pokemonshowdown.com/sprites/dex/${showdownId}.png`;
 }
 
+/**
+ * Ordered sprite URLs to try for a species. Champions-original Mega Evolutions (e.g. Mega
+ * Staraptor) have no sprite on Pokemon Showdown, so for any Mega the base species' sprite is
+ * offered as a fallback — the renderer advances to it on image error instead of showing nothing.
+ */
+export function buildPokemonSpriteUrlCandidates(speciesName: string): string[] {
+  const primary = buildPokemonSpriteUrl(speciesName);
+  const baseSpecies = megaBaseSpeciesName(speciesName);
+  if (baseSpecies) {
+    const baseUrl = buildPokemonSpriteUrl(baseSpecies);
+    if (baseUrl !== primary) {
+      return [primary, baseUrl];
+    }
+  }
+  return [primary];
+}
+
+function megaBaseSpeciesName(speciesName: string): string | null {
+  const normalized = speciesName.trim().toLowerCase();
+  const spacedMegaMatch = normalized.match(/^mega\s+(.+?)(?:\s+[xy])?$/);
+  if (spacedMegaMatch) {
+    return spacedMegaMatch[1];
+  }
+  const dashedMegaMatch = normalized.match(/^(.+?)-mega(?:-[xy])?$/);
+  if (dashedMegaMatch) {
+    return dashedMegaMatch[1];
+  }
+  return null;
+}
+
 export function formatLabel(value: string): string {
   return value.replace(/[_-]+/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 }

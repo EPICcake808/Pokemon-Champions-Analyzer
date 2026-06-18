@@ -13,6 +13,7 @@ import certifi
 
 from .cache_paths import resolve_cache_path
 from .champions_m_a_stats import champions_stat_overrides
+from .champions_mega_abilities import champions_mega_ability_overrides
 from .models import MoveData, MoveStatChange, SpeciesData
 from .version import USER_AGENT
 
@@ -102,8 +103,13 @@ class CachedPokeApiClient:
         cache_key = normalize_showdown_name(species_name, convert_gender_suffix=True)
         cached = self._cache["pokemon"].get(cache_key)
         cached_abilities = _cached_species_abilities(cached)
-        if cached_abilities is not None:
+        if cached_abilities:
             return cached_abilities
+        if cached_abilities is not None:
+            # Cached but empty: PokeAPI carried no abilities. Fill from the Champions Mega
+            # table for the forms it omits (existing caches predate that fill).
+            override = champions_mega_ability_overrides((cached or {}).get("api_name"))
+            return override if override else cached_abilities
 
         payload = self._resolve_species_payload(species_name)
         trimmed = _trimmed_species_payload(species_name, payload)
@@ -349,14 +355,19 @@ def _trimmed_species_payload(species_name: str, payload: dict[str, Any]) -> dict
         stat["stat"]["name"]: stat["base_stat"]
         for stat in payload["stats"]
     }
+    api_name = payload["name"]
     abilities = tuple(
         ability_entry["ability"]["name"]
         for ability_entry in sorted(payload.get("abilities", []), key=lambda entry: entry.get("slot", 0))
     )
+    # PokeAPI serves several Champions-original Mega forms with no abilities; fill from the
+    # verified Champions table so the analyzer shows the Mega's ability.
+    if not abilities:
+        abilities = champions_mega_ability_overrides(api_name)
 
     return {
         "name": species_name,
-        "api_name": payload["name"],
+        "api_name": api_name,
         "types": tuple(
             slot["type"]["name"]
             for slot in sorted(payload["types"], key=lambda slot: slot["slot"])

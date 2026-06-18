@@ -124,6 +124,7 @@ MEGA_STONE_CONTEXT_ABILITIES = {
 DEFENSIVE_ABILITY_IMMUNITIES = {
     "dry skin": ("water",),
     "earth eater": ("ground",),
+    "elevate": ("ground",),
     "flash fire": ("fire",),
     "levitate": ("ground",),
     "lightning rod": ("electric",),
@@ -132,7 +133,7 @@ DEFENSIVE_ABILITY_IMMUNITIES = {
     "storm drain": ("water",),
     "volt absorb": ("electric",),
     "water absorb": ("water",),
-    "well-baked body": ("fire",),
+    "well baked body": ("fire",),
 }
 TEAM_REDIRECTION_ABILITIES = {
     "electric": ("lightning rod",),
@@ -8527,7 +8528,9 @@ def _score_team_field_soundness(
 
 
 def _normalized_ability_name(ability: str | None) -> str:
-    return (ability or "").strip().lower()
+    # Canonicalize spacing so hyphenated PokeAPI/builder slugs ("lightning-rod") and spaced
+    # Showdown text ("Lightning Rod") both match the ability tables.
+    return " ".join((ability or "").strip().lower().replace("-", " ").replace("_", " ").split())
 
 
 def _normalized_item_name(item: str | None) -> str:

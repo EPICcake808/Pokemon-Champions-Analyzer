@@ -360,5 +360,68 @@ class AssumptionDisclosureTests(unittest.TestCase):
         self.assertTrue(any("Light Screen" in note for note in screened.assumptions))
 
 
+class ChampionsMegaAbilityTests(unittest.TestCase):
+    """The Champions Mega abilities (and the hyphen-slug normalization) are modeled."""
+
+    def test_fire_mane_boosts_fire_moves(self) -> None:
+        move = _move("Flamethrower", "fire", "special", 90)
+        base = compute_damage(_attacker(), _defender(), move)
+        boosted = compute_damage(_attacker(ability="fire-mane"), _defender(), move)
+        self.assertGreater(boosted.max_damage, base.max_damage)
+        self.assertTrue(any("Fire Mane" in note for note in boosted.assumptions))
+        self.assertEqual(boosted.unmodeled, ())
+
+    def test_fire_mane_does_not_boost_other_types(self) -> None:
+        move = _move("Surf", "water", "special", 90)
+        base = compute_damage(_attacker(), _defender(), move)
+        same = compute_damage(_attacker(ability="fire-mane"), _defender(), move)
+        self.assertEqual(same.max_damage, base.max_damage)
+
+    def test_elevate_grants_ground_immunity(self) -> None:
+        eq = compute_damage(_attacker(), _defender(ability="elevate"), _move("Earthquake", "ground", "physical", 100))
+        self.assertEqual(eq.max_damage, 0)
+        self.assertIn("absorbs Ground", eq.summary)
+
+    def test_tough_claws_boosts_contact_but_not_listed_non_contact(self) -> None:
+        contact = _move("Meteor Mash", "steel", "physical", 90)
+        boosted = compute_damage(_attacker(ability="tough-claws", types=("steel",)), _defender(), contact)
+        plain = compute_damage(_attacker(types=("steel",)), _defender(), contact)
+        self.assertGreater(boosted.max_damage, plain.max_damage)
+        self.assertTrue(any("Tough Claws" in note for note in boosted.assumptions))
+
+        quake = _move("Earthquake", "ground", "physical", 100)
+        not_boosted = compute_damage(_attacker(ability="tough-claws"), _defender(), quake)
+        plain_quake = compute_damage(_attacker(), _defender(), quake)
+        self.assertEqual(not_boosted.max_damage, plain_quake.max_damage)
+        self.assertTrue(any("does not make contact" in note for note in not_boosted.assumptions))
+        self.assertEqual(not_boosted.unmodeled, ())
+
+    def test_shell_armor_suppresses_critical_hit(self) -> None:
+        move = _move("Ice Shard", "ice", "physical", 40)
+        crit_requested = compute_damage(_attacker(), _defender(ability="shell-armor"), move, FieldConditions(crit=True))
+        no_crit = compute_damage(_attacker(), _defender(ability="shell-armor"), move, FieldConditions(crit=False))
+        self.assertEqual(crit_requested.max_damage, no_crit.max_damage)
+        self.assertTrue(any("prevents critical hits" in note for note in crit_requested.assumptions))
+
+    def test_electric_surge_boosts_user_electric_moves(self) -> None:
+        move = _move("Thunderbolt", "electric", "special", 90)
+        base = compute_damage(_attacker(types=("electric",)), _defender(), move)
+        boosted = compute_damage(_attacker(ability="electric-surge", types=("electric",)), _defender(), move)
+        self.assertGreater(boosted.max_damage, base.max_damage)
+        self.assertTrue(any("Terrain" in note for note in boosted.assumptions))
+
+    def test_hyphenated_and_spaced_ability_slugs_match(self) -> None:
+        move = _move("Iron Head", "steel", "physical", 80)
+        hyphen = compute_damage(_attacker(ability="tough-claws", types=("steel",)), _defender(), move)
+        spaced = compute_damage(_attacker(ability="Tough Claws", types=("steel",)), _defender(), move)
+        self.assertEqual(hyphen.max_damage, spaced.max_damage)
+
+    def test_no_effect_mega_abilities_are_not_flagged_unmodeled(self) -> None:
+        move = _move("Body Slam", "normal", "physical", 85)
+        for ability in ("no-guard", "contrary", "speed-boost", "regenerator"):
+            result = compute_damage(_attacker(ability=ability), _defender(), move)
+            self.assertEqual(result.unmodeled, (), msg=ability)
+
+
 if __name__ == "__main__":
     unittest.main()

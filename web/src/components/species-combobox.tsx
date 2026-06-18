@@ -9,7 +9,10 @@ type Props = {
   placeholder?: string;
 };
 
-const MAX_VISIBLE = 60;
+// Bounds how many options render at once. Set well above the full eligible-species + Mega
+// count (a few hundred) so the unfiltered list is fully scrollable — previously a cap of 60
+// hid every Pokemon past the first 60 (e.g. the newer-regulation additions appended at the end).
+const MAX_VISIBLE = 1000;
 
 export function SpeciesCombobox({ value, options, onChange, placeholder = "Search species…" }: Props) {
   const [open, setOpen] = useState(false);
@@ -21,7 +24,9 @@ export function SpeciesCombobox({ value, options, onChange, placeholder = "Searc
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const matches = q ? options.filter((option) => option.toLowerCase().includes(q)) : options;
-    return matches.slice(0, MAX_VISIBLE);
+    // Alphabetical so the long list is navigable by scroll regardless of the source order
+    // (eligible species followed by Mega forms).
+    return [...matches].sort((a, b) => a.localeCompare(b)).slice(0, MAX_VISIBLE);
   }, [query, options]);
 
   useEffect(() => {

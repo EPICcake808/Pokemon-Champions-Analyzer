@@ -23,6 +23,7 @@ constants below. Anything outside that set is reported back in
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 
 from .models import MoveData, SpeciesData, TeamMember
@@ -36,6 +37,7 @@ from .typechart import defensive_multiplier
 ABILITY_TYPE_IMMUNITIES = {
     "dry skin": ("water",),
     "earth eater": ("ground",),
+    "elevate": ("ground",),  # Mega Eelektross (Champions): Levitate-like Ground immunity
     "flash fire": ("fire",),
     "levitate": ("ground",),
     "lightning rod": ("electric",),
@@ -44,7 +46,7 @@ ABILITY_TYPE_IMMUNITIES = {
     "storm drain": ("water",),
     "volt absorb": ("electric",),
     "water absorb": ("water",),
-    "well-baked body": ("fire",),
+    "well baked body": ("fire",),
 }
 
 # Offensive abilities that double the Attack stat.
@@ -91,6 +93,12 @@ _NO_DAMAGE_EFFECT_ABILITIES = {
     "armor tail",
     "defiant",
     "intimidate",
+    # Champions Mega abilities whose effect is not a single-roll damage modifier: Contrary
+    # only matters across self-lowering moves (stat stages are fed in), No Guard is accuracy
+    # (the roll already assumes a hit), and Speed Boost is a Speed change.
+    "contrary",
+    "no guard",
+    "speed boost",
 }
 
 # Items recognised by the engine (everything else is treated as no damage effect).
@@ -98,7 +106,7 @@ _KNOWN_NEUTRAL_ITEMS = {
     "leftovers",
     "rocky helmet",
     "sitrus berry",
-    "heavy-duty boots",
+    "heavy duty boots",
     "focus sash",
     "mental herb",
     "covert cloak",
@@ -123,7 +131,7 @@ TYPE_BOOST_ITEMS = {
     "metal coat": "steel",
     "miracle seed": "grass",
     "mystic water": "water",
-    "never-melt ice": "ice",
+    "never melt ice": "ice",
     "poison barb": "poison",
     "sharp beak": "flying",
     "silk scarf": "normal",
@@ -145,10 +153,32 @@ _HALF = 2048
 _ONE_AND_HALF = 6144
 _DOUBLE = 8192
 _LIFE_ORB_MOD = 5324  # 1.3
+_ONE_AND_THREE_TENTHS = 5324  # 1.3 (terrain boost / Tough Claws)
 _TYPE_BOOST_MOD = 4915  # 1.2 (type-enhancing items)
 _SPREAD_MOD = 3072  # 0.75
 _SCREEN_SINGLE = 2048  # 0.5
 _SCREEN_DOUBLE = 2732  # ~0.667
+
+# Offensive abilities that boost a single move type's base power by 1.5x.
+_TYPE_BOOST_ABILITIES = {
+    "fire mane": "fire",  # Mega Pyroar (Champions): Fire-type moves +50%
+}
+# Abilities that set a terrain boosting the grounded user's matching-type moves by 1.3x. Only
+# the user's own boost is modeled (the field-wide terrain is otherwise out of scope here).
+_TERRAIN_BOOST_ABILITIES = {
+    "electric surge": "electric",  # Mega Raichu X (Champions): Electric Terrain
+}
+# Contact-boosting abilities (1.3x on contact moves).
+_CONTACT_BOOST_ABILITIES = {"tough claws"}  # Mega Barbaracle, Mega Metagross
+# Defender abilities that block critical hits entirely.
+_CRIT_IMMUNE_ABILITIES = {"shell armor", "battle armor"}  # Mega Scolipede
+# MoveData has no contact flag, so Tough Claws is applied to physical moves while excluding the
+# common non-contact physical moves below (with the assumption disclosed). Keyed by api_name.
+_KNOWN_NON_CONTACT_PHYSICAL_MOVES = {
+    "earthquake", "bulldoze", "fissure", "magnitude", "rock-slide", "stone-edge", "rock-tomb",
+    "rock-blast", "rock-throw", "smack-down", "diamond-storm", "self-destruct", "explosion",
+    "bonemerang", "bone-rush", "bone-club", "thousand-arrows", "thousand-waves",
+}
 
 
 def _poke_round(value: float) -> int:
@@ -243,7 +273,9 @@ class DamageResult:
 
 
 def _norm(name: str | None) -> str:
-    return (name or "").strip().lower()
+    # Canonicalize spacing so hyphenated PokeAPI/builder slugs ("tough-claws", "lightning-rod")
+    # and spaced Showdown text ("Tough Claws") both match the modifier tables below.
+    return re.sub(r"[\s_-]+", " ", (name or "").strip().lower())
 
 
 def _ko_hits(per_hit: int, hp: int) -> int | None:
@@ -324,6 +356,9 @@ def compute_damage(
     weather = _norm(field.weather)
     move_type = move.type_name
     is_physical = move.damage_class == "physical"
+    # A defender with Shell Armor / Battle Armor cannot be critically hit.
+    is_crit = field.crit and defender_ability not in _CRIT_IMMUNE_ABILITIES
+    assumptions: list[str] = []
 
     # Defender ability immunity short-circuits everything.
     if move_type in ABILITY_TYPE_IMMUNITIES.get(defender_ability, ()):
@@ -351,19 +386,35 @@ def compute_damage(
 
     type_eff = defensive_multiplier(defender.types, move_type)
 
-    # --- Base-power modifiers (Technician, then 1.2x type-boost items) ---
+    # --- Base-power modifiers (Technician, type-boost items, type/terrain/contact abilities) ---
     power_mods: list[int] = []
     if attacker_ability == "technician" and power <= 60:
         power_mods.append(_ONE_AND_HALF)
     if TYPE_BOOST_ITEMS.get(attacker_item) == move_type:
         power_mods.append(_TYPE_BOOST_MOD)
+    if _TYPE_BOOST_ABILITIES.get(attacker_ability) == move_type:
+        power_mods.append(_ONE_AND_HALF)
+        assumptions.append(f"{attacker_ability.title()}: {move_type.title()} move power ×1.5.")
+    if _TERRAIN_BOOST_ABILITIES.get(attacker_ability) == move_type and "flying" not in attacker.types:
+        # Modeled as the grounded user's own terrain boost; the field-wide terrain is not tracked.
+        power_mods.append(_ONE_AND_THREE_TENTHS)
+        assumptions.append(
+            f"{attacker_ability.title()} sets {move_type.title()} Terrain: the grounded user's "
+            f"{move_type.title()} moves are boosted ×1.3."
+        )
+    if attacker_ability in _CONTACT_BOOST_ABILITIES and is_physical:
+        if move.api_name in _KNOWN_NON_CONTACT_PHYSICAL_MOVES:
+            assumptions.append(f"Tough Claws not applied: {move.name} does not make contact.")
+        else:
+            power_mods.append(_ONE_AND_THREE_TENTHS)
+            assumptions.append(f"Tough Claws ×1.3 (assumes {move.name} makes contact).")
     if power_mods:
         power = _apply_chain(power, tuple(power_mods))
 
     # --- Crit stage-ignore rules ---
     atk_stage = field.attacker_atk_stage
     def_stage = field.defender_def_stage
-    if field.crit:
+    if is_crit:
         atk_stage = max(0, atk_stage)
         def_stage = min(0, def_stage)
 
@@ -414,7 +465,7 @@ def compute_damage(
         elif move_type == "fire":
             base = _apply_mod(base, _HALF)
 
-    if field.crit:
+    if is_crit:
         base = math.floor(base * 1.5)
 
     # --- STAB modifier ---
@@ -444,7 +495,7 @@ def compute_damage(
     if attacker_item == _LIFE_ORB:
         final_mods.append(_LIFE_ORB_MOD)
     screen_mod = _SCREEN_DOUBLE if field.spread else _SCREEN_SINGLE
-    if not field.crit:
+    if not is_crit:
         if is_physical and field.reflect:
             final_mods.append(screen_mod)
         if not is_physical and field.light_screen:
@@ -474,22 +525,24 @@ def compute_damage(
     hp = defender.hp
 
     # Surface the assumptions behind any variable-power or field-dependent number (#11), so a row is
-    # never shown as exact when it actually depends on state this single roll cannot see.
-    assumptions: list[str] = []
+    # never shown as exact when it actually depends on state this single roll cannot see. (The
+    # ability/terrain/contact assumptions were already collected above.)
     variable_note = _VARIABLE_POWER_MOVES.get(move.api_name)
     if variable_note:
         assumptions.append(variable_note.format(power=power))
     if field.spread:
         assumptions.append("Spread move: base damage ×0.75 (move hits multiple targets).")
-    if field.crit:
+    if is_crit:
         assumptions.append("Critical hit: ×1.5 and ignores screens and the defender's positive defense boosts.")
+    elif field.crit:
+        assumptions.append(f"{defender_ability.title()} prevents critical hits, so the requested critical hit is not applied.")
     if is_burned:
         assumptions.append("Attacker burned: physical damage halved.")
     if weather in ("sun", "rain") and move_type in ("fire", "water"):
         assumptions.append(f"{weather.title()}: {move_type.title()} damage adjusted (×1.5 boosted / ×0.5 weakened).")
-    if not field.crit and is_physical and field.reflect:
+    if not is_crit and is_physical and field.reflect:
         assumptions.append("Reflect: physical damage ×0.5 (×0.667 in doubles).")
-    if not field.crit and not is_physical and field.light_screen:
+    if not is_crit and not is_physical and field.light_screen:
         assumptions.append("Light Screen: special damage ×0.5 (×0.667 in doubles).")
 
     # Surface ability/item factors we did not model so the UI can flag them.
@@ -528,13 +581,27 @@ def compute_damage(
 
 def _modeled_attacker_abilities() -> frozenset[str]:
     return frozenset(
-        {"adaptability", "technician", "guts", *_DOUBLE_ATTACK_ABILITIES, *_NO_DAMAGE_EFFECT_ABILITIES}
+        {
+            "adaptability",
+            "technician",
+            "guts",
+            *_DOUBLE_ATTACK_ABILITIES,
+            *_TYPE_BOOST_ABILITIES,
+            *_TERRAIN_BOOST_ABILITIES,
+            *_CONTACT_BOOST_ABILITIES,
+            *_NO_DAMAGE_EFFECT_ABILITIES,
+        }
     )
 
 
 def _modeled_defender_abilities() -> frozenset[str]:
     return frozenset(
-        {*ABILITY_TYPE_IMMUNITIES, *_DEFENDER_TYPE_HALVING_ABILITIES, *_NO_DAMAGE_EFFECT_ABILITIES}
+        {
+            *ABILITY_TYPE_IMMUNITIES,
+            *_DEFENDER_TYPE_HALVING_ABILITIES,
+            *_CRIT_IMMUNE_ABILITIES,
+            *_NO_DAMAGE_EFFECT_ABILITIES,
+        }
     )
 
 

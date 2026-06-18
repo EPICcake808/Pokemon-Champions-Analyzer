@@ -58,6 +58,25 @@ M-A, and the engine was reworked so adding the next regulation is a self-contain
 
 ### Fixed
 
+- The builder species dropdown now lists every eligible Pokemon and Mega form when scrolling, not
+  only the first 60 (which hid the newer-regulation additions appended at the end), and is sorted
+  alphabetically so a long list is navigable (`web/src/components/species-combobox.tsx`).
+- Champions-original Mega Evolutions (Mega Staraptor, Mega Scolipede, Mega Pyroar, …) now show
+  their ability. PokeAPI serves several of these forms with an empty ability list, so the analyzer
+  fills the Champions ability from a verified table, applied only when PokeAPI provides none
+  (`pokemon_team_analyzer/champions_mega_abilities.py`, `pokemon_team_analyzer/data.py`).
+- The damage engine and defensive-typing logic now model the M-B Mega abilities' effects: Fire
+  Mane (Fire moves ×1.5), Elevate (Ground immunity), Electric Surge (the grounded user's Electric
+  moves ×1.3), Tough Claws (contact moves ×1.3, with non-contact physical moves excluded and the
+  assumption disclosed), and Shell Armor (suppresses the critical hit); Contrary, No Guard, and
+  Speed Boost are recognized as having no single-roll damage effect rather than being flagged as
+  unmodeled (`pokemon_team_analyzer/damage.py`, `pokemon_team_analyzer/analyzer.py`). Ability
+  matching now canonicalizes hyphenated PokeAPI/builder slugs and spaced Showdown text, so
+  multi-word abilities (Huge Power, Lightning Rod, Swift Swim, …) selected in the builder also
+  apply.
+- Mega forms with no sprite of their own (the Champions-original Megas, which Pokemon Showdown has
+  no art for) now fall back to the base species' sprite instead of showing a blank placeholder
+  (`web/src/lib/showdown.ts`, `web/src/components/analyzer-workspace.tsx`).
 - Analyzing a team under a regulation without a curated speed-benchmark catalog (e.g. M-B) no
   longer crashes in `TeamAnalysis.to_dict`; the speed profile now degrades gracefully with empty
   benchmark tags per member (`pokemon_team_analyzer/analyzer.py`).
@@ -69,8 +88,10 @@ M-A, and the engine was reworked so adding the next regulation is a self-contain
 - M-B has no dedicated meta board yet (it is ~1 day old), so it shows the latest M-A field as a
   disclosed proxy; the daily job ingests M-B results as they appear and the board hands off
   automatically once it crosses the sample-size cutoff. The speed-benchmark panel still reports
-  that no curated table exists for M-B yet, and M-B mega abilities new to the series (e.g. Fire
-  Mane, Elevate) are not yet modeled by the analyzer's ability logic.
+  that no curated table exists for M-B yet.
+- Tough Claws is applied to physical moves minus a curated non-contact list (MoveData carries no
+  contact flag), and Electric Surge models only the user's own terrain boost (the field-wide
+  terrain is not tracked) — both disclosed in the damage row's assumptions.
 
 ## [0.4.1] - 2026-06-15
 

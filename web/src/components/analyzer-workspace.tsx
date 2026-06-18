@@ -15,7 +15,7 @@ import { PreviewTrainer } from "@/components/preview-trainer";
 import { SlotDoctor } from "@/components/slot-doctor";
 import { SpeciesCombobox } from "@/components/species-combobox";
 import { SpeedCoveragePanel } from "@/components/speed-coverage";
-import { buildPokemonSpriteUrl, formatLabel, parseShowdownTeam, serializeShowdownTeam } from "@/lib/showdown";
+import { buildPokemonSpriteUrlCandidates, formatLabel, parseShowdownTeam, serializeShowdownTeam } from "@/lib/showdown";
 import type {
   AnalyzeRoutePayload,
   AuthCapabilitySummary,
@@ -3505,11 +3505,18 @@ function BuilderStatPreview({
 }
 
 function PokemonSprite({ species, label, small = false }: { species: string; label: string; small?: boolean }) {
-  const [failed, setFailed] = useState(false);
-  const url = buildPokemonSpriteUrl(species);
+  const candidates = buildPokemonSpriteUrlCandidates(species);
+  const [candidateIndex, setCandidateIndex] = useState(0);
+  // Reset the fallback chain when the species changes (the component is reused across slots).
+  const [trackedSpecies, setTrackedSpecies] = useState(species);
+  if (species !== trackedSpecies) {
+    setTrackedSpecies(species);
+    setCandidateIndex(0);
+  }
+  const url = candidates[candidateIndex];
   const sizeClass = small ? "h-14 w-14 sm:h-16 sm:w-16" : "h-20 w-20 lg:h-24 lg:w-24";
 
-  if (failed) {
+  if (!url) {
     return (
       <div
         className={`flex ${sizeClass} items-center justify-center border border-[var(--line)] [font-family:var(--font-display)] text-[0.68rem] uppercase tracking-[0.22em] text-white/34`}
@@ -3526,7 +3533,7 @@ function PokemonSprite({ species, label, small = false }: { species: string; lab
       width={small ? 64 : 96}
       height={small ? 64 : 96}
       unoptimized
-      onError={() => setFailed(true)}
+      onError={() => setCandidateIndex((index) => index + 1)}
       loading="lazy"
       sizes={small ? "64px" : "96px"}
       className={`${sizeClass} object-contain drop-shadow-[0_22px_45px_rgba(0,0,0,0.48)]`}
