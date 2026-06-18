@@ -44,7 +44,10 @@ jobs:
       - name: Install package
         run: pip install -e .
 
-      - name: Build (and optionally publish) the meta board
+      # M-A board: built from M-A tournament data, committed to the repo artifact, and (when
+      # configured) published to the DB. The separate M-B step below ingests M-B data once it
+      # exists; until then the runtime proxy shows M-A for M-B (see meta_snapshots.py).
+      - name: Build (and optionally publish) the M-A meta board
         env:
           LIMITLESS_API_KEY: ${{ secrets.LIMITLESS_API_KEY }}
           META_SNAPSHOT_REFRESH_SECRET: ${{ secrets.META_SNAPSHOT_REFRESH_SECRET }}
@@ -62,6 +65,32 @@ jobs:
             echo "DB publish skipped (META_SNAPSHOT_PUBLISH_URL / META_SNAPSHOT_REFRESH_SECRET not set); repo commit still runs."
           fi
           python -m pokemon_team_analyzer.meta_ingest "${ARGS[@]}"
+
+      # Regulation M-B: ingest M-B's own tournament results once they exist and publish to the
+      # DB (per-regulation upsert, so it never touches the M-A row or the committed M-A artifact
+      # -- no --write here). --skip-if-empty makes this a clean no-op until M-B data appears. The
+      # runtime proxy keeps showing the M-A field for M-B until the M-B board crosses the
+      # sample-size cutoff, at which point the analyzer switches to it automatically.
+      - name: Build and publish the Regulation M-B board (no-op until data exists)
+        env:
+          LIMITLESS_API_KEY: ${{ secrets.LIMITLESS_API_KEY }}
+          META_SNAPSHOT_REFRESH_SECRET: ${{ secrets.META_SNAPSHOT_REFRESH_SECRET }}
+          PUBLISH_URL: ${{ secrets.META_SNAPSHOT_PUBLISH_URL }}
+          SINCE: ${{ github.event.inputs.since_days || '30' }}
+          MIN_PLAYERS: ${{ github.event.inputs.min_players || '16' }}
+          MAX_TOURNAMENTS: ${{ github.event.inputs.max_tournaments || '60' }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PUBLISH_URL}" ] || [ -z "${META_SNAPSHOT_REFRESH_SECRET}" ]; then
+            echo "M-B publish skipped (META_SNAPSHOT_PUBLISH_URL / META_SNAPSHOT_REFRESH_SECRET not set)."
+            exit 0
+          fi
+          # DB-only publish (no --write): a per-regulation upsert that never touches the M-A row
+          # or the committed M-A artifact. --skip-if-empty exits 0 until M-B results exist.
+          python -m pokemon_team_analyzer.meta_ingest \
+            --format-code M-B --regulation champions_regulation_m_b \
+            --since "$SINCE" --min-players "$MIN_PLAYERS" --max-tournaments "$MAX_TOURNAMENTS" \
+            --publish-url "${PUBLISH_URL}" --skip-if-empty --report
 
       - name: Commit refreshed board
         # Run even if publish failed, so the freshly built artifact is still committed.

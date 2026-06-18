@@ -393,6 +393,19 @@ class BuildFeedTests(unittest.TestCase):
         self.assertEqual(document["provenance"]["officialEventCount"], 1)
         self.assertTrue(document["provenance"]["officialEvents"])
 
+    def test_main_skip_if_empty_exits_zero_when_no_data(self):
+        # A regulation with no tournament data yet makes build_feed raise RuntimeError.
+        import io
+        from contextlib import redirect_stderr
+
+        mb_args = ["--format-code", "M-B", "--regulation", "champions_regulation_m_b"]
+        with patch.object(build, "build_feed", side_effect=RuntimeError("No rosters were collected")):
+            with redirect_stderr(io.StringIO()):
+                # Without the flag a no-data build is a hard error...
+                self.assertEqual(build.main(mb_args), 1)
+                # ...with it, the daily build is a clean no-op.
+                self.assertEqual(build.main([*mb_args, "--skip-if-empty"]), 0)
+
 
 class LimitlessVgcOfficialSourceTests(unittest.TestCase):
     def test_classify_tier(self):

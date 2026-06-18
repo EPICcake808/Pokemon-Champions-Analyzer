@@ -16,8 +16,10 @@ from pokemon_team_analyzer.meta_snapshots import (
     get_runtime_common_meta_pokemon,
     get_tournament_meta_provenance,
     get_tournament_team_snapshots,
+    is_proxy_board,
+    resolve_board_regulation_id,
 )
-from pokemon_team_analyzer.regulations import DEFAULT_REGULATION_ID
+from pokemon_team_analyzer.regulations import DEFAULT_REGULATION_ID, M_B_REGULATION_ID
 
 
 class _DummyHttpResponse:
@@ -278,6 +280,126 @@ class RuntimeUsageMetaTests(unittest.TestCase):
         rows = _build_common_meta_pokemon(DEFAULT_REGULATION_ID)
         self.assertTrue(rows)
         self.assertIn("meta_share", rows[0])
+
+
+class MetaBoardProxyTests(unittest.TestCase):
+    """M-B borrows the M-A board as a proxy until it has tournament data of its own."""
+
+    def setUp(self) -> None:
+        clear_runtime_meta_snapshot_cache()
+
+    def tearDown(self) -> None:
+        clear_runtime_meta_snapshot_cache()
+
+    def test_resolve_board_regulation_id(self) -> None:
+        self.assertEqual(resolve_board_regulation_id(DEFAULT_REGULATION_ID), DEFAULT_REGULATION_ID)
+        self.assertEqual(resolve_board_regulation_id(M_B_REGULATION_ID), DEFAULT_REGULATION_ID)
+        # A regulation without a configured fallback resolves to itself.
+        self.assertEqual(resolve_board_regulation_id("champions_regulation_future"), "champions_regulation_future")
+
+    def test_is_proxy_board(self) -> None:
+        self.assertTrue(is_proxy_board(M_B_REGULATION_ID))
+        self.assertFalse(is_proxy_board(DEFAULT_REGULATION_ID))
+
+    @patch.dict(os.environ, {"POKEMON_ANALYZER_META_SNAPSHOT_URL": ""}, clear=False)
+    def test_m_b_serves_the_built_in_m_a_board(self) -> None:
+        # With no live feed configured, M-B shows the built-in M-A tournament shells.
+        self.assertEqual(get_tournament_team_snapshots(M_B_REGULATION_ID), TOURNAMENT_TEAM_SNAPSHOTS)
+
+    def test_unknown_regulation_without_fallback_is_empty(self) -> None:
+        self.assertEqual(get_tournament_team_snapshots("champions_regulation_future"), ())
+
+    def test_m_b_provenance_discloses_proxy(self) -> None:
+        provenance = get_tournament_meta_provenance(M_B_REGULATION_ID)
+        self.assertEqual(provenance.get("proxy_for_regulation_id"), M_B_REGULATION_ID)
+        self.assertEqual(provenance.get("proxy_source_regulation_id"), DEFAULT_REGULATION_ID)
+        # The user-facing note uses friendly labels and discloses the proxy + expanded legality.
+        methodology = str(provenance.get("methodology", ""))
+        self.assertIn("Regulation M-B", methodology)
+        self.assertIn("Regulation M-A", methodology)
+        self.assertIn("expanded legality", methodology)
+
+    def test_m_a_provenance_has_no_proxy_disclosure(self) -> None:
+        provenance = get_tournament_meta_provenance(DEFAULT_REGULATION_ID)
+        self.assertNotIn("proxy_for_regulation_id", provenance)
+
+
+def _board_payload(regulation_id: str, sample_size: int, slug: str) -> dict[str, object]:
+    return {
+        "regulationId": regulation_id,
+        "sourceLabel": f"{regulation_id} board",
+        "tournamentTeamSnapshots": [
+            {
+                "slug": slug,
+                "label": slug,
+                "source": "External feed",
+                "result_label": "daily refresh",
+                "field_relevance": 0.95,
+                "popularity_weight": 0.8,
+                "result_weight": 0.9,
+                "modes": ["tailwind"],
+                "mode_weights": {"tailwind": 1.0},
+                "broad_mix": {"hyper_offense": 1.0},
+                "key_pokemon": ["garchomp"],
+                "key_cores": ["Garchomp core"],
+            }
+        ],
+        "provenance": {"sampleSize": sample_size},
+    }
+
+
+class MetaBoardCutoffTests(unittest.TestCase):
+    """Data-driven hand-off: M-B uses its own board once it crosses the sample-size cutoff."""
+
+    def setUp(self) -> None:
+        clear_runtime_meta_snapshot_cache()
+
+    def tearDown(self) -> None:
+        clear_runtime_meta_snapshot_cache()
+
+    def _route(self, m_b_sample_size: int):
+        """A urlopen side_effect serving an M-A board and an M-B board by regulationId."""
+        m_a_payload = _board_payload(DEFAULT_REGULATION_ID, 200, "m-a-shell")
+        m_b_payload = _board_payload(M_B_REGULATION_ID, m_b_sample_size, "m-b-shell")
+
+        def _side_effect(request, *args, **kwargs):
+            url = request.full_url if hasattr(request, "full_url") else str(request)
+            payload = m_b_payload if f"regulationId={M_B_REGULATION_ID}" in url else m_a_payload
+            return _DummyHttpResponse(payload)
+
+        return _side_effect
+
+    def test_m_b_uses_own_board_once_above_cutoff(self) -> None:
+        # M-B's own board has plenty of teams (>= 30) -> serve M-B, drop the proxy.
+        with patch.dict(
+            os.environ,
+            {"POKEMON_ANALYZER_META_SNAPSHOT_URL": "https://example.com/api/meta-snapshot", "POKEMON_ANALYZER_META_BOARD_MIN_SAMPLE": "30"},
+            clear=False,
+        ):
+            with patch("pokemon_team_analyzer.meta_snapshots.urlopen", side_effect=self._route(45)):
+                self.assertEqual(resolve_board_regulation_id(M_B_REGULATION_ID), M_B_REGULATION_ID)
+                self.assertFalse(is_proxy_board(M_B_REGULATION_ID))
+                snapshots = get_tournament_team_snapshots(M_B_REGULATION_ID)
+                provenance = get_tournament_meta_provenance(M_B_REGULATION_ID)
+
+        self.assertEqual(snapshots[0]["slug"], "m-b-shell")
+        self.assertNotIn("proxy_for_regulation_id", provenance)
+
+    def test_m_b_proxies_to_m_a_below_cutoff(self) -> None:
+        # M-B's own board is too thin (< 30) -> keep showing the M-A field as a proxy.
+        with patch.dict(
+            os.environ,
+            {"POKEMON_ANALYZER_META_SNAPSHOT_URL": "https://example.com/api/meta-snapshot", "POKEMON_ANALYZER_META_BOARD_MIN_SAMPLE": "30"},
+            clear=False,
+        ):
+            with patch("pokemon_team_analyzer.meta_snapshots.urlopen", side_effect=self._route(5)):
+                self.assertEqual(resolve_board_regulation_id(M_B_REGULATION_ID), DEFAULT_REGULATION_ID)
+                self.assertTrue(is_proxy_board(M_B_REGULATION_ID))
+                snapshots = get_tournament_team_snapshots(M_B_REGULATION_ID)
+                provenance = get_tournament_meta_provenance(M_B_REGULATION_ID)
+
+        self.assertEqual(snapshots[0]["slug"], "m-a-shell")
+        self.assertEqual(provenance.get("proxy_for_regulation_id"), M_B_REGULATION_ID)
 
 
 if __name__ == "__main__":

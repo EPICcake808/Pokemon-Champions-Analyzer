@@ -25,6 +25,13 @@ M-A, and the engine was reworked so adding the next regulation is a self-contain
   regulation that rebalances a species uses its own stat line while others stay correct. M-B's
   table is intentionally empty: verification confirmed M-B changed no base stats (its
   Annihilape/Grimmsnarl "nerfs" were move/mechanic changes, not stat changes).
+- The meta-ingest pipeline can now build a board for any regulation via a new `--regulation`
+  flag, decoupled from `--format-code` (the Limitless data source), plus `--skip-if-empty` so a
+  newer regulation's daily build is a clean no-op until its results appear. The usage tokenizer
+  recognizes every regulation's Mega stones, and the daily refresh job
+  (`.github/workflows/meta-refresh.yml`) now ingests and publishes the M-B board (DB-only,
+  per-regulation upsert, so it never touches the committed M-A artifact) alongside M-A
+  (`pokemon_team_analyzer/meta_ingest/`).
 
 ### Changed
 
@@ -40,6 +47,14 @@ M-A, and the engine was reworked so adding the next regulation is a self-contain
 - The web regulation toggle, builder species picker, damage calc, preview, and slot doctor all
   follow the selected regulation; section copy that hard-coded "Regulation M-A" now reflects the
   active ruleset.
+- A brand-new regulation borrows the board of the regulation it extends until it has enough
+  tournament data of its own, then hands off automatically (`resolve_board_regulation_id` in
+  `pokemon_team_analyzer/meta_snapshots.py`). While M-B's own board is thin it shows the latest
+  M-A field — evaluated against your M-B team under M-B's expanded legality, with the proxy and
+  the reason stated in the board's provenance; once M-B's published board crosses the sample-size
+  cutoff (default 30 sampled teams, `POKEMON_ANALYZER_META_BOARD_MIN_SAMPLE`) the analyzer serves
+  M-B's own board and the disclosure drops. The runtime feed and built-in board are now keyed by
+  the resolved board regulation rather than hard-gated to M-A.
 
 ### Fixed
 
@@ -51,10 +66,11 @@ M-A, and the engine was reworked so adding the next regulation is a self-contain
 
 ### Known limitations
 
-- A curated M-B meta board and speed-benchmark catalog are not yet ingested (M-B is ~1 day old);
-  the meta board shows the M-A-derived deterministic board as a disclosed proxy and the speed
-  panel reports that no curated table exists for M-B yet. M-B mega abilities new to the series
-  (e.g. Fire Mane, Elevate) are not yet modeled by the analyzer's ability logic.
+- M-B has no dedicated meta board yet (it is ~1 day old), so it shows the latest M-A field as a
+  disclosed proxy; the daily job ingests M-B results as they appear and the board hands off
+  automatically once it crosses the sample-size cutoff. The speed-benchmark panel still reports
+  that no curated table exists for M-B yet, and M-B mega abilities new to the series (e.g. Fire
+  Mane, Elevate) are not yet modeled by the analyzer's ability logic.
 
 ## [0.4.1] - 2026-06-15
 

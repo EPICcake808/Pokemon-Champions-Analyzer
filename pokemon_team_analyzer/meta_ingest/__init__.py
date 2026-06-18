@@ -1,4 +1,4 @@
-"""Local, multi-source meta ingestion for Champions Regulation M-A.
+"""Local, multi-source meta ingestion for Champions regulations (default Regulation M-A).
 
 This subpackage builds the published meta-snapshot feed from real, structured
 tournament data instead of the hand-curated in-repo board. It is intentionally
@@ -9,8 +9,10 @@ Pipeline overview:
 
 * :mod:`.sources.limitless` is the authoritative backbone. It uses the official
   Limitless tournament API (``play.limitlesstcg.com/api``) to list completed
-  Champions Regulation M-A (``format == "M-A"``) tournaments and pull every
-  player's structured roster.
+  Champions tournaments for the requested ``--format-code`` (default ``"M-A"``)
+  and pull every player's structured roster. ``--format-code`` (the data source)
+  and ``--regulation`` (the board's legality/tag) are decoupled, so a newer
+  regulation can be seeded from an older format's results.
 * :mod:`.sources.pikalytics` and :mod:`.sources.pokemon_zone` are secondary
   usage cross-checks used only by :mod:`.reconcile`.
 * :mod:`.usage` computes real overall usage (teams-containing-species over total

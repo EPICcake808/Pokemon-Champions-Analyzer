@@ -483,6 +483,23 @@ _BUILTIN_REGULATIONS = (
 _REGULATION_BY_ID = {regulation.id: regulation for regulation in _BUILTIN_REGULATIONS}
 
 
+def _build_all_mega_stone_to_base_species() -> dict[str, tuple[str, ...]]:
+    """Union of every regulation's Mega-stone -> base-species map.
+
+    Regulation-agnostic consumers (e.g. the meta-ingest usage tokenizer) need to recognize a
+    held Mega stone from any regulation, not just M-A's, so they read this union rather than a
+    single regulation's table.
+    """
+    merged: dict[str, tuple[str, ...]] = {}
+    for regulation in _BUILTIN_REGULATIONS:
+        for stone_name, base_species in regulation.mega_stone_to_base_species.items():
+            merged.setdefault(stone_name, base_species)
+    return merged
+
+
+ALL_MEGA_STONE_TO_BASE_SPECIES = _build_all_mega_stone_to_base_species()
+
+
 def list_regulations() -> tuple[RegulationEntry, ...]:
     return _BUILTIN_REGULATIONS
 

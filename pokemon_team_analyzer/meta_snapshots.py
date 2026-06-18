@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 from datetime import UTC, datetime
 from typing import Any, cast
@@ -14,7 +15,7 @@ from .champions_m_a_tournament_meta import (
     TOURNAMENT_META_SOURCES as BUILT_IN_TOURNAMENT_META_SOURCES,
     TOURNAMENT_TEAM_SNAPSHOTS as BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS,
 )
-from .regulations import DEFAULT_REGULATION_ID
+from .regulations import DEFAULT_REGULATION_ID, get_regulation
 
 
 _SNAPSHOT_CACHE: dict[str, dict[str, object]] = {}
@@ -30,6 +31,74 @@ RUNTIME_USAGE_METHODOLOGY = (
     "Live overall usage from real tournament team lists: each Pokemon's share is the "
     "percentage of sampled Regulation M-A teams running it, cross-checked across sources."
 )
+
+
+# A brand-new regulation borrows the board of the regulation it extends until it has enough
+# tournament data of its own. M-B extends M-A: while M-B's own board is thin (or absent) the
+# M-B board shows the M-A field (the user's M-B-legal team is still analyzed against it under
+# M-B); once M-B's own board reaches the sample-size cutoff the hand-off is automatic. Remove
+# an entry to force a regulation onto its own board regardless of sample size.
+_META_BOARD_FALLBACK_REGULATION_ID: dict[str, str] = {
+    "champions_regulation_m_b": DEFAULT_REGULATION_ID,
+}
+
+# Minimum sampled-team count before a regulation switches from its proxy to its own board.
+# Below this a board's usage percentages are too noisy to trust, so the proxy (the more
+# established regulation it extends) is shown instead. Override via the env var to tune.
+_META_BOARD_PROXY_MIN_SAMPLE_SIZE_DEFAULT = 30
+
+
+def _meta_board_proxy_min_sample_size() -> int:
+    raw = os.getenv("POKEMON_ANALYZER_META_BOARD_MIN_SAMPLE", "").strip()
+    if raw:
+        try:
+            return max(0, int(raw))
+        except ValueError:
+            pass
+    return _META_BOARD_PROXY_MIN_SAMPLE_SIZE_DEFAULT
+
+
+def _own_board_sample_size(regulation_id: str) -> int:
+    """Sampled-team count of a regulation's *own* published board (0 if it has none)."""
+    base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
+    if not base_url:
+        return 0
+    entry = _runtime_board_cache_entry(regulation_id, base_url)
+    if not entry:
+        return 0
+    provenance = entry.get("provenance")
+    sample_size = provenance.get("sample_size") if isinstance(provenance, dict) else None
+    return sample_size if isinstance(sample_size, int) and not isinstance(sample_size, bool) else 0
+
+
+def resolve_board_regulation_id(regulation_id: str | None) -> str:
+    """The regulation whose meta board should actually be served for ``regulation_id``.
+
+    A regulation with a configured fallback uses its *own* board once that board has enough
+    sampled teams; until then it borrows the fallback regulation's board as a proxy.
+    """
+    resolved = regulation_id or DEFAULT_REGULATION_ID
+    fallback = _META_BOARD_FALLBACK_REGULATION_ID.get(resolved)
+    if fallback is None:
+        return resolved
+    if _own_board_sample_size(resolved) >= _meta_board_proxy_min_sample_size():
+        return resolved
+    return fallback
+
+
+def _regulation_label(regulation_id: str) -> str:
+    """Friendly short label for a regulation id, e.g. 'Regulation M-B'. Falls back to the id."""
+    try:
+        display_name = get_regulation(regulation_id).display_name
+    except KeyError:
+        return regulation_id
+    return re.sub(r"^Pokemon Champions\s+", "", display_name).strip() or regulation_id
+
+
+def is_proxy_board(regulation_id: str | None) -> bool:
+    """True when ``regulation_id`` is borrowing another regulation's board as a proxy."""
+    resolved = regulation_id or DEFAULT_REGULATION_ID
+    return resolve_board_regulation_id(resolved) != resolved
 
 
 def clear_runtime_meta_snapshot_cache() -> None:
@@ -99,13 +168,27 @@ def get_tournament_meta_provenance(
     """
 
     resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
+    board_regulation_id = resolve_board_regulation_id(resolved_regulation_id)
     base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
-    if resolved_regulation_id == DEFAULT_REGULATION_ID and base_url:
-        cache_key = f"{resolved_regulation_id}:{base_url}"
-        cached_entry = _SNAPSHOT_CACHE.get(cache_key)
-        if cached_entry and cached_entry.get("provenance"):
-            return cast(dict[str, object], cached_entry["provenance"])
-    return _built_in_meta_provenance()
+    provenance: dict[str, object] | None = None
+    if base_url:
+        entry = _runtime_board_cache_entry(board_regulation_id, base_url)
+        if entry and entry.get("provenance"):
+            provenance = dict(cast(dict[str, object], entry["provenance"]))
+    if provenance is None:
+        provenance = _built_in_meta_provenance()
+    if board_regulation_id != resolved_regulation_id:
+        # Disclose that another regulation's field is shown as a proxy for this one.
+        target_label = _regulation_label(resolved_regulation_id)
+        source_label = _regulation_label(board_regulation_id)
+        provenance["proxy_for_regulation_id"] = resolved_regulation_id
+        provenance["proxy_source_regulation_id"] = board_regulation_id
+        provenance["methodology"] = (
+            f"{provenance.get('methodology', '')} Shown as the current proxy field for "
+            f"{target_label}: no dedicated board exists for it yet, so the latest {source_label} "
+            f"results are displayed and your team is evaluated under {target_label}'s expanded legality."
+        ).strip()
+    return provenance
 
 
 def _isoformat_utc(moment: datetime | None = None) -> str:
@@ -342,42 +425,58 @@ def _fetch_runtime_tournament_team_snapshots(
     return tuple(normalized_snapshots), provenance, common_meta
 
 
-def get_tournament_team_snapshots(
-    regulation_id: str | None = DEFAULT_REGULATION_ID,
-) -> tuple[dict[str, object], ...]:
-    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
-    if resolved_regulation_id != DEFAULT_REGULATION_ID:
-        # The built-in tournament shells are M-A (the engine default). Other regulations
-        # have no curated board yet, so return an empty board that degrades gracefully
-        # rather than mislabeling M-A shells as another regulation's field.
-        return ()
+def _runtime_board_cache_entry(regulation_id: str, base_url: str) -> dict[str, object] | None:
+    """Fetch (and cache) a single regulation's runtime board, or ``None`` if it has none.
 
-    base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
-    if not base_url:
-        return BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS
-
-    cache_key = f"{resolved_regulation_id}:{base_url}"
+    The result is cached per ``regulation_id:base_url`` for the snapshot TTL. Failures are
+    negatively cached so the data-driven proxy resolution (which probes a newer regulation's
+    own board every analysis) does not re-hit a missing board repeatedly; a previously good
+    entry is kept and served stale on a later failure.
+    """
+    cache_key = f"{regulation_id}:{base_url}"
     cached_entry = _SNAPSHOT_CACHE.get(cache_key)
     now = time.monotonic()
     if cached_entry and now < cast(float, cached_entry["expires_at"]):
-        return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
+        return None if cached_entry.get("failed") else cached_entry
 
     try:
         runtime_snapshots, runtime_provenance, runtime_common_meta = _fetch_runtime_tournament_team_snapshots(
-            base_url, resolved_regulation_id
+            base_url, regulation_id
         )
     except Exception:
-        if cached_entry:
-            return cast(tuple[dict[str, object], ...], cached_entry["snapshots"])
-        return BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS
+        if cached_entry and not cached_entry.get("failed"):
+            return cached_entry  # serve the last good board stale rather than dropping it
+        _SNAPSHOT_CACHE[cache_key] = {
+            "expires_at": now + _runtime_meta_snapshot_ttl_seconds(),
+            "failed": True,
+        }
+        return None
 
-    _SNAPSHOT_CACHE[cache_key] = {
+    entry: dict[str, object] = {
         "expires_at": now + _runtime_meta_snapshot_ttl_seconds(),
         "snapshots": runtime_snapshots,
         "provenance": runtime_provenance,
         "common_meta": runtime_common_meta,
     }
-    return runtime_snapshots
+    _SNAPSHOT_CACHE[cache_key] = entry
+    return entry
+
+
+def get_tournament_team_snapshots(
+    regulation_id: str | None = DEFAULT_REGULATION_ID,
+) -> tuple[dict[str, object], ...]:
+    # Serve the effective board for this regulation: its own once it has enough data, else the
+    # board of the regulation it extends (proxy), else the built-in M-A board / empty.
+    board_regulation_id = resolve_board_regulation_id(regulation_id)
+    base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
+    if base_url:
+        entry = _runtime_board_cache_entry(board_regulation_id, base_url)
+        if entry:
+            return cast(tuple[dict[str, object], ...], entry["snapshots"])
+    # No live feed (or it failed): only M-A has a built-in board to fall back to.
+    if board_regulation_id == DEFAULT_REGULATION_ID:
+        return BUILT_IN_TOURNAMENT_TEAM_SNAPSHOTS
+    return ()
 
 
 def get_runtime_common_meta_pokemon(
@@ -391,17 +490,12 @@ def get_runtime_common_meta_pokemon(
     no live usage is available and the caller should fall back to board-share derivation.
     """
 
-    resolved_regulation_id = regulation_id or DEFAULT_REGULATION_ID
-    if resolved_regulation_id != DEFAULT_REGULATION_ID:
-        return ()
-
+    board_regulation_id = resolve_board_regulation_id(regulation_id)
     base_url = os.getenv("POKEMON_ANALYZER_META_SNAPSHOT_URL", "").strip()
     if not base_url:
         return ()
 
-    # Ensure the runtime feed is fetched/cached (shared fetch populates common_meta too).
-    get_tournament_team_snapshots(resolved_regulation_id)
-    cached_entry = _SNAPSHOT_CACHE.get(f"{resolved_regulation_id}:{base_url}")
-    if not cached_entry:
+    entry = _runtime_board_cache_entry(board_regulation_id, base_url)
+    if not entry:
         return ()
-    return cast(tuple[dict[str, object], ...], cached_entry.get("common_meta", ()))
+    return cast(tuple[dict[str, object], ...], entry.get("common_meta", ()))

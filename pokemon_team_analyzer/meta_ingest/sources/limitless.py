@@ -24,8 +24,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from ...champions_m_a_data import MEGA_STONE_TO_BASE_SPECIES
 from ...data import normalize_showdown_name
+from ...regulations import ALL_MEGA_STONE_TO_BASE_SPECIES
 from .. import DEFAULT_FORMAT_CODE
 from ..http import HttpError, get_json
 
@@ -34,9 +34,11 @@ WEB_BASE = "https://play.limitlesstcg.com"
 GAME = "VGC"
 
 # Normalized stone base species (e.g. "charizard") -> indicates the holder mega-evolves.
+# Uses the union of every regulation's Mega stones so M-B (and later) Mega holders tokenize
+# correctly, not just M-A's.
 _STONE_BASE_TOKENS = {
     stone: tuple(normalize_showdown_name(base, convert_gender_suffix=True) for base in bases)
-    for stone, bases in MEGA_STONE_TO_BASE_SPECIES.items()
+    for stone, bases in ALL_MEGA_STONE_TO_BASE_SPECIES.items()
 }
 
 # Mega stones whose resulting catalog token is not simply ``{base_id}-mega``.
@@ -169,11 +171,11 @@ def list_tournaments(
     now: datetime | None = None,
     sleep=None,
 ) -> list[Tournament]:
-    """List completed Reg M-A VGC tournaments within the date window.
+    """List completed VGC tournaments matching ``format_code`` within the date window.
 
     The API returns tournaments newest-first, so paging stops once results fall
-    before the window. Filtering by ``format == "M-A"`` is done client-side to be
-    robust regardless of server-side format filtering.
+    before the window. Filtering by ``format == format_code`` (default ``"M-A"``) is
+    done client-side to be robust regardless of server-side format filtering.
     """
 
     current_time = (now or datetime.now(UTC)).astimezone(UTC)

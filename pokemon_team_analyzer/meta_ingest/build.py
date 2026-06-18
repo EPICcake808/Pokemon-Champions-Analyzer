@@ -232,6 +232,17 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--format-code", default=DEFAULT_FORMAT_CODE, help="Limitless format code to match (default 'M-A')."
     )
+    parser.add_argument(
+        "--regulation",
+        default=DEFAULT_REGULATION_ID,
+        help=(
+            "Regulation id the board is built and tagged for, used to validate and discover "
+            f"team shells (default '{DEFAULT_REGULATION_ID}'). Decoupled from --format-code so a "
+            "newer regulation can be seeded from an older format's tournament data -- e.g. "
+            "'--format-code M-A --regulation champions_regulation_m_b' builds an M-B board from "
+            "the latest M-A results under M-B's expanded legality."
+        ),
+    )
     parser.add_argument("--min-players", type=int, default=8, help="Skip grassroots tournaments below this size.")
     parser.add_argument("--max-tournaments", type=int, default=60, help="Cap on grassroots tournaments sampled.")
     parser.add_argument("--max-teams", type=int, default=150, help="Cap on unique teams analyzed for discovery.")
@@ -251,6 +262,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "Defaults to the META_SNAPSHOT_PUBLISH_URL env var.",
     )
     parser.add_argument("--report", action="store_true", help="Print the full reconciliation report.")
+    parser.add_argument(
+        "--skip-if-empty",
+        action="store_true",
+        help="Exit 0 without writing/publishing when no tournament data is available for the "
+        "format yet (so a newer regulation's daily build is a clean no-op until results appear).",
+    )
     return parser.parse_args(argv)
 
 
@@ -262,7 +279,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(
         f"Collecting Limitless Reg {args.format_code} tournaments (last {args.since}d, "
-        f"min {args.min_players} players, up to {args.max_tournaments})...",
+        f"min {args.min_players} players, up to {args.max_tournaments}); "
+        f"building board for regulation '{args.regulation}'...",
         file=sys.stderr,
     )
     try:
@@ -270,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
             since_days=args.since,
             officials_since_days=args.officials_since,
             format_code=args.format_code,
+            regulation_id=args.regulation,
             min_players=args.min_players,
             max_tournaments=args.max_tournaments,
             max_teams_analyzed=args.max_teams,
@@ -277,6 +296,17 @@ def main(argv: list[str] | None = None) -> int:
             include_officials=not args.no_officials,
             on_progress=progress,
         )
+    except RuntimeError as error:
+        # build_feed raises RuntimeError when there are no rosters / no discoverable shells.
+        # For a regulation that has no tournament data yet, that is expected: skip cleanly.
+        if args.skip_if_empty:
+            print(
+                f"No board built for regulation '{args.regulation}' (no data yet); skipping: {error}",
+                file=sys.stderr,
+            )
+            return 0
+        print(f"ERROR: {error}", file=sys.stderr)
+        return 1
     except Exception as error:  # noqa: BLE001 - CLI boundary: report and exit nonzero
         print(f"ERROR: {error}", file=sys.stderr)
         return 1
