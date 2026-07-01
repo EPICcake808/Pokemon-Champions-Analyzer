@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-06-30T10:13:42.117815Z",
+  "generatedAt": "2026-07-01T10:22:50.188608Z",
   "regulations": [
     {
       "regulationId": "champions_regulation_m_a",
-      "updatedAt": "2026-06-30T10:13:42.117815Z",
+      "updatedAt": "2026-07-01T10:22:50.188608Z",
       "sourceLabel": "Pokemon Champions Analyzer automated multi-source Regulation M-A meta board",
       "notes": [
         "Automated multi-source ingest: 2963 teams across 62 tournaments (grassroots last 30d + officials last 60d).",
@@ -1188,7 +1188,7 @@
         }
       ],
       "provenance": {
-        "generatedAt": "2026-06-30T10:13:42.117815Z",
+        "generatedAt": "2026-07-01T10:22:50.188608Z",
         "windowDays": 30,
         "officialsWindowDays": 60,
         "sampleSize": 2963,
