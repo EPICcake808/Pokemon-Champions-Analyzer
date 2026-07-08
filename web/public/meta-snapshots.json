@@ -1,16 +1,16 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-07T10:11:12.552556Z",
+  "generatedAt": "2026-07-08T09:48:48.713287Z",
   "regulations": [
     {
       "regulationId": "champions_regulation_m_a",
-      "updatedAt": "2026-07-07T10:11:12.552556Z",
+      "updatedAt": "2026-07-08T09:48:48.713287Z",
       "sourceLabel": "Pokemon Champions Analyzer automated multi-source Regulation M-A meta board",
       "notes": [
-        "Automated multi-source ingest: 2957 teams across 62 tournaments (grassroots last 30d + officials last 60d).",
+        "Automated multi-source ingest: 2793 teams across 58 tournaments (grassroots last 30d + officials last 60d).",
         "The meta list is ranked by USAGE WEIGHTED toward the biggest, most official events (Regionals/Internationals/Special Events/Worlds) and the deepest top-cut runs; raw share-of-teams is retained for transparency.",
         "Official events weighted in: NAIC 2026, New Orleans (international, 1096), Special Event Turin (special event, 940), Regional Indianapolis, IN (regional, 1013).",
-        "Discovered 24 representative shells from 150 analyzed grassroots teams (49 clusters).",
+        "Discovered 24 representative shells from 150 analyzed grassroots teams (53 clusters).",
         "Reconciliation: Pikalytics (20 rows); unavailable: Pokémon Zone — unavailable (HTTP 403 Forbidden)",
         "Top-10 usage agreement with cross-checks: 100%.",
         "Provenance: limitlessvgc.com (official results) + Limitless tournament API (grassroots), cross-checked against Pikalytics and Pokémon Zone."
@@ -18,7 +18,7 @@
       "commonMetaPokemon": [
         {
           "species": "Kingambit",
-          "metaShare": 51.6,
+          "metaShare": 51.9,
           "whyUsed": "Balance and offense teams both value it because it keeps priority endgames honest and punishes passive or overly defensive lines.",
           "whatItDoes": "It acts as a cleaner and trade punisher, usually closing games with strong Dark or Steel pressure and priority once its partners have chipped the field.",
           "featuredTeams": [
@@ -26,14 +26,14 @@
             "Incineroar Mega Floette Dual Mode",
             "Kingambit Sneasler Dual Mode"
           ],
-          "weightedUsagePercent": 51.6,
+          "weightedUsagePercent": 51.9,
           "usagePercent": 35.7,
-          "teamCount": 1056,
-          "sampleSize": 2957
+          "teamCount": 996,
+          "sampleSize": 2793
         },
         {
           "species": "Basculegion",
-          "metaShare": 46.7,
+          "metaShare": 46.8,
           "whyUsed": "Rain and fast-offense shells keep it around because it converts speed control into immediate KOs better than most physical cleaners in the format.",
           "whatItDoes": "It acts as the rain-enabled cleaner that cashes in on chipped boards and forces endgames once Pelipper, Tailwind, or support positioning has opened the field.",
           "featuredTeams": [
@@ -41,10 +41,10 @@
             "Kingambit Sneasler Dual Mode",
             "Basculegion Farigiraf Tailroom"
           ],
-          "weightedUsagePercent": 46.7,
-          "usagePercent": 36.8,
-          "teamCount": 1089,
-          "sampleSize": 2957
+          "weightedUsagePercent": 46.8,
+          "usagePercent": 36.5,
+          "teamCount": 1020,
+          "sampleSize": 2793
         },
         {
           "species": "Garchomp",
@@ -57,9 +57,9 @@
             "Hisuian Arcanine Corviknight Sand Tailwind"
           ],
           "weightedUsagePercent": 43.6,
-          "usagePercent": 39.8,
-          "teamCount": 1176,
-          "sampleSize": 2957
+          "usagePercent": 39.5,
+          "teamCount": 1103,
+          "sampleSize": 2793
         },
         {
           "species": "Incineroar",
@@ -72,9 +72,9 @@
             "Mega Charizard Y Hydreigon Dual Mode"
           ],
           "weightedUsagePercent": 38.2,
-          "usagePercent": 35.8,
-          "teamCount": 1060,
-          "sampleSize": 2957
+          "usagePercent": 35.7,
+          "teamCount": 998,
+          "sampleSize": 2793
         },
         {
           "species": "Sneasler",
@@ -87,35 +87,35 @@
             "Mega Charizard Y Hydreigon Dual Mode"
           ],
           "weightedUsagePercent": 36.9,
-          "usagePercent": 32.2,
-          "teamCount": 952,
-          "sampleSize": 2957
+          "usagePercent": 31.9,
+          "teamCount": 891,
+          "sampleSize": 2793
         },
         {
           "species": "Charizard",
-          "metaShare": 34.1,
+          "metaShare": 34.3,
           "whyUsed": "Sun and fast-offense shells lean on it because its Mega forms fold a self-contained weather engine and one of the format's best nukes into a single, flexible slot.",
           "whatItDoes": "As Mega Charizard Y it sets harsh sunlight and fires off high-output special Fire damage; as Mega Charizard X it offers a physical Dragon/Fire alternative — either way it turns Tailwind and support turns straight into KO pressure.",
           "featuredTeams": [],
-          "weightedUsagePercent": 34.1,
+          "weightedUsagePercent": 34.3,
           "usagePercent": 27.3,
-          "teamCount": 807,
-          "sampleSize": 2957
+          "teamCount": 763,
+          "sampleSize": 2793
         },
         {
           "species": "Floette Eternal",
-          "metaShare": 33.4,
+          "metaShare": 33.6,
           "whyUsed": "Balance, Trick Room, and dual-mega shells lean on it because its Mega folds a top-tier Fairy special attacker and a durable support body into one flexible slot.",
           "whatItDoes": "It threatens high-output Fairy damage through Light of Ruin while Flower Veil and its bulk let it stay in to support partners, anchoring both slow Trick Room and fast dual-mode lines.",
           "featuredTeams": [],
-          "weightedUsagePercent": 33.4,
-          "usagePercent": 24.9,
-          "teamCount": 735,
-          "sampleSize": 2957
+          "weightedUsagePercent": 33.6,
+          "usagePercent": 24.8,
+          "teamCount": 693,
+          "sampleSize": 2793
         },
         {
           "species": "Sinistcha",
-          "metaShare": 28.2,
+          "metaShare": 28.0,
           "whyUsed": "It compresses redirection, healing, and slower-mode insurance into one slot, so balance, room, and hybrid shells can stay consistent without losing support density.",
           "whatItDoes": "It keeps partners healthy with Hospitality or healing support, redirects key turns with Rage Powder, and still threatens real board progress with Matcha Gotcha or Trick Room positioning.",
           "featuredTeams": [
@@ -123,10 +123,10 @@
             "Mega Charizard Y Mega Floette Trick Room",
             "Rotom Wash Sinistcha Tailroom"
           ],
-          "weightedUsagePercent": 28.2,
-          "usagePercent": 30.9,
-          "teamCount": 914,
-          "sampleSize": 2957
+          "weightedUsagePercent": 28.0,
+          "usagePercent": 30.8,
+          "teamCount": 860,
+          "sampleSize": 2793
         },
         {
           "species": "Whimsicott",
@@ -139,9 +139,9 @@
             "Basculegion Farigiraf Tailroom"
           ],
           "weightedUsagePercent": 22.9,
-          "usagePercent": 21.6,
-          "teamCount": 638,
-          "sampleSize": 2957
+          "usagePercent": 21.7,
+          "teamCount": 605,
+          "sampleSize": 2793
         },
         {
           "species": "Aerodactyl",
@@ -150,16 +150,16 @@
           "whatItDoes": "It threatens Tailwind leads, fast chip, and disruptive positioning turns that let stronger backline attackers start the game ahead on tempo.",
           "featuredTeams": [],
           "weightedUsagePercent": 13.8,
-          "usagePercent": 13.0,
-          "teamCount": 383,
-          "sampleSize": 2957
+          "usagePercent": 12.9,
+          "teamCount": 360,
+          "sampleSize": 2793
         }
       ],
       "tournamentTeamSnapshots": [
         {
           "slug": "live-garchomp-mega-charizard-y-tailwind",
           "label": "Garchomp Mega Charizard Y Tailwind",
-          "source": "official + grassroots results (401 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (372 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "International winner",
           "field_relevance": 1.3,
           "popularity_weight": 1.0,
@@ -172,7 +172,7 @@
           ],
           "mode_weights": {
             "tailwind": 0.52,
-            "dual_mode": 0.3,
+            "dual_mode": 0.31,
             "tailroom": 0.09,
             "trick_room": 0.09
           },
@@ -199,16 +199,16 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 401,
+          "team_count": 372,
           "is_official": true
         },
         {
           "slug": "live-incineroar-mega-floette-dual-mode",
           "label": "Incineroar Mega Floette Dual Mode",
-          "source": "official + grassroots results (129 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (122 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Special Event winner",
           "field_relevance": 1.03,
-          "popularity_weight": 0.57,
+          "popularity_weight": 0.58,
           "result_weight": 1.0,
           "modes": [
             "dual_mode",
@@ -216,8 +216,8 @@
             "tailwind"
           ],
           "mode_weights": {
-            "dual_mode": 0.5,
-            "trick_room": 0.42,
+            "dual_mode": 0.51,
+            "trick_room": 0.43,
             "tailwind": 0.07
           },
           "broad_mix": {
@@ -243,13 +243,13 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 129,
+          "team_count": 122,
           "is_official": true
         },
         {
           "slug": "live-kingambit-sneasler-dual-mode",
           "label": "Kingambit Sneasler Dual Mode",
-          "source": "official + grassroots results (68 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (62 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Special Event top-8 finish",
           "field_relevance": 0.93,
           "popularity_weight": 0.48,
@@ -285,13 +285,13 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 68,
+          "team_count": 62,
           "is_official": true
         },
         {
           "slug": "live-mega-charizard-y-mega-floette-trick-room",
           "label": "Mega Charizard Y Mega Floette Trick Room",
-          "source": "official + grassroots results (43 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (37 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Regional winner",
           "field_relevance": 0.91,
           "popularity_weight": 0.39,
@@ -327,7 +327,7 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 43,
+          "team_count": 37,
           "is_official": true
         },
         {
@@ -418,9 +418,9 @@
         {
           "slug": "live-rotom-wash-sinistcha-tailroom",
           "label": "Rotom Wash Sinistcha Tailroom",
-          "source": "official + grassroots results (9 teams): Regional Indianapolis, IN, Intimidators Champions Challenge #18 REG M-A",
+          "source": "official + grassroots results (6 teams): Regional Indianapolis, IN, Intimidators Champions Challenge #18 REG M-A",
           "result_label": "Regional top-4 finish",
-          "field_relevance": 0.86,
+          "field_relevance": 0.85,
           "popularity_weight": 0.32,
           "result_weight": 0.97,
           "modes": [
@@ -458,7 +458,7 @@
             "https://play.limitlesstcg.com/tournament/6a2fe31e2d97f3b0c2617462/standings",
             "https://play.limitlesstcg.com/tournament/6a2a6d37e334c3c9befd3b00/standings"
           ],
-          "team_count": 9,
+          "team_count": 6,
           "is_official": true
         },
         {
@@ -501,7 +501,7 @@
         {
           "slug": "live-archaludon-espathra-rain",
           "label": "Archaludon Espathra Rain",
-          "source": "official + grassroots results (21 teams): Regional Indianapolis, IN, [❄️lanakila.vg] Mobile Dawn",
+          "source": "official + grassroots results (20 teams): Regional Indianapolis, IN, [❄️lanakila.vg] Mobile Dawn",
           "result_label": "Regional top-8 finish",
           "field_relevance": 0.84,
           "popularity_weight": 0.33,
@@ -513,7 +513,7 @@
             "tailwind"
           ],
           "mode_weights": {
-            "rain": 0.62,
+            "rain": 0.61,
             "dual_mode": 0.33,
             "rain_tailwind": 0.04,
             "tailwind": 0.02
@@ -541,7 +541,7 @@
             "https://play.limitlesstcg.com/tournament/6a2999fce334c3c9befd31cd/standings",
             "https://play.limitlesstcg.com/tournament/6a2b0e112d97f3b0c2614219/standings"
           ],
-          "team_count": 21,
+          "team_count": 20,
           "is_official": true
         },
         {
@@ -584,9 +584,9 @@
           "is_official": true
         },
         {
-          "slug": "live-mega-gengar-politoed-rain",
-          "label": "Mega Gengar Politoed Rain",
-          "source": "official + grassroots results (34 teams): Special Event Turin, Regional Indianapolis, IN",
+          "slug": "live-mega-gengar-incineroar-rain",
+          "label": "Mega Gengar Incineroar Rain",
+          "source": "official + grassroots results (30 teams): Special Event Turin, Regional Indianapolis, IN",
           "result_label": "Special Event top-16 finish",
           "field_relevance": 0.82,
           "popularity_weight": 0.34,
@@ -598,10 +598,10 @@
             "trick_room"
           ],
           "mode_weights": {
-            "rain": 0.58,
-            "rain_room": 0.18,
+            "rain": 0.59,
+            "rain_room": 0.17,
             "dual_mode": 0.14,
-            "trick_room": 0.11
+            "trick_room": 0.1
           },
           "broad_mix": {
             "bulky_offense": 0.45,
@@ -610,22 +610,22 @@
           },
           "key_pokemon": [
             "gengar-mega",
-            "politoed",
             "incineroar",
+            "politoed",
             "sinistcha",
             "kommo-o",
             "tinkaton"
           ],
           "key_cores": [
-            "Mega Gengar + Politoed",
-            "Incineroar + Sinistcha"
+            "Mega Gengar + Incineroar",
+            "Politoed + Sinistcha"
           ],
           "provenance_urls": [
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434",
             "https://play.limitlesstcg.com/tournament/6a2b0e112d97f3b0c2614219/standings"
           ],
-          "team_count": 34,
+          "team_count": 30,
           "is_official": true
         },
         {
@@ -718,7 +718,7 @@
         {
           "slug": "live-excadrill-mega-floette-sand",
           "label": "Excadrill Mega Floette Sand",
-          "source": "official + grassroots results (3 teams): Regional Indianapolis, IN, *Sitrus-Series*|Champions|$50 to First Place|#62",
+          "source": "official + grassroots results (2 teams): Regional Indianapolis, IN, *Sitrus-Series*|Champions|$50 to First Place|#62",
           "result_label": "Regional top-16 finish",
           "field_relevance": 0.8,
           "popularity_weight": 0.31,
@@ -751,10 +751,9 @@
           ],
           "provenance_urls": [
             "https://limitlessvgc.com/tournaments/434",
-            "https://play.limitlesstcg.com/tournament/6a21741847f3797bf6bab7f3/standings",
-            "https://play.limitlesstcg.com/tournament/6a1cceb847f3797bf6ba8b3b/standings"
+            "https://play.limitlesstcg.com/tournament/6a21741847f3797bf6bab7f3/standings"
           ],
-          "team_count": 3,
+          "team_count": 2,
           "is_official": true
         },
         {
@@ -763,7 +762,7 @@
           "source": "Limitless grassroots results (26 teams): Game Corner Showdown 2025 - Last Chance Qualifier, WARTORTLE WEDNESDAYS #64 REG M-B BO3 OTS",
           "result_label": "winner",
           "field_relevance": 0.62,
-          "popularity_weight": 0.32,
+          "popularity_weight": 0.33,
           "result_weight": 1.0,
           "modes": [
             "dual_mode",
@@ -890,52 +889,9 @@
           "is_official": false
         },
         {
-          "slug": "live-farigiraf-hatterene-sun-room",
-          "label": "Farigiraf Hatterene Sun Room",
-          "source": "Limitless grassroots results (7 teams): Sketch Academy Pride Month x MMHM Qualifier 2, Devils Den Tournaments #80",
-          "result_label": "top-4 finish",
-          "field_relevance": 0.58,
-          "popularity_weight": 0.31,
-          "result_weight": 0.91,
-          "modes": [
-            "sun_room",
-            "sun",
-            "trick_room"
-          ],
-          "mode_weights": {
-            "sun_room": 0.45,
-            "sun": 0.27,
-            "trick_room": 0.27
-          },
-          "broad_mix": {
-            "bulky_offense": 0.45,
-            "balance": 0.35,
-            "hyper_offense": 0.2
-          },
-          "key_pokemon": [
-            "farigiraf",
-            "hatterene",
-            "incineroar",
-            "kangaskhan-mega",
-            "kingambit",
-            "torkoal"
-          ],
-          "key_cores": [
-            "Farigiraf + Hatterene",
-            "Incineroar + Mega Kangaskhan"
-          ],
-          "provenance_urls": [
-            "https://play.limitlesstcg.com/tournament/6a1cd37847f3797bf6ba8b5d/standings",
-            "https://play.limitlesstcg.com/tournament/6a28b9902d97f3b0c2612abd/standings",
-            "https://play.limitlesstcg.com/tournament/6a1cbef447f3797bf6ba8a30/standings"
-          ],
-          "team_count": 7,
-          "is_official": false
-        },
-        {
           "slug": "live-farigiraf-mega-golurk-sun-room",
           "label": "Farigiraf Mega Golurk Sun Room",
-          "source": "Limitless grassroots results (14 teams): *Sitrus-Series*|Champions-MB|#63, FlorTour Vol. 69 - $69 cash prize!!",
+          "source": "Limitless grassroots results (12 teams): *Sitrus-Series*|Champions-MB|#63, FlorTour Vol. 69 - $69 cash prize!!",
           "result_label": "top-4 finish",
           "field_relevance": 0.58,
           "popularity_weight": 0.31,
@@ -975,13 +931,13 @@
             "https://play.limitlesstcg.com/tournament/6a2b0e112d97f3b0c2614219/standings",
             "https://play.limitlesstcg.com/tournament/6a21741847f3797bf6bab7f3/standings"
           ],
-          "team_count": 14,
+          "team_count": 12,
           "is_official": false
         },
         {
           "slug": "live-garchomp-kingambit-tailwind",
           "label": "Garchomp Kingambit Tailwind",
-          "source": "Limitless grassroots results (11 teams): CHAMPIONS REG. M-B |👑CROWN FIGHT Bo3 TOUR #73👑, Champions Tour LEPE #8",
+          "source": "Limitless grassroots results (9 teams): CHAMPIONS REG. M-B |👑CROWN FIGHT Bo3 TOUR #73👑, Champions Tour LEPE #8",
           "result_label": "top-4 finish",
           "field_relevance": 0.58,
           "popularity_weight": 0.31,
@@ -992,9 +948,9 @@
             "snow"
           ],
           "mode_weights": {
-            "tailwind": 0.59,
-            "snow_tailwind": 0.26,
-            "snow": 0.15
+            "tailwind": 0.67,
+            "snow_tailwind": 0.21,
+            "snow": 0.12
           },
           "broad_mix": {
             "hyper_offense": 0.55,
@@ -1018,7 +974,7 @@
             "https://play.limitlesstcg.com/tournament/6a2abf192d97f3b0c2613c98/standings",
             "https://play.limitlesstcg.com/tournament/6a15dfdd8c163b8097997df1/standings"
           ],
-          "team_count": 11,
+          "team_count": 9,
           "is_official": false
         },
         {
@@ -1106,18 +1062,22 @@
           "is_official": false
         },
         {
-          "slug": "live-dragonite-mega-gengar-snow",
-          "label": "Dragonite Mega Gengar Snow",
-          "source": "Limitless grassroots results (5 teams): FlorTour Vol. 69 - $69 cash prize!!, Sky Pillar Saturday Showdown S8 #6",
+          "slug": "live-ceruledge-mega-floette-snow-room",
+          "label": "Ceruledge Mega Floette Snow Room",
+          "source": "Limitless grassroots results (2 teams): TARTAN TAKEDOWN #28 - [CHAMPIONS], VGC Trainer school x MMHM x Pride month event!  #2",
           "result_label": "top-4 finish",
           "field_relevance": 0.58,
           "popularity_weight": 0.3,
           "result_weight": 0.91,
           "modes": [
-            "snow"
+            "snow_room",
+            "snow",
+            "trick_room"
           ],
           "mode_weights": {
-            "snow": 1.0
+            "snow_room": 0.45,
+            "snow": 0.27,
+            "trick_room": 0.27
           },
           "broad_mix": {
             "bulky_offense": 0.45,
@@ -1125,23 +1085,22 @@
             "hyper_offense": 0.2
           },
           "key_pokemon": [
-            "dragonite",
-            "gengar-mega",
+            "ceruledge",
+            "floette-mega",
             "incineroar",
-            "kingambit",
+            "milotic",
             "ninetales-alola",
-            "sneasler"
+            "sinistcha"
           ],
           "key_cores": [
-            "Dragonite + Mega Gengar",
-            "Incineroar + Kingambit"
+            "Ceruledge + Mega Floette",
+            "Incineroar + Milotic"
           ],
           "provenance_urls": [
-            "https://play.limitlesstcg.com/tournament/6a2b0e112d97f3b0c2614219/standings",
-            "https://play.limitlesstcg.com/tournament/6a2ab0322d97f3b0c2613c44/standings",
-            "https://play.limitlesstcg.com/tournament/6a28b9902d97f3b0c2612abd/standings"
+            "https://play.limitlesstcg.com/tournament/6a2ff6362d97f3b0c26174ac/standings",
+            "https://play.limitlesstcg.com/tournament/6a157d308c163b8097997b6c/standings"
           ],
-          "team_count": 5,
+          "team_count": 2,
           "is_official": false
         },
         {
@@ -1188,17 +1147,58 @@
           ],
           "team_count": 2,
           "is_official": false
+        },
+        {
+          "slug": "live-mega-aerodactyl-incineroar-tailwind",
+          "label": "Mega Aerodactyl Incineroar Tailwind",
+          "source": "Limitless grassroots results (3 teams): r/VGC Regulation M-B Kickoff Cup, *Sitrus-Series*|Champions-MB|#63",
+          "result_label": "top-4 finish",
+          "field_relevance": 0.58,
+          "popularity_weight": 0.3,
+          "result_weight": 0.91,
+          "modes": [
+            "tailwind",
+            "dual_mode"
+          ],
+          "mode_weights": {
+            "tailwind": 0.67,
+            "dual_mode": 0.33
+          },
+          "broad_mix": {
+            "hyper_offense": 0.55,
+            "bulky_offense": 0.3,
+            "balance": 0.15
+          },
+          "key_pokemon": [
+            "aerodactyl-mega",
+            "incineroar",
+            "kommo-o",
+            "metagross-mega",
+            "milotic",
+            "sylveon"
+          ],
+          "key_cores": [
+            "Mega Aerodactyl + Incineroar",
+            "Mega Metagross + Kommo O",
+            "Milotic + Sylveon"
+          ],
+          "provenance_urls": [
+            "https://play.limitlesstcg.com/tournament/6a32a5ae2d97f3b0c2618621/standings",
+            "https://play.limitlesstcg.com/tournament/6a2c0161e334c3c9befd473b/standings"
+          ],
+          "team_count": 3,
+          "is_official": false
         }
       ],
       "provenance": {
-        "generatedAt": "2026-07-07T10:11:12.552556Z",
+        "generatedAt": "2026-07-08T09:48:48.713287Z",
         "windowDays": 30,
         "officialsWindowDays": 60,
-        "sampleSize": 2957,
-        "tournamentCount": 62,
+        "sampleSize": 2793,
+        "tournamentCount": 58,
         "officialEventCount": 3,
         "tierBreakdown": {
-          "online": 2521,
+          "online": 2357,
           "international": 156,
           "special_event": 135,
           "regional": 145
