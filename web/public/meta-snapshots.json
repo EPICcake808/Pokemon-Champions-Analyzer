@@ -1,16 +1,16 @@
 {
   "version": 1,
-  "generatedAt": "2026-07-21T09:50:27.181089Z",
+  "generatedAt": "2026-07-22T09:49:11.306914Z",
   "regulations": [
     {
       "regulationId": "champions_regulation_m_a",
-      "updatedAt": "2026-07-21T09:50:27.181089Z",
+      "updatedAt": "2026-07-22T09:49:11.306914Z",
       "sourceLabel": "Pokemon Champions Analyzer automated multi-source Regulation M-A meta board",
       "notes": [
-        "Automated multi-source ingest: 761 teams across 13 tournaments (grassroots last 30d + officials last 60d).",
+        "Automated multi-source ingest: 656 teams across 11 tournaments (grassroots last 30d + officials last 60d).",
         "The meta list is ranked by USAGE WEIGHTED toward the biggest, most official events (Regionals/Internationals/Special Events/Worlds) and the deepest top-cut runs; raw share-of-teams is retained for transparency.",
         "Official events weighted in: NAIC 2026, New Orleans (international, 1096), Special Event Turin (special event, 940), Regional Indianapolis, IN (regional, 1013).",
-        "Discovered 24 representative shells from 150 analyzed grassroots teams (62 clusters).",
+        "Discovered 24 representative shells from 150 analyzed grassroots teams (70 clusters).",
         "Reconciliation: Pikalytics (20 rows); unavailable: Pokémon Zone — unavailable (HTTP 403 Forbidden)",
         "Top-10 usage agreement with cross-checks: 90%.",
         "Usage disagreements flagged: froslass (absent from Pikalytics).",
@@ -19,7 +19,7 @@
       "commonMetaPokemon": [
         {
           "species": "Kingambit",
-          "metaShare": 62.1,
+          "metaShare": 62.9,
           "whyUsed": "Balance and offense teams both value it because it keeps priority endgames honest and punishes passive or overly defensive lines.",
           "whatItDoes": "It acts as a cleaner and trade punisher, usually closing games with strong Dark or Steel pressure and priority once its partners have chipped the field.",
           "featuredTeams": [
@@ -27,14 +27,14 @@
             "Incineroar Mega Floette Dual Mode",
             "Kingambit Sneasler Dual Mode"
           ],
-          "weightedUsagePercent": 62.1,
-          "usagePercent": 48.0,
-          "teamCount": 365,
-          "sampleSize": 761
+          "weightedUsagePercent": 62.9,
+          "usagePercent": 51.4,
+          "teamCount": 337,
+          "sampleSize": 656
         },
         {
           "species": "Basculegion",
-          "metaShare": 52.6,
+          "metaShare": 53.1,
           "whyUsed": "Rain and fast-offense shells keep it around because it converts speed control into immediate KOs better than most physical cleaners in the format.",
           "whatItDoes": "It acts as the rain-enabled cleaner that cashes in on chipped boards and forces endgames once Pelipper, Tailwind, or support positioning has opened the field.",
           "featuredTeams": [
@@ -42,10 +42,10 @@
             "Kingambit Sneasler Dual Mode",
             "Basculegion Mega Charizard Y Dual Mode"
           ],
-          "weightedUsagePercent": 52.6,
-          "usagePercent": 43.1,
-          "teamCount": 328,
-          "sampleSize": 761
+          "weightedUsagePercent": 53.1,
+          "usagePercent": 45.1,
+          "teamCount": 296,
+          "sampleSize": 656
         },
         {
           "species": "Garchomp",
@@ -54,17 +54,17 @@
           "whatItDoes": "It applies broad physical pressure with strong Ground coverage and spread damage, forcing awkward switches and punishing teams that fall behind on speed control.",
           "featuredTeams": [
             "Garchomp Mega Charizard Y Tailwind",
-            "Incineroar Mega Floette Trick Room",
+            "Mega Floette Incineroar Trick Room",
             "Hisuian Arcanine Corviknight Sand Tailwind"
           ],
           "weightedUsagePercent": 46.3,
-          "usagePercent": 43.6,
-          "teamCount": 332,
-          "sampleSize": 761
+          "usagePercent": 43.4,
+          "teamCount": 285,
+          "sampleSize": 656
         },
         {
           "species": "Sneasler",
-          "metaShare": 39.2,
+          "metaShare": 39.6,
           "whyUsed": "Fast offense and dual-mega shells keep reaching for it because Unburden turns a single consumed item into a speed tier almost nothing outruns, letting it close games before slower control teams stabilize.",
           "whatItDoes": "It opens with Fake Out, then snowballs with fast Fighting and Poison pressure and Dire Claw status, cleaning chipped boards and punishing teams that fall behind on speed.",
           "featuredTeams": [
@@ -72,94 +72,95 @@
             "Kingambit Sneasler Dual Mode",
             "Mega Charizard Y Hydreigon Dual Mode"
           ],
+          "weightedUsagePercent": 39.6,
+          "usagePercent": 31.1,
+          "teamCount": 204,
+          "sampleSize": 656
+        },
+        {
+          "species": "Floette Eternal",
+          "metaShare": 39.2,
+          "whyUsed": "Balance, Trick Room, and dual-mega shells lean on it because its Mega folds a top-tier Fairy special attacker and a durable support body into one flexible slot.",
+          "whatItDoes": "It threatens high-output Fairy damage through Light of Ruin while Flower Veil and its bulk let it stay in to support partners, anchoring both slow Trick Room and fast dual-mode lines.",
+          "featuredTeams": [],
           "weightedUsagePercent": 39.2,
-          "usagePercent": 29.8,
-          "teamCount": 227,
-          "sampleSize": 761
+          "usagePercent": 32.0,
+          "teamCount": 210,
+          "sampleSize": 656
         },
         {
           "species": "Charizard",
-          "metaShare": 38.8,
+          "metaShare": 39.1,
           "whyUsed": "Sun and fast-offense shells lean on it because its Mega forms fold a self-contained weather engine and one of the format's best nukes into a single, flexible slot.",
           "whatItDoes": "As Mega Charizard Y it sets harsh sunlight and fires off high-output special Fire damage; as Mega Charizard X it offers a physical Dragon/Fire alternative — either way it turns Tailwind and support turns straight into KO pressure.",
           "featuredTeams": [],
-          "weightedUsagePercent": 38.8,
-          "usagePercent": 32.2,
-          "teamCount": 245,
-          "sampleSize": 761
+          "weightedUsagePercent": 39.1,
+          "usagePercent": 33.5,
+          "teamCount": 220,
+          "sampleSize": 656
         },
         {
           "species": "Incineroar",
-          "metaShare": 38.8,
+          "metaShare": 39.1,
           "whyUsed": "It remains one of the safest glue pieces because Intimidate and positioning utility patch physical pressure without forcing teams to give up tempo.",
           "whatItDoes": "It slows openings with Fake Out and pivot pressure, softens setup attempts, and buys cleaner entry turns for the field's main sweepers and weather payoffs.",
           "featuredTeams": [
             "Incineroar Mega Floette Dual Mode",
-            "Incineroar Mega Floette Trick Room",
+            "Mega Floette Incineroar Trick Room",
             "Mega Charizard Y Hydreigon Dual Mode"
           ],
-          "weightedUsagePercent": 38.8,
-          "usagePercent": 32.1,
-          "teamCount": 244,
-          "sampleSize": 761
-        },
-        {
-          "species": "Floette Eternal",
-          "metaShare": 38.6,
-          "whyUsed": "Balance, Trick Room, and dual-mega shells lean on it because its Mega folds a top-tier Fairy special attacker and a durable support body into one flexible slot.",
-          "whatItDoes": "It threatens high-output Fairy damage through Light of Ruin while Flower Veil and its bulk let it stay in to support partners, anchoring both slow Trick Room and fast dual-mode lines.",
-          "featuredTeams": [],
-          "weightedUsagePercent": 38.6,
-          "usagePercent": 29.6,
-          "teamCount": 225,
-          "sampleSize": 761
+          "weightedUsagePercent": 39.1,
+          "usagePercent": 32.8,
+          "teamCount": 215,
+          "sampleSize": 656
         },
         {
           "species": "Sinistcha",
-          "metaShare": 25.8,
+          "metaShare": 25.7,
           "whyUsed": "It compresses redirection, healing, and slower-mode insurance into one slot, so balance, room, and hybrid shells can stay consistent without losing support density.",
           "whatItDoes": "It keeps partners healthy with Hospitality or healing support, redirects key turns with Rage Powder, and still threatens real board progress with Matcha Gotcha or Trick Room positioning.",
           "featuredTeams": [
             "Incineroar Mega Floette Dual Mode",
-            "Incineroar Mega Floette Trick Room",
+            "Mega Floette Incineroar Trick Room",
             "Rotom Wash Sinistcha Sand Room"
           ],
-          "weightedUsagePercent": 25.8,
-          "usagePercent": 26.0,
-          "teamCount": 198,
-          "sampleSize": 761
+          "weightedUsagePercent": 25.7,
+          "usagePercent": 25.8,
+          "teamCount": 169,
+          "sampleSize": 656
         },
         {
           "species": "Whimsicott",
-          "metaShare": 23.4,
+          "metaShare": 23.5,
           "whyUsed": "Prankster speed control and disruption are still premium, so fast offenses keep reaching for it when they want immediate tempo without spending their mega slot on support.",
           "whatItDoes": "It gets Tailwind online quickly, threatens Encore-style disruption, and creates fast openings for attackers like Garchomp, Mega Charizard Y, and Kingambit.",
           "featuredTeams": [
             "Garchomp Mega Charizard Y Tailwind",
-            "Corviknight Mega Froslass Tailwind"
+            "Corviknight Mega Froslass Tailwind",
+            "Archaludon Basculegion Rain Tailwind"
           ],
-          "weightedUsagePercent": 23.4,
-          "usagePercent": 21.9,
-          "teamCount": 167,
-          "sampleSize": 761
+          "weightedUsagePercent": 23.5,
+          "usagePercent": 22.0,
+          "teamCount": 144,
+          "sampleSize": 656
         },
         {
           "species": "Froslass",
-          "metaShare": 15.3,
+          "metaShare": 15.5,
           "whyUsed": "Fast offense leans on it because it gives reliable speed control and disruption from turn one, and its Mega trades up into a real offensive threat without changing the lead plan.",
           "whatItDoes": "It threatens fast Tailwind, hazards, and Destiny Bond trades, opening clean turns for the backline while its Ice/Ghost coverage chips key targets.",
           "featuredTeams": [],
-          "weightedUsagePercent": 15.3,
-          "usagePercent": 11.6,
-          "teamCount": 88,
-          "sampleSize": 761
+          "weightedUsagePercent": 15.5,
+          "usagePercent": 12.5,
+          "teamCount": 82,
+          "sampleSize": 656
         }
       ],
       "tournamentTeamSnapshots": [
         {
           "slug": "live-garchomp-mega-charizard-y-tailwind",
           "label": "Garchomp Mega Charizard Y Tailwind",
-          "source": "official + grassroots results (81 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (67 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "International winner",
           "field_relevance": 1.3,
           "popularity_weight": 1.0,
@@ -171,15 +172,15 @@
             "trick_room"
           ],
           "mode_weights": {
-            "tailwind": 0.52,
+            "tailwind": 0.53,
             "dual_mode": 0.29,
-            "tailroom": 0.1,
+            "tailroom": 0.09,
             "trick_room": 0.09
           },
           "broad_mix": {
             "hyper_offense": 0.46,
             "bulky_offense": 0.34,
-            "balance": 0.2
+            "balance": 0.19
           },
           "key_pokemon": [
             "garchomp",
@@ -198,7 +199,7 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 81,
+          "team_count": 67,
           "is_official": true
         },
         {
@@ -206,8 +207,8 @@
           "label": "Incineroar Mega Floette Dual Mode",
           "source": "official + grassroots results (23 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Special Event winner",
-          "field_relevance": 1.05,
-          "popularity_weight": 0.62,
+          "field_relevance": 1.06,
+          "popularity_weight": 0.63,
           "result_weight": 1.0,
           "modes": [
             "dual_mode",
@@ -246,9 +247,9 @@
         {
           "slug": "live-kingambit-sneasler-dual-mode",
           "label": "Kingambit Sneasler Dual Mode",
-          "source": "official + grassroots results (17 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "source": "official + grassroots results (16 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Special Event top-8 finish",
-          "field_relevance": 0.96,
+          "field_relevance": 0.97,
           "popularity_weight": 0.53,
           "result_weight": 0.88,
           "modes": [
@@ -282,13 +283,13 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 17,
+          "team_count": 16,
           "is_official": true
         },
         {
-          "slug": "live-incineroar-mega-floette-trick-room",
-          "label": "Incineroar Mega Floette Trick Room",
-          "source": "official + grassroots results (20 teams): NAIC 2026, New Orleans, Special Event Turin",
+          "slug": "live-mega-floette-incineroar-trick-room",
+          "label": "Mega Floette Incineroar Trick Room",
+          "source": "official + grassroots results (16 teams): NAIC 2026, New Orleans, Special Event Turin",
           "result_label": "Regional winner",
           "field_relevance": 0.95,
           "popularity_weight": 0.46,
@@ -311,8 +312,8 @@
             "balance": 0.22
           },
           "key_pokemon": [
-            "incineroar",
             "floette-mega",
+            "incineroar",
             "sinistcha",
             "garchomp",
             "charizard-mega-y",
@@ -328,13 +329,13 @@
             "https://limitlessvgc.com/tournaments/435",
             "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 20,
+          "team_count": 16,
           "is_official": true
         },
         {
           "slug": "live-hisuian-arcanine-corviknight-sand-tailwind",
           "label": "Hisuian Arcanine Corviknight Sand Tailwind",
-          "source": "official + grassroots results (3 teams): Regional Indianapolis, IN, NAIC 2026, New Orleans",
+          "source": "official + grassroots results (2 teams): Regional Indianapolis, IN, NAIC 2026, New Orleans",
           "result_label": "Regional top-4 finish",
           "field_relevance": 0.87,
           "popularity_weight": 0.34,
@@ -371,10 +372,9 @@
           ],
           "provenance_urls": [
             "https://limitlessvgc.com/tournaments/434",
-            "https://limitlessvgc.com/tournaments/436",
-            "https://play.limitlesstcg.com/tournament/6a330c852d97f3b0c2618bb0/standings"
+            "https://limitlessvgc.com/tournaments/436"
           ],
-          "team_count": 3,
+          "team_count": 2,
           "is_official": true
         },
         {
@@ -499,47 +499,41 @@
         {
           "slug": "live-archaludon-mega-dragonite-rain",
           "label": "Archaludon Mega Dragonite Rain",
-          "source": "official + grassroots results (3 teams): Regional Indianapolis, IN, Extreme Speed #7 M-B",
+          "source": "official + grassroots results (1 teams): Regional Indianapolis, IN",
           "result_label": "Regional top-8 finish",
           "field_relevance": 0.83,
           "popularity_weight": 0.32,
           "result_weight": 0.88,
           "modes": [
             "rain",
-            "dual_mode",
-            "rain_tailwind",
-            "tailwind"
+            "dual_mode"
           ],
           "mode_weights": {
-            "rain": 0.62,
-            "dual_mode": 0.3,
-            "rain_tailwind": 0.05,
-            "tailwind": 0.03
+            "rain": 0.67,
+            "dual_mode": 0.33
           },
           "broad_mix": {
-            "bulky_offense": 0.43,
-            "balance": 0.33,
-            "hyper_offense": 0.24
+            "bulky_offense": 0.45,
+            "balance": 0.35,
+            "hyper_offense": 0.2
           },
           "key_pokemon": [
             "archaludon",
             "dragonite-mega",
-            "politoed",
-            "sneasler",
             "espathra",
-            "scovillain-mega"
+            "politoed",
+            "scovillain-mega",
+            "sneasler"
           ],
           "key_cores": [
             "Mega Dragonite + Archaludon",
-            "Mega Scovillain + Politoed",
-            "Sneasler + Espathra"
+            "Mega Scovillain + Espathra",
+            "Politoed + Sneasler"
           ],
           "provenance_urls": [
-            "https://limitlessvgc.com/tournaments/434",
-            "https://play.limitlesstcg.com/tournament/6a330c852d97f3b0c2618bb0/standings",
-            "https://play.limitlesstcg.com/tournament/6a157d5a0f6c1f089986159f/standings"
+            "https://limitlessvgc.com/tournaments/434"
           ],
-          "team_count": 3,
+          "team_count": 1,
           "is_official": true
         },
         {
@@ -670,6 +664,51 @@
           "is_official": true
         },
         {
+          "slug": "live-mega-floette-incineroar-sand-room",
+          "label": "Mega Floette Incineroar Sand Room",
+          "source": "official + grassroots results (2 teams): Regional Indianapolis, IN, PWC - Battle in the Colosseum #18 - Reg M-B",
+          "result_label": "Regional top-16 finish",
+          "field_relevance": 0.81,
+          "popularity_weight": 0.32,
+          "result_weight": 0.79,
+          "modes": [
+            "sand_room",
+            "dual_mode",
+            "sand",
+            "trick_room"
+          ],
+          "mode_weights": {
+            "sand_room": 0.32,
+            "dual_mode": 0.28,
+            "sand": 0.21,
+            "trick_room": 0.19
+          },
+          "broad_mix": {
+            "bulky_offense": 0.44,
+            "balance": 0.33,
+            "hyper_offense": 0.23
+          },
+          "key_pokemon": [
+            "floette-mega",
+            "incineroar",
+            "rotom-wash",
+            "sinistcha",
+            "tyranitar-mega",
+            "excadrill"
+          ],
+          "key_cores": [
+            "Mega Floette + Incineroar",
+            "Mega Tyranitar + Rotom Wash",
+            "Sinistcha + Excadrill"
+          ],
+          "provenance_urls": [
+            "https://limitlessvgc.com/tournaments/434",
+            "https://play.limitlesstcg.com/tournament/6a3d90b483fd320299bd01f0/standings"
+          ],
+          "team_count": 2,
+          "is_official": true
+        },
+        {
           "slug": "live-corviknight-excadrill-tailroom",
           "label": "Corviknight Excadrill Tailroom",
           "source": "official + grassroots results (1 teams): Regional Indianapolis, IN",
@@ -713,93 +752,49 @@
           "is_official": true
         },
         {
-          "slug": "live-excadrill-mega-floette-sand-room",
-          "label": "Excadrill Mega Floette Sand Room",
-          "source": "official + grassroots results (1 teams): Regional Indianapolis, IN",
-          "result_label": "Regional top-16 finish",
-          "field_relevance": 0.81,
-          "popularity_weight": 0.31,
-          "result_weight": 0.79,
-          "modes": [
-            "sand_room",
-            "dual_mode",
-            "sand",
-            "trick_room"
-          ],
-          "mode_weights": {
-            "sand_room": 0.33,
-            "dual_mode": 0.27,
-            "sand": 0.2,
-            "trick_room": 0.2
-          },
-          "broad_mix": {
-            "bulky_offense": 0.45,
-            "balance": 0.35,
-            "hyper_offense": 0.2
-          },
-          "key_pokemon": [
-            "excadrill",
-            "floette-mega",
-            "incineroar",
-            "rotom-wash",
-            "sinistcha",
-            "tyranitar-mega"
-          ],
-          "key_cores": [
-            "Mega Floette + Excadrill",
-            "Mega Tyranitar + Incineroar",
-            "Rotom Wash + Sinistcha"
-          ],
-          "provenance_urls": [
-            "https://limitlessvgc.com/tournaments/434"
-          ],
-          "team_count": 1,
-          "is_official": true
-        },
-        {
-          "slug": "live-mega-swampert-archaludon-dual-mode",
-          "label": "Mega Swampert Archaludon Dual Mode",
-          "source": "Limitless grassroots results (26 teams): Game Corner Showdown 2025 - Last Chance Qualifier, WARTORTLE WEDNESDAYS #64 REG M-B BO3 OTS",
+          "slug": "live-archaludon-mega-swampert-tailroom",
+          "label": "Archaludon Mega Swampert Tailroom",
+          "source": "Limitless grassroots results (19 teams): Game Corner Showdown 2025 - Last Chance Qualifier, WARTORTLE WEDNESDAYS #64 REG M-B BO3 OTS",
           "result_label": "winner",
-          "field_relevance": 0.63,
-          "popularity_weight": 0.34,
+          "field_relevance": 0.62,
+          "popularity_weight": 0.33,
           "result_weight": 1.0,
           "modes": [
+            "tailroom",
             "dual_mode",
             "rain",
-            "tailwind",
-            "tailroom"
+            "tailwind"
           ],
           "mode_weights": {
-            "dual_mode": 0.31,
-            "rain": 0.25,
-            "tailwind": 0.22,
-            "tailroom": 0.22
+            "tailroom": 0.28,
+            "dual_mode": 0.26,
+            "rain": 0.24,
+            "tailwind": 0.22
           },
           "broad_mix": {
-            "trick_room": 0.39,
-            "bulky_offense": 0.36,
-            "hyper_offense": 0.26
+            "trick_room": 0.49,
+            "bulky_offense": 0.32,
+            "balance": 0.19
           },
           "key_pokemon": [
-            "swampert-mega",
             "archaludon",
+            "swampert-mega",
             "pelipper",
-            "sinistcha",
             "grimmsnarl",
+            "sinistcha",
             "metagross-mega"
           ],
           "key_cores": [
             "Mega Swampert + Archaludon",
             "Mega Metagross + Pelipper",
-            "Sinistcha + Grimmsnarl"
+            "Grimmsnarl + Sinistcha"
           ],
           "provenance_urls": [
             "https://play.limitlesstcg.com/tournament/6a33d4bb2d97f3b0c2619037/standings",
             "https://play.limitlesstcg.com/tournament/6a433f5f83fd320299bd47f2/standings",
             "https://play.limitlesstcg.com/tournament/6a3d76b0c87cd9ff0a30f3c6/standings"
           ],
-          "team_count": 26,
+          "team_count": 19,
           "is_official": false
         },
         {
@@ -915,9 +910,9 @@
           "is_official": false
         },
         {
-          "slug": "live-mega-blastoise-farigiraf-sun-room",
-          "label": "Mega Blastoise Farigiraf Sun Room",
-          "source": "Limitless grassroots results (1 teams): Thalera Champions Cheese #08 - Starters Edition",
+          "slug": "live-farigiraf-kingambit-sun-room",
+          "label": "Farigiraf Kingambit Sun Room",
+          "source": "Limitless grassroots results (2 teams): Thalera Champions Cheese #08 - Starters Edition, Friday Fight Night #61 Reg M-B Bo3",
           "result_label": "winner",
           "field_relevance": 0.6,
           "popularity_weight": 0.3,
@@ -938,30 +933,31 @@
             "hyper_offense": 0.2
           },
           "key_pokemon": [
-            "blastoise-mega",
             "farigiraf",
             "kingambit",
             "staraptor",
             "sylveon",
-            "torkoal"
+            "torkoal",
+            "blastoise-mega"
           ],
           "key_cores": [
-            "Mega Blastoise + Farigiraf",
-            "Kingambit + Staraptor"
+            "Farigiraf + Kingambit",
+            "Staraptor + Sylveon"
           ],
           "provenance_urls": [
-            "https://play.limitlesstcg.com/tournament/6a369a31af50e123084062cf/standings"
+            "https://play.limitlesstcg.com/tournament/6a369a31af50e123084062cf/standings",
+            "https://play.limitlesstcg.com/tournament/6a35c324af50e1230840596f/standings"
           ],
-          "team_count": 1,
+          "team_count": 2,
           "is_official": false
         },
         {
-          "slug": "live-farigiraf-mega-mawile-sun-room",
-          "label": "Farigiraf Mega Mawile Sun Room",
-          "source": "Limitless grassroots results (7 teams): Extreme Speed #8 REG M-B, Friday Fight Night #61 Reg M-B Bo3",
+          "slug": "live-farigiraf-torkoal-sun-room",
+          "label": "Farigiraf Torkoal Sun Room",
+          "source": "Limitless grassroots results (10 teams): Extreme Speed #8 REG M-B, Friday Fight Night #61 Reg M-B Bo3",
           "result_label": "top-4 finish",
-          "field_relevance": 0.58,
-          "popularity_weight": 0.31,
+          "field_relevance": 0.59,
+          "popularity_weight": 0.32,
           "result_weight": 0.91,
           "modes": [
             "sun_room",
@@ -970,10 +966,10 @@
             "dual_mode"
           ],
           "mode_weights": {
-            "sun_room": 0.37,
+            "sun_room": 0.36,
             "sun": 0.22,
             "trick_room": 0.22,
-            "dual_mode": 0.19
+            "dual_mode": 0.21
           },
           "broad_mix": {
             "bulky_offense": 0.45,
@@ -982,63 +978,23 @@
           },
           "key_pokemon": [
             "farigiraf",
-            "mawile-mega",
             "torkoal",
+            "mawile-mega",
             "vileplume",
-            "kangaskhan",
-            "ampharos-mega"
+            "decidueye-hisui",
+            "pyroar-mega"
           ],
           "key_cores": [
             "Mega Mawile + Farigiraf",
-            "Mega Ampharos + Torkoal",
-            "Vileplume + Kangaskhan"
+            "Mega Pyroar + Torkoal",
+            "Vileplume + Hisuian Decidueye"
           ],
           "provenance_urls": [
             "https://play.limitlesstcg.com/tournament/6a3d76b0c87cd9ff0a30f3c6/standings",
             "https://play.limitlesstcg.com/tournament/6a35c324af50e1230840596f/standings",
             "https://play.limitlesstcg.com/tournament/6a433f5f83fd320299bd47f2/standings"
           ],
-          "team_count": 7,
-          "is_official": false
-        },
-        {
-          "slug": "live-mega-charizard-y-garchomp-dual-mode",
-          "label": "Mega Charizard Y Garchomp Dual Mode",
-          "source": "Limitless grassroots results (4 teams): PWC - Battle in the Colosseum #18 - Reg M-B, Friday Fight Night #61 Reg M-B Bo3",
-          "result_label": "top-4 finish",
-          "field_relevance": 0.58,
-          "popularity_weight": 0.31,
-          "result_weight": 0.91,
-          "modes": [
-            "dual_mode"
-          ],
-          "mode_weights": {
-            "dual_mode": 1.0
-          },
-          "broad_mix": {
-            "balance": 0.5,
-            "bulky_offense": 0.3,
-            "hyper_offense": 0.2
-          },
-          "key_pokemon": [
-            "charizard-mega-y",
-            "garchomp",
-            "grimmsnarl",
-            "hydreigon",
-            "metagross-mega",
-            "toxapex"
-          ],
-          "key_cores": [
-            "Mega Charizard Y + Garchomp",
-            "Mega Metagross + Grimmsnarl",
-            "Hydreigon + Toxapex"
-          ],
-          "provenance_urls": [
-            "https://play.limitlesstcg.com/tournament/6a3d90b483fd320299bd01f0/standings",
-            "https://play.limitlesstcg.com/tournament/6a35c324af50e1230840596f/standings",
-            "https://play.limitlesstcg.com/tournament/6a330c852d97f3b0c2618bb0/standings"
-          ],
-          "team_count": 4,
+          "team_count": 10,
           "is_official": false
         },
         {
@@ -1120,6 +1076,50 @@
           "is_official": false
         },
         {
+          "slug": "live-archaludon-basculegion-rain-tailwind",
+          "label": "Archaludon Basculegion Rain Tailwind",
+          "source": "Limitless grassroots results (1 teams): WARTORTLE WEDNESDAYS #64 REG M-B BO3 OTS",
+          "result_label": "top-4 finish",
+          "field_relevance": 0.58,
+          "popularity_weight": 0.3,
+          "result_weight": 0.91,
+          "modes": [
+            "rain_tailwind",
+            "dual_mode",
+            "rain",
+            "tailwind"
+          ],
+          "mode_weights": {
+            "rain_tailwind": 0.33,
+            "dual_mode": 0.27,
+            "rain": 0.2,
+            "tailwind": 0.2
+          },
+          "broad_mix": {
+            "hyper_offense": 0.55,
+            "bulky_offense": 0.3,
+            "balance": 0.15
+          },
+          "key_pokemon": [
+            "archaludon",
+            "basculegion",
+            "charizard-mega-y",
+            "pelipper",
+            "swampert-mega",
+            "whimsicott"
+          ],
+          "key_cores": [
+            "Mega Charizard Y + Archaludon",
+            "Mega Swampert + Basculegion",
+            "Pelipper + Whimsicott"
+          ],
+          "provenance_urls": [
+            "https://play.limitlesstcg.com/tournament/6a433f5f83fd320299bd47f2/standings"
+          ],
+          "team_count": 1,
+          "is_official": false
+        },
+        {
           "slug": "live-archaludon-mega-blastoise-trick-room",
           "label": "Archaludon Mega Blastoise Trick Room",
           "source": "Limitless grassroots results (1 teams): Thalera Champions Cheese #08 - Starters Edition",
@@ -1158,14 +1158,14 @@
         }
       ],
       "provenance": {
-        "generatedAt": "2026-07-21T09:50:27.181089Z",
+        "generatedAt": "2026-07-22T09:49:11.306914Z",
         "windowDays": 30,
         "officialsWindowDays": 60,
-        "sampleSize": 761,
-        "tournamentCount": 13,
+        "sampleSize": 656,
+        "tournamentCount": 11,
         "officialEventCount": 3,
         "tierBreakdown": {
-          "online": 325,
+          "online": 220,
           "international": 156,
           "special_event": 135,
           "regional": 145
